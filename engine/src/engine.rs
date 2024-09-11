@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use display::display::Display;
+use display::display_manager::{DisplayId, DisplayManager};
 use tao::window::{Window, WindowBuilder};
 use tokio::runtime::Runtime;
 use wgpu::{instance::Instance, render_texture::RenderTexture};
@@ -35,17 +35,19 @@ impl EngineBuilder {
 }
 
 pub struct Engine {
-    runtime: Runtime,
-    displays: Vec<Display>,
+    runtime: Arc<Runtime>,
+    display_manager: DisplayManager,
     stats: Stats,
     wgpu_instance: Instance,
 }
 
 impl Engine {
     fn new(runtime: Runtime) -> Self {
+        let runtime = Arc::new(runtime);
+
         Self {
-            runtime,
-            displays: Vec::new(),
+            runtime: runtime.clone(),
+            display_manager: DisplayManager::new(runtime),
             stats: Stats::new(),
             wgpu_instance: Instance::default(),
         }
@@ -54,9 +56,7 @@ impl Engine {
     pub fn update(&mut self) {
         self.stats.before_update();
 
-        for display in &mut self.displays {
-            display.render();
-        }
+        self.display_manager.render();
 
         self.stats.after_update();
     }
@@ -74,7 +74,8 @@ impl Engine {
         height: u32,
         render_texture: &RenderTexture,
         create_window_callback: F,
-    ) where
+    ) -> DisplayId
+    where
         F: Fn(WindowBuilder) -> Arc<Window>,
     {
         let window_builder = WindowBuilder::new()
@@ -83,13 +84,7 @@ impl Engine {
 
         let window = create_window_callback(window_builder);
 
-        let display = self
-            .runtime
-            .block_on(async {
-                Display::new(&self.wgpu_instance, window, render_texture.texture_view()).await
-            })
-            .into();
-
-        self.displays.push(display);
+        self.display_manager
+            .add_display(&self.wgpu_instance, window, render_texture.texture_view())
     }
 }
