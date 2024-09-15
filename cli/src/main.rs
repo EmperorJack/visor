@@ -15,12 +15,12 @@ fn main() {
         Arc::new(window)
     });
 
-    let render_texture = engine.create_render_texture(600, 400);
+    let render_texture_id = engine.create_render_texture(600, 400);
     engine.create_display(
         "Display".into(),
         600,
         400,
-        &render_texture,
+        &render_texture_id,
         create_window_callback,
     );
 

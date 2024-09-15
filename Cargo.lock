@@ -598,6 +598,7 @@ dependencies = [
  "display",
  "tao",
  "tokio",
+ "uuid",
  "wgpu 0.1.0",
 ]
 
