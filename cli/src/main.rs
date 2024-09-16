@@ -31,6 +31,7 @@ fn main() {
         .with_window_creator(Box::new(event_loop_window_creator))
         .build();
 
+    engine.create_sketch();
     let render_texture_id = engine.create_render_texture(600, 400);
     engine.create_display("Display".into(), 600, 400, &render_texture_id);
 

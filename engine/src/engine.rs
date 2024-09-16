@@ -1,18 +1,18 @@
-use std::{
-    collections::HashMap,
-    sync::{mpsc, Arc},
-};
+use std::{collections::HashMap, sync::Arc};
 
 use display::display_manager::{DisplayId, DisplayManager};
 use tao::{
     event::WindowEvent,
     window::{Window, WindowBuilder, WindowId},
 };
-use tokio::runtime::Runtime;
+use tokio::{runtime::Runtime, sync::mpsc, task::JoinSet};
 use uuid::Uuid;
 use wgpu::{instance::Instance, render_texture::RenderTexture};
 
-use crate::stats::Stats;
+use crate::{
+    sketch::{Sketch, SketchId},
+    stats::Stats,
+};
 
 // TODO: see if there is a more elegant way to achieve this
 pub trait WindowCreator {
@@ -51,10 +51,11 @@ impl EngineBuilder {
             )
             .into();
 
-        let (tao_window_event_sender, tao_window_event_receiver) = mpsc::channel();
+        let (tao_window_event_sender, tao_window_event_receiver) = mpsc::unbounded_channel();
 
         Engine {
             runtime: runtime.clone(),
+            sketches: Default::default(),
             render_textures: Default::default(),
             display_manager: DisplayManager::new(runtime),
             window_creator: self.window_creator,
@@ -71,17 +72,20 @@ pub struct RenderTextureId(Uuid);
 
 pub struct Engine {
     runtime: Arc<Runtime>,
+    sketches: HashMap<SketchId, Sketch>,
     render_textures: HashMap<RenderTextureId, RenderTexture>,
     display_manager: DisplayManager,
     window_creator: Option<Box<dyn WindowCreator>>,
-    tao_window_event_sender: mpsc::Sender<(WindowId, WindowEvent<'static>)>,
-    tao_window_event_receiver: mpsc::Receiver<(WindowId, WindowEvent<'static>)>,
+    tao_window_event_sender: mpsc::UnboundedSender<(WindowId, WindowEvent<'static>)>,
+    tao_window_event_receiver: mpsc::UnboundedReceiver<(WindowId, WindowEvent<'static>)>,
     stats: Stats,
     wgpu_instance: Instance,
 }
 
 impl Engine {
-    pub fn tao_window_event_sender(&self) -> mpsc::Sender<(WindowId, WindowEvent<'static>)> {
+    pub fn tao_window_event_sender(
+        &self,
+    ) -> mpsc::UnboundedSender<(WindowId, WindowEvent<'static>)> {
         self.tao_window_event_sender.clone()
     }
 
@@ -93,9 +97,35 @@ impl Engine {
                 .handle_tao_window_event(&window_id, &event);
         }
 
+        self.runtime.block_on(async {
+            let mut join_set = JoinSet::new();
+
+            for sketch in self.sketches.values() {
+                let result_receiver = sketch.request_update().await;
+
+                join_set.spawn(async move {
+                    result_receiver
+                        .await
+                        .expect("Unexpected: error occurred during sketch update");
+                });
+            }
+
+            while (join_set.join_next().await).is_some() {}
+        });
+
         self.display_manager.render();
 
         self.stats.after_update();
+    }
+
+    pub fn create_sketch(&mut self) -> SketchId {
+        let id = SketchId(Uuid::new_v4());
+
+        let sketch = Sketch::new();
+
+        self.sketches.insert(id, sketch);
+
+        id
     }
 
     pub fn create_render_texture(&mut self, width: u32, height: u32) -> RenderTextureId {
