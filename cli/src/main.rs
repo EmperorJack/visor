@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use engine::engine::{EngineBuilder, WindowCreator};
-use tao::event_loop::EventLoopWindowTarget;
+use tao::{event::Event, event_loop::EventLoopWindowTarget};
 
 struct EventLoopWindowCreator {
     event_loop_window_target: EventLoopWindowTarget<()>,
@@ -34,27 +34,23 @@ fn main() {
     let render_texture_id = engine.create_render_texture(600, 400);
     engine.create_display("Display".into(), 600, 400, &render_texture_id);
 
+    let engine_window_event_sender = engine.tao_window_event_sender();
+
     event_loop.run(move |event, _event_loop, control_flow| {
         *control_flow = tao::event_loop::ControlFlow::Wait;
 
         match event {
-            tao::event::Event::WindowEvent {
-                event: tao::event::WindowEvent::CloseRequested,
-                window_id: _,
-                ..
+            Event::WindowEvent {
+                window_id, event, ..
             } => {
-                std::process::exit(0);
+                if let Some(event) = event.to_static() {
+                    engine_window_event_sender
+                        .send((window_id, event))
+                        .expect("Unexpected: could not send window event to engine");
+                }
             }
 
-            tao::event::Event::WindowEvent {
-                event: tao::event::WindowEvent::Destroyed,
-                window_id: _,
-                ..
-            } => {
-                *control_flow = tao::event_loop::ControlFlow::Exit;
-            }
-
-            tao::event::Event::MainEventsCleared => {
+            Event::MainEventsCleared => {
                 engine.update();
             }
             _ => (),

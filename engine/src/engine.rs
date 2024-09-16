@@ -1,7 +1,13 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    collections::HashMap,
+    sync::{mpsc, Arc},
+};
 
 use display::display_manager::{DisplayId, DisplayManager};
-use tao::window::{Window, WindowBuilder};
+use tao::{
+    event::WindowEvent,
+    window::{Window, WindowBuilder, WindowId},
+};
 use tokio::runtime::Runtime;
 use uuid::Uuid;
 use wgpu::{instance::Instance, render_texture::RenderTexture};
@@ -45,11 +51,15 @@ impl EngineBuilder {
             )
             .into();
 
+        let (tao_window_event_sender, tao_window_event_receiver) = mpsc::channel();
+
         Engine {
             runtime: runtime.clone(),
             render_textures: Default::default(),
             display_manager: DisplayManager::new(runtime),
             window_creator: self.window_creator,
+            tao_window_event_sender,
+            tao_window_event_receiver,
             stats: Stats::new(),
             wgpu_instance: Instance::default(),
         }
@@ -64,13 +74,24 @@ pub struct Engine {
     render_textures: HashMap<RenderTextureId, RenderTexture>,
     display_manager: DisplayManager,
     window_creator: Option<Box<dyn WindowCreator>>,
+    tao_window_event_sender: mpsc::Sender<(WindowId, WindowEvent<'static>)>,
+    tao_window_event_receiver: mpsc::Receiver<(WindowId, WindowEvent<'static>)>,
     stats: Stats,
     wgpu_instance: Instance,
 }
 
 impl Engine {
+    pub fn tao_window_event_sender(&self) -> mpsc::Sender<(WindowId, WindowEvent<'static>)> {
+        self.tao_window_event_sender.clone()
+    }
+
     pub fn update(&mut self) {
         self.stats.before_update();
+
+        while let Ok((window_id, event)) = self.tao_window_event_receiver.try_recv() {
+            self.display_manager
+                .handle_tao_window_event(&window_id, &event);
+        }
 
         self.display_manager.render();
 

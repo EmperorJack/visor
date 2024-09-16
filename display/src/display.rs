@@ -1,7 +1,11 @@
 use std::sync::Arc;
 
 use nannou::wgpu::TextureView;
-use tao::{dpi::PhysicalSize, platform::macos::WindowExtMacOS, window::Window};
+use tao::{
+    dpi::PhysicalSize,
+    platform::macos::WindowExtMacOS,
+    window::{Window, WindowId},
+};
 use wgpu::{display::Display as WgpuDisplay, instance::Instance};
 
 pub struct Display {
@@ -31,6 +35,10 @@ impl Display {
             window,
             wgpu_display,
         }
+    }
+
+    pub fn window_id(&self) -> WindowId {
+        self.window.id()
     }
 
     pub fn focus(&self) {
