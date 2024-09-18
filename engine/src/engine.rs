@@ -7,7 +7,7 @@ use tao::{
 };
 use tokio::{runtime::Runtime, sync::mpsc, task::JoinSet};
 use uuid::Uuid;
-use wgpu::{instance::Instance, render_texture::RenderTexture};
+use wgpu::render_texture::RenderTexture;
 
 use crate::{
     sketch::{Sketch, SketchId},
@@ -53,6 +53,31 @@ impl EngineBuilder {
 
         let (tao_window_event_sender, tao_window_event_receiver) = mpsc::unbounded_channel();
 
+        let wgpu_instance = nannou::wgpu::Instance::default();
+
+        let (wgpu_device, wgpu_queue) = runtime.block_on(async {
+            let adapter = wgpu_instance
+                .request_adapter(&nannou::wgpu::RequestAdapterOptions {
+                    power_preference: nannou::wgpu::PowerPreference::HighPerformance,
+                    compatible_surface: None,
+                    force_fallback_adapter: false,
+                })
+                .await
+                .expect("Unexpected: could not request wgpu adapter");
+
+            adapter
+                .request_device(
+                    &nannou::wgpu::DeviceDescriptor {
+                        features: nannou::wgpu::Features::empty(),
+                        limits: nannou::wgpu::Limits::default(),
+                        label: None,
+                    },
+                    None,
+                )
+                .await
+                .expect("Unexpected: could not connect to wgpu device")
+        });
+
         Engine {
             runtime: runtime.clone(),
             sketches: Default::default(),
@@ -62,7 +87,9 @@ impl EngineBuilder {
             tao_window_event_sender,
             tao_window_event_receiver,
             stats: Stats::new(),
-            wgpu_instance: Instance::default(),
+            wgpu_instance,
+            wgpu_device,
+            wgpu_queue,
         }
     }
 }
@@ -79,7 +106,9 @@ pub struct Engine {
     tao_window_event_sender: mpsc::UnboundedSender<(WindowId, WindowEvent<'static>)>,
     tao_window_event_receiver: mpsc::UnboundedReceiver<(WindowId, WindowEvent<'static>)>,
     stats: Stats,
-    wgpu_instance: Instance,
+    wgpu_instance: nannou::wgpu::Instance,
+    wgpu_device: nannou::wgpu::Device,
+    wgpu_queue: nannou::wgpu::Queue,
 }
 
 impl Engine {
@@ -113,6 +142,26 @@ impl Engine {
             while (join_set.join_next().await).is_some() {}
         });
 
+        let mut encoder =
+            self.wgpu_device
+                .create_command_encoder(&nannou::wgpu::CommandEncoderDescriptor {
+                    label: Some("Engine texture render encoder"),
+                });
+
+        for sketch in self.sketches.values() {
+            if let Some(render_texture_id) = sketch.target_render_texture_id() {
+                let render_texture = self
+                    .render_textures
+                    .get_mut(render_texture_id)
+                    // TODO: handle error
+                    .expect("Engine error: no render texture found for given id!");
+
+                render_texture.render(&sketch.get_draw().inner, &self.wgpu_device, &mut encoder);
+            }
+        }
+
+        self.wgpu_queue.submit(Some(encoder.finish()));
+
         self.display_manager.render();
 
         self.stats.after_update();
@@ -128,12 +177,31 @@ impl Engine {
         id
     }
 
+    pub fn set_sketch_target_render_texture_id(
+        &mut self,
+        sketch_id: &SketchId,
+        render_texture_id: Option<&RenderTextureId>,
+    ) {
+        let sketch = self
+            .sketches
+            .get_mut(sketch_id)
+            .expect("Engine error: no sketch found for given id!"); // TODO: handle error
+
+        if let Some(render_texture_id) = render_texture_id {
+            if !self.render_textures.contains_key(render_texture_id) {
+                panic!("Engine error: no render texture found for given id!"); // TODO: handle error
+            }
+        }
+
+        sketch.set_target_render_texture_id(render_texture_id);
+    }
+
     pub fn create_render_texture(&mut self, width: u32, height: u32) -> RenderTextureId {
         let id = RenderTextureId(Uuid::new_v4());
 
         let render_texture = self
             .runtime
-            .block_on(async { RenderTexture::new(&self.wgpu_instance, width, height).await });
+            .block_on(async { RenderTexture::new(&self.wgpu_device, width, height).await });
 
         self.render_textures.insert(id, render_texture);
 

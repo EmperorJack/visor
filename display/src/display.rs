@@ -6,7 +6,7 @@ use tao::{
     platform::macos::WindowExtMacOS,
     window::{Window, WindowId},
 };
-use wgpu::{display::Display as WgpuDisplay, instance::Instance};
+use wgpu::display::Display as WgpuDisplay;
 
 pub struct Display {
     window: Arc<Window>,
@@ -15,7 +15,7 @@ pub struct Display {
 
 impl Display {
     pub async fn new(
-        wgpu_instance: &Instance,
+        wgpu_instance: &nannou::wgpu::Instance,
         window: Arc<Window>,
         texture_view: TextureView,
     ) -> Self {

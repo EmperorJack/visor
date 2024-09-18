@@ -1,7 +1,5 @@
 use std::sync::Arc;
 
-use crate::instance::Instance;
-
 pub struct Display {
     surface: nannou::wgpu::Surface,
     surface_config: nannou::wgpu::SurfaceConfiguration,
@@ -12,7 +10,7 @@ pub struct Display {
 
 impl Display {
     pub async fn new<W>(
-        instance: &Instance,
+        instance: &nannou::wgpu::Instance,
         window: &Arc<W>,
         width: u32,
         height: u32,

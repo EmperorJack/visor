@@ -1,16 +1,22 @@
 use tokio::sync::{mpsc, oneshot};
 
+use crate::draw::Draw;
+
 pub(crate) enum SketchWorkerTask {
     Update(oneshot::Sender<()>),
 }
 
 pub(crate) struct SketchWorker {
+    draw: Draw,
     task_receiver: mpsc::Receiver<SketchWorkerTask>,
 }
 
 impl SketchWorker {
-    pub fn new(task_receiver: mpsc::Receiver<SketchWorkerTask>) -> Self {
-        Self { task_receiver }
+    pub fn new(draw: Draw, task_receiver: mpsc::Receiver<SketchWorkerTask>) -> Self {
+        Self {
+            draw,
+            task_receiver,
+        }
     }
 
     pub fn run(&mut self) {
@@ -23,7 +29,11 @@ impl SketchWorker {
             while let Some(task) = self.task_receiver.recv().await {
                 match task {
                     SketchWorkerTask::Update(result_sender) => {
-                        // TODO: update sketch
+                        self.draw
+                            .inner
+                            .rect()
+                            .w_h(50.0, 50.0)
+                            .color(nannou::prelude::RED);
 
                         result_sender
                             .send(())
