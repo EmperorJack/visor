@@ -1,13 +1,20 @@
-use std::{path::PathBuf, sync::Arc};
+use std::{
+    path::PathBuf,
+    sync::{mpsc, Arc},
+};
 
 use clap::Parser;
 use engine::engine::{EngineBuilder, WindowCreator};
+use notify::{RecommendedWatcher, Watcher};
 use tao::{event::Event, event_loop::EventLoopWindowTarget};
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {
     sketch_file_path: PathBuf,
+
+    #[arg(short, long)]
+    watch: bool,
 }
 
 struct EventLoopWindowCreator {
@@ -30,6 +37,29 @@ impl WindowCreator for EventLoopWindowCreator {
 fn main() {
     let args = Args::parse();
 
+    let watcher_state = if args.watch {
+        let (watcher_event_sender, watcher_event_receiver) =
+            mpsc::channel::<Result<notify::Event, notify::Error>>();
+
+        let mut watcher = RecommendedWatcher::new(
+            move |event_result| {
+                watcher_event_sender
+                    .send(event_result)
+                    .expect("Unexpected: could not send watch event to channel");
+            },
+            notify::Config::default(),
+        )
+        .expect("Unexpected: could not setup file watcher");
+
+        watcher
+            .watch(&args.sketch_file_path, notify::RecursiveMode::NonRecursive)
+            .expect("Unexpected: could not watch sketch file path");
+
+        Some((watcher, watcher_event_receiver))
+    } else {
+        None
+    };
+
     let event_loop = tao::event_loop::EventLoop::new();
 
     let event_loop_window_creator = EventLoopWindowCreator {
@@ -51,7 +81,29 @@ fn main() {
     let engine_window_event_sender = engine.tao_window_event_sender();
 
     event_loop.run(move |event, _event_loop, control_flow| {
-        *control_flow = tao::event_loop::ControlFlow::Wait;
+        *control_flow = tao::event_loop::ControlFlow::Poll;
+
+        if let Some((_, watcher_receiver)) = &watcher_state {
+            let mut sketch_file_updated = false;
+
+            while let Ok(event_result) = watcher_receiver.try_recv() {
+                let event = event_result.expect("Unexpected: watcher event error");
+
+                match event.kind {
+                    notify::EventKind::Create(_)
+                    | notify::EventKind::Modify(_)
+                    | notify::EventKind::Remove(_) => {
+                        sketch_file_updated = true;
+                    }
+                    _ => {}
+                }
+            }
+
+            if sketch_file_updated {
+                println!("Detected file change, recompiling sketch...");
+                engine.recompile_sketch(&sketch_id);
+            }
+        }
 
         match event {
             Event::WindowEvent {

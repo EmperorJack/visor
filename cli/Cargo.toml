@@ -8,4 +8,5 @@ edition = "2021"
 [dependencies]
 clap = { version = "4.5.17", features = ["derive"] }
 engine = { path = "../engine" }
+notify = "6.1.1"
 tao = { version = "0.16.2" }
