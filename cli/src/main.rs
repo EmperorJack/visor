@@ -1,7 +1,14 @@
-use std::sync::Arc;
+use std::{path::PathBuf, sync::Arc};
 
+use clap::Parser;
 use engine::engine::{EngineBuilder, WindowCreator};
 use tao::{event::Event, event_loop::EventLoopWindowTarget};
+
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    sketch_file_path: PathBuf,
+}
 
 struct EventLoopWindowCreator {
     event_loop_window_target: EventLoopWindowTarget<()>,
@@ -21,6 +28,8 @@ impl WindowCreator for EventLoopWindowCreator {
 }
 
 fn main() {
+    let args = Args::parse();
+
     let event_loop = tao::event_loop::EventLoop::new();
 
     let event_loop_window_creator = EventLoopWindowCreator {
@@ -31,7 +40,7 @@ fn main() {
         .with_window_creator(Box::new(event_loop_window_creator))
         .build();
 
-    let sketch_id = engine.create_sketch();
+    let sketch_id = engine.create_sketch(args.sketch_file_path);
 
     let render_texture_id = engine.create_render_texture(600, 400);
     engine.set_sketch_target_render_texture_id(&sketch_id, Some(&render_texture_id));

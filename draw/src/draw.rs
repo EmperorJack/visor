@@ -1,6 +1,6 @@
 #[derive(Clone, Default)]
 pub struct Draw {
-    pub(crate) inner: nannou::Draw,
+    pub inner: nannou::Draw,
 }
 
 // Note: This is inherently unsafe but required for multi-threading sketches

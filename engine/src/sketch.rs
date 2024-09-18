@@ -1,8 +1,10 @@
+use std::path::PathBuf;
+
+use draw::draw::Draw;
 use tokio::sync::{mpsc, oneshot};
 use uuid::Uuid;
 
 use crate::{
-    draw::Draw,
     engine::RenderTextureId,
     sketch_worker::{SketchWorker, SketchWorkerTask},
 };
@@ -17,7 +19,7 @@ pub(crate) struct Sketch {
 }
 
 impl Sketch {
-    pub fn new() -> Self {
+    pub fn new(file_path: PathBuf) -> Self {
         let (worker_task_sender, worker_task_receiver) = mpsc::channel::<SketchWorkerTask>(1);
 
         let draw = Draw::default();
@@ -26,7 +28,7 @@ impl Sketch {
             let draw = draw.clone();
 
             std::thread::spawn(move || {
-                SketchWorker::new(draw, worker_task_receiver).run();
+                SketchWorker::new(file_path, draw, worker_task_receiver).run();
             });
         }
 

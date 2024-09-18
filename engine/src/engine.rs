@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 use display::display_manager::{DisplayId, DisplayManager};
 use tao::{
@@ -167,10 +167,10 @@ impl Engine {
         self.stats.after_update();
     }
 
-    pub fn create_sketch(&mut self) -> SketchId {
+    pub fn create_sketch(&mut self, file_path: PathBuf) -> SketchId {
         let id = SketchId(Uuid::new_v4());
 
-        let sketch = Sketch::new();
+        let sketch = Sketch::new(file_path);
 
         self.sketches.insert(id, sketch);
 
