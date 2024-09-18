@@ -177,6 +177,21 @@ impl Engine {
         id
     }
 
+    pub fn recompile_sketch(&mut self, sketch_id: &SketchId) {
+        let sketch = self
+            .sketches
+            .get_mut(sketch_id)
+            .expect("Engine error: no sketch found for given id!"); // TODO: handle error
+
+        self.runtime.block_on(async {
+            let result_receiver = sketch.request_compile().await;
+
+            result_receiver
+                .await
+                .expect("Unexpected: error occurred during sketch compile");
+        });
+    }
+
     pub fn set_sketch_target_render_texture_id(
         &mut self,
         sketch_id: &SketchId,

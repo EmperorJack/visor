@@ -5,6 +5,7 @@ use runtime::runtime::Runtime;
 use tokio::sync::{mpsc, oneshot};
 
 pub(crate) enum SketchWorkerTask {
+    Compile(oneshot::Sender<()>),
     Update(oneshot::Sender<()>),
 }
 
@@ -40,6 +41,14 @@ impl SketchWorker {
         tokio_runtime.block_on(async {
             while let Some(task) = self.task_receiver.recv().await {
                 match task {
+                    SketchWorkerTask::Compile(result_sender) => {
+                        self.request_compile = true;
+
+                        result_sender
+                            .send(())
+                            .expect("Unexpected: could not send result back to sketch");
+                    }
+
                     SketchWorkerTask::Update(result_sender) => {
                         self.update().await;
 

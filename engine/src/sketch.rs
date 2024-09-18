@@ -51,6 +51,17 @@ impl Sketch {
         self.target_render_texture_id = id.copied();
     }
 
+    pub async fn request_compile(&self) -> oneshot::Receiver<()> {
+        let (result_sender, result_receiver) = oneshot::channel::<()>();
+
+        self.worker_task_sender
+            .send(SketchWorkerTask::Compile(result_sender))
+            .await
+            .expect("Unexpected: could not send update task to sketch worker");
+
+        result_receiver
+    }
+
     pub async fn request_update(&self) -> oneshot::Receiver<()> {
         let (result_sender, result_receiver) = oneshot::channel::<()>();
 
