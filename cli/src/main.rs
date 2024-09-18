@@ -34,10 +34,10 @@ fn main() {
     let sketch_id = engine.create_sketch();
 
     let render_texture_id = engine.create_render_texture(600, 400);
-
     engine.set_sketch_target_render_texture_id(&sketch_id, Some(&render_texture_id));
 
-    engine.create_display("Display".into(), 600, 400, &render_texture_id);
+    let display_id = engine.create_display("Display".into(), 600, 400);
+    engine.set_display_source_texture(&display_id, Some(&render_texture_id));
 
     let engine_window_event_sender = engine.tao_window_event_sender();
 

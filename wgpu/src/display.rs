@@ -2,10 +2,11 @@ use std::sync::Arc;
 
 pub struct Display {
     surface: nannou::wgpu::Surface,
+    surface_format: nannou::wgpu::TextureFormat,
     surface_config: nannou::wgpu::SurfaceConfiguration,
     device: nannou::wgpu::Device,
     queue: nannou::wgpu::Queue,
-    texture_reshaper: nannou::wgpu::TextureReshaper,
+    source_texture_reshaper: Option<nannou::wgpu::TextureReshaper>,
 }
 
 impl Display {
@@ -14,7 +15,6 @@ impl Display {
         window: &Arc<W>,
         width: u32,
         height: u32,
-        texture_view: &nannou::wgpu::TextureView,
     ) -> Self
     where
         W: raw_window_handle::HasRawWindowHandle + raw_window_handle::HasRawDisplayHandle,
@@ -64,43 +64,51 @@ impl Display {
 
         surface.configure(&device, &surface_config);
 
-        let texture_reshaper = nannou::wgpu::TextureReshaper::new(
-            &device,
-            texture_view,
-            1,
-            texture_view.sample_type(),
-            1,
-            surface_format,
-        );
-
         Self {
             surface,
+            surface_format,
             surface_config,
             device,
             queue,
-            texture_reshaper,
+            source_texture_reshaper: None,
         }
     }
 
+    pub fn set_source_texture(&mut self, texture_view: Option<&nannou::wgpu::TextureView>) {
+        self.source_texture_reshaper = texture_view.map(|texture_view| {
+            nannou::wgpu::TextureReshaper::new(
+                &self.device,
+                texture_view,
+                1,
+                texture_view.sample_type(),
+                1,
+                self.surface_format,
+            )
+        });
+    }
+
     pub fn render(&self) -> Result<(), nannou::wgpu::SurfaceError> {
-        self.surface.get_current_texture().map(|surface_texture| {
-            let mut encoder =
-                self.device
-                    .create_command_encoder(&nannou::wgpu::CommandEncoderDescriptor {
-                        label: Some("Display surface texture render encoder"),
-                    });
+        if let Some(source_texture_reshaper) = &self.source_texture_reshaper {
+            return self.surface.get_current_texture().map(|surface_texture| {
+                let mut encoder =
+                    self.device
+                        .create_command_encoder(&nannou::wgpu::CommandEncoderDescriptor {
+                            label: Some("Display surface texture render encoder"),
+                        });
 
-            let surface_texture_view = surface_texture
-                .texture
-                .create_view(&nannou::wgpu::TextureViewDescriptor::default());
+                let surface_texture_view = surface_texture
+                    .texture
+                    .create_view(&nannou::wgpu::TextureViewDescriptor::default());
 
-            self.texture_reshaper
-                .encode_render_pass(&surface_texture_view, &mut encoder);
+                source_texture_reshaper.encode_render_pass(&surface_texture_view, &mut encoder);
 
-            self.queue.submit(Some(encoder.finish()));
+                self.queue.submit(Some(encoder.finish()));
 
-            surface_texture.present();
-        })
+                surface_texture.present();
+            });
+        };
+
+        Ok(())
     }
 
     pub fn resize(&mut self, width: u32, height: u32) {

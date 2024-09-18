@@ -208,18 +208,7 @@ impl Engine {
         id
     }
 
-    pub fn create_display(
-        &mut self,
-        title: String,
-        width: u32,
-        height: u32,
-        render_texture_id: &RenderTextureId,
-    ) -> DisplayId {
-        let render_texture = self
-            .render_textures
-            .get(render_texture_id)
-            .expect("Engine error: no render texture found for given id!"); // TODO: handle error
-
+    pub fn create_display(&mut self, title: String, width: u32, height: u32) -> DisplayId {
         if let Some(window_creator) = &self.window_creator {
             let window_builder = WindowBuilder::new()
                 .with_title(title)
@@ -227,13 +216,26 @@ impl Engine {
 
             let window = window_creator.create_window(window_builder);
 
-            self.display_manager.add_display(
-                &self.wgpu_instance,
-                window,
-                render_texture.texture_view(),
-            )
+            self.display_manager
+                .add_display(&self.wgpu_instance, window)
         } else {
             panic!("Engine error: cannot create display without a window creator, make sure to call with_window_creator when building the engine!")
         }
+    }
+
+    pub fn set_display_source_texture(
+        &mut self,
+        display_id: &DisplayId,
+        render_texture_id: Option<&RenderTextureId>,
+    ) {
+        let render_texture_view = render_texture_id.map(|render_texture_id| {
+            self.render_textures
+                .get(render_texture_id)
+                .expect("Engine error: no render texture found for given id!") // TODO: handle error
+                .texture_view()
+        });
+
+        self.display_manager
+            .set_display_source_texture(display_id, render_texture_view.as_ref());
     }
 }

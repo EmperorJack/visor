@@ -66,17 +66,12 @@ impl DisplayManager {
         }
     }
 
-    pub fn add_display(
-        &mut self,
-        wgpu_instance: &Instance,
-        window: Arc<Window>,
-        texture_view: TextureView,
-    ) -> DisplayId {
+    pub fn add_display(&mut self, wgpu_instance: &Instance, window: Arc<Window>) -> DisplayId {
         let id = DisplayId(Uuid::new_v4());
 
         let display = self
             .runtime
-            .block_on(async { Display::new(wgpu_instance, window, texture_view).await });
+            .block_on(async { Display::new(wgpu_instance, window).await });
 
         self.display_id_map.insert(display.window_id(), id);
         self.displays.insert(id, display);
@@ -101,6 +96,17 @@ impl DisplayManager {
 
     pub fn set_display_fullscreen(&self, id: &DisplayId, enabled: bool) {
         self.get_display(id).set_fullscreen(enabled);
+    }
+
+    pub fn set_display_source_texture(
+        &mut self,
+        id: &DisplayId,
+        texture_view: Option<&TextureView>,
+    ) {
+        self.displays
+            .get_mut(id)
+            .unwrap_or_else(|| panic!("Unexpected: could not find display with id {}", id.0))
+            .set_source_texture(texture_view);
     }
 
     pub fn render(&mut self) {

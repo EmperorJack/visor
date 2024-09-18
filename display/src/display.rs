@@ -14,22 +14,11 @@ pub struct Display {
 }
 
 impl Display {
-    pub async fn new(
-        wgpu_instance: &nannou::wgpu::Instance,
-        window: Arc<Window>,
-        texture_view: TextureView,
-    ) -> Self {
+    pub async fn new(wgpu_instance: &nannou::wgpu::Instance, window: Arc<Window>) -> Self {
         let size = window.inner_size();
 
         // TODO: ensure this is run on the main thread
-        let wgpu_display = WgpuDisplay::new(
-            &wgpu_instance,
-            &window,
-            size.width,
-            size.height,
-            &texture_view,
-        )
-        .await;
+        let wgpu_display = WgpuDisplay::new(&wgpu_instance, &window, size.width, size.height).await;
 
         Self {
             window,
@@ -72,6 +61,10 @@ impl Display {
 
     pub fn handle_resize(&mut self, size: PhysicalSize<u32>) {
         self.wgpu_display.resize(size.width, size.height);
+    }
+
+    pub fn set_source_texture(&mut self, texture_view: Option<&TextureView>) {
+        self.wgpu_display.set_source_texture(texture_view);
     }
 
     pub fn render(&mut self) {
