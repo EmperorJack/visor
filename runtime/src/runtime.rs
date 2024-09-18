@@ -4,9 +4,7 @@ use anyhow::Error;
 use deno_core::{error::AnyError, v8, Extension, JsRuntime, ModuleId};
 use draw::draw::Draw;
 
-use crate::{ops::OPS, ts_module_loader::TsModuleLoader};
-
-static RUNTIME_SNAPSHOT: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/RUNTIME_SNAPSHOT.bin"));
+use crate::{plugin_snapshot::PLUGIN_SNAPSHOT_CELL, ts_module_loader::TsModuleLoader};
 
 pub enum SketchFunction {
     Setup,
@@ -40,21 +38,25 @@ impl Runtime {
         path: &Path,
         draw: Draw,
     ) -> Result<(Option<Self>, Option<Error>), AnyError> {
-        let js_extension = Extension {
-            name: "sketch",
-            ops: std::borrow::Cow::Borrowed(&OPS),
-            op_state_fn: Some(Box::new(|state| {
-                state.put(draw);
-            })),
+        let plugin_snapshot = PLUGIN_SNAPSHOT_CELL
+            .get()
+            .expect("Unexpected: plugin snapshot should be created by now");
+
+        let ops_extension = Extension {
+            name: "ops",
+            ops: std::borrow::Cow::Borrowed(&plugin_snapshot.ops),
             ..Default::default()
         };
 
         let mut js_runtime = deno_core::JsRuntime::new(deno_core::RuntimeOptions {
             module_loader: Some(Rc::new(TsModuleLoader)),
-            startup_snapshot: Some(&RUNTIME_SNAPSHOT),
-            extensions: vec![js_extension],
+            startup_snapshot: Some(&plugin_snapshot.snapshot),
+            skip_op_registration: true,
+            extensions: vec![ops_extension],
             ..Default::default()
         });
+
+        js_runtime.op_state().borrow_mut().put(draw);
 
         let path = path
             .to_str()

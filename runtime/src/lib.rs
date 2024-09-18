@@ -1,3 +1,3 @@
-mod ops;
+pub mod plugin_snapshot;
 pub mod runtime;
 mod ts_module_loader;

@@ -1,6 +1,15 @@
 [workspace]
 
-members = ["cli", "display", "draw", "engine", "runtime", "wgpu"]
+members = [
+  "cli",
+  "display",
+  "draw",
+  "engine",
+  "plugin",
+  "plugin-draw",
+  "runtime",
+  "wgpu",
+]
 
 resolver = "2"
 

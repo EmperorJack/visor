@@ -1,6 +1,9 @@
 use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 use display::display_manager::{DisplayId, DisplayManager};
+use plugin::plugin::Plugin;
+use plugin_draw::DrawPlugin;
+use runtime::plugin_snapshot::{PluginSnapshot, PLUGIN_SNAPSHOT_CELL};
 use tao::{
     event::WindowEvent,
     window::{Window, WindowBuilder, WindowId},
@@ -53,6 +56,10 @@ impl EngineBuilder {
 
         let (tao_window_event_sender, tao_window_event_receiver) = mpsc::unbounded_channel();
 
+        let plugins: Vec<Box<dyn Plugin>> = vec![Box::new(DrawPlugin)];
+
+        PLUGIN_SNAPSHOT_CELL.get_or_init(|| PluginSnapshot::new(&plugins));
+
         let wgpu_instance = nannou::wgpu::Instance::default();
 
         let (wgpu_device, wgpu_queue) = runtime.block_on(async {
@@ -86,6 +93,7 @@ impl EngineBuilder {
             window_creator: self.window_creator,
             tao_window_event_sender,
             tao_window_event_receiver,
+            _plugins: plugins,
             stats: Stats::new(),
             wgpu_instance,
             wgpu_device,
@@ -105,6 +113,7 @@ pub struct Engine {
     window_creator: Option<Box<dyn WindowCreator>>,
     tao_window_event_sender: mpsc::UnboundedSender<(WindowId, WindowEvent<'static>)>,
     tao_window_event_receiver: mpsc::UnboundedReceiver<(WindowId, WindowEvent<'static>)>,
+    _plugins: Vec<Box<dyn Plugin>>,
     stats: Stats,
     wgpu_instance: nannou::wgpu::Instance,
     wgpu_device: nannou::wgpu::Device,
