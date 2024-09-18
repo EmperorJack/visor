@@ -6,6 +6,8 @@ use draw::draw::Draw;
 
 use crate::{ops::OPS, ts_module_loader::TsModuleLoader};
 
+static RUNTIME_SNAPSHOT: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/RUNTIME_SNAPSHOT.bin"));
+
 pub enum SketchFunction {
     Setup,
     Update,
@@ -49,6 +51,7 @@ impl Runtime {
 
         let mut js_runtime = deno_core::JsRuntime::new(deno_core::RuntimeOptions {
             module_loader: Some(Rc::new(TsModuleLoader)),
+            startup_snapshot: Some(&RUNTIME_SNAPSHOT),
             extensions: vec![js_extension],
             ..Default::default()
         });
