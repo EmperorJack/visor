@@ -77,19 +77,18 @@ impl SketchWorker {
 
             error = compile_error;
 
-            self.runtime = Some(runtime);
+            self.runtime = runtime;
 
             self.request_compile = false;
         }
 
         if let Some(error) = error {
             println!("Compile error: {}", error);
-        } else {
-            let runtime = self
-                .runtime
-                .as_mut()
-                .expect("Unexpected: runtime should be created at this point!");
 
+            return;
+        }
+
+        if let Some(runtime) = &mut self.runtime {
             let runtime_error =
                 Self::execute_sketch_lifecycle(self.request_setup, &self.draw.inner, runtime).await;
 

@@ -34,7 +34,10 @@ pub struct Runtime {
 }
 
 impl Runtime {
-    pub async fn compile(path: &Path, draw: Draw) -> Result<(Self, Option<Error>), AnyError> {
+    pub async fn compile(
+        path: &Path,
+        draw: Draw,
+    ) -> Result<(Option<Self>, Option<Error>), AnyError> {
         let js_extension = Extension {
             name: "sketch",
             ops: std::borrow::Cow::Borrowed(&OPS),
@@ -58,7 +61,10 @@ impl Runtime {
 
         let main_module = deno_core::resolve_path(path, &current_dir)?;
 
-        let main_module_id = js_runtime.load_main_es_module(&main_module).await?;
+        let main_module_id = match js_runtime.load_main_es_module(&main_module).await {
+            Ok(main_module_id) => main_module_id,
+            Err(error) => return Ok((None, Some(error))),
+        };
 
         let result_receiver = js_runtime.mod_evaluate(main_module_id);
 
@@ -72,14 +78,14 @@ impl Runtime {
         };
 
         if let Err(error) = run_event_loop_result {
-            return Ok((runtime, Some(error)));
+            return Ok((Some(runtime), Some(error)));
         }
 
         if let Err(error) = result_receiver.await {
-            return Ok((runtime, Some(error)));
+            return Ok((Some(runtime), Some(error)));
         }
 
-        Ok((runtime, None))
+        Ok((Some(runtime), None))
     }
 
     pub async fn execute_runtime_function(
