@@ -4,9 +4,9 @@ use std::{
 };
 
 use clap::Parser;
-use engine::engine::{EngineBuilder, WindowCreator};
 use notify::{RecommendedWatcher, Watcher};
 use tao::{event::Event, event_loop::EventLoopWindowTarget};
+use visor_engine::engine::{EngineBuilder, WindowCreator};
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]

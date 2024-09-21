@@ -1,5 +1,5 @@
 [package]
-name = "cli"
+name = "visor_live_cli"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,6 +7,6 @@ edition = "2021"
 
 [dependencies]
 clap = { version = "4.5.17", features = ["derive"] }
-engine = { path = "../crates/engine" }
 notify = "6.1.1"
 tao = { version = "0.16.2" }
+visor_engine = { path = "../crates/visor_engine" }

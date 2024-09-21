@@ -6,7 +6,7 @@ use tao::{
     platform::macos::WindowExtMacOS,
     window::{Window, WindowId},
 };
-use wgpu::display::Display as WgpuDisplay;
+use visor_wgpu::display::Display as WgpuDisplay;
 
 pub struct Display {
     window: Arc<Window>,

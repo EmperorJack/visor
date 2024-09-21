@@ -2,7 +2,7 @@ use std::{path::Path, rc::Rc};
 
 use anyhow::Error;
 use deno_core::{error::AnyError, v8, Extension, JsRuntime, ModuleId};
-use draw::draw::Draw;
+use visor_draw::draw::Draw;
 
 use crate::{plugin_snapshot::PLUGIN_SNAPSHOT_CELL, ts_module_loader::TsModuleLoader};
 

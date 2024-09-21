@@ -1,7 +1,7 @@
 use std::sync::OnceLock;
 
 use deno_core::OpDecl;
-use plugin::plugin::Plugin;
+use visor_plugin::plugin::Plugin;
 
 pub static PLUGIN_SNAPSHOT_CELL: OnceLock<PluginSnapshot> = OnceLock::new();
 

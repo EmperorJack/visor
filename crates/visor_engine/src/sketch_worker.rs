@@ -1,9 +1,9 @@
 use std::path::PathBuf;
 
 use anyhow::Error;
-use draw::draw::Draw;
-use runtime::runtime::{Runtime, RuntimeExecuteFunctionResult, SketchFunction};
 use tokio::sync::{mpsc, oneshot};
+use visor_draw::draw::Draw;
+use visor_runtime::runtime::{Runtime, RuntimeExecuteFunctionResult, SketchFunction};
 
 pub(crate) enum SketchWorkerTask {
     Compile(oneshot::Sender<()>),

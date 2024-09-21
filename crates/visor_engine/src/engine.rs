@@ -1,16 +1,16 @@
 use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
-use display::display_manager::{DisplayId, DisplayManager};
-use plugin::plugin::Plugin;
-use plugin_draw::DrawPlugin;
-use runtime::plugin_snapshot::{PluginSnapshot, PLUGIN_SNAPSHOT_CELL};
 use tao::{
     event::WindowEvent,
     window::{Window, WindowBuilder, WindowId},
 };
 use tokio::{runtime::Runtime, sync::mpsc, task::JoinSet};
 use uuid::Uuid;
-use wgpu::render_texture::RenderTexture;
+use visor_display::display_manager::{DisplayId, DisplayManager};
+use visor_plugin::plugin::Plugin;
+use visor_plugin_draw::DrawPlugin;
+use visor_runtime::plugin_snapshot::{PluginSnapshot, PLUGIN_SNAPSHOT_CELL};
+use visor_wgpu::render_texture::RenderTexture;
 
 use crate::{
     sketch::{Sketch, SketchId},

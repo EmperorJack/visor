@@ -564,16 +564,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1462739cb27611015575c0c11df5df7601141071f07518d56fcc1be504cbec97"
 
 [[package]]
-name = "cli"
-version = "0.1.0"
-dependencies = [
- "clap",
- "engine",
- "notify",
- "tao",
-]
-
-[[package]]
 name = "cocoa"
 version = "0.24.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -984,17 +974,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bd0c93bb4b0c6d9b77f4435b0ae98c24d17f1c45b2ff844c6151a07256ca923b"
 
 [[package]]
-name = "display"
-version = "0.1.0"
-dependencies = [
- "nannou",
- "tao",
- "tokio",
- "uuid",
- "wgpu 0.1.0",
-]
-
-[[package]]
 name = "dlib"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1025,34 +1004,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "draw"
-version = "0.1.0"
-dependencies = [
- "nannou",
-]
-
-[[package]]
 name = "either"
 version = "1.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "60b1af1c220855b6ceac025d3f6ecdd2b7c4894bfe9cd9bda4fbb4bc7c0d4cf0"
-
-[[package]]
-name = "engine"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "display",
- "draw",
- "nannou",
- "plugin",
- "plugin-draw",
- "runtime",
- "tao",
- "tokio",
- "uuid",
- "wgpu 0.1.0",
-]
 
 [[package]]
 name = "equivalent"
@@ -2288,7 +2243,7 @@ dependencies = [
  "tokio",
  "toml 0.5.11",
  "walkdir",
- "wgpu 0.17.2",
+ "wgpu",
  "winit",
 ]
 
@@ -2325,7 +2280,7 @@ dependencies = [
  "instant",
  "num_cpus",
  "tokio",
- "wgpu 0.17.2",
+ "wgpu",
 ]
 
 [[package]]
@@ -2832,23 +2787,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d231b230927b5e4ad203db57bbcbee2802f6bce620b1e4a9024a07d94e2907ec"
 
 [[package]]
-name = "plugin"
-version = "0.1.0"
-dependencies = [
- "deno_core",
-]
-
-[[package]]
-name = "plugin-draw"
-version = "0.1.0"
-dependencies = [
- "deno_core",
- "draw",
- "nannou",
- "plugin",
-]
-
-[[package]]
 name = "png"
 version = "0.16.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3181,19 +3119,6 @@ name = "renderdoc-sys"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "19b30a45b0cd0bcca8037f3d0dc3421eaf95327a17cad11964fb8179b4fc4832"
-
-[[package]]
-name = "runtime"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "deno_ast",
- "deno_core",
- "draw",
- "nannou",
- "plugin",
- "tokio",
-]
 
 [[package]]
 name = "rustc-demangle"
@@ -4452,6 +4377,89 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 
 [[package]]
+name = "visor_display"
+version = "0.1.0"
+dependencies = [
+ "nannou",
+ "tao",
+ "tokio",
+ "uuid",
+ "visor_wgpu",
+]
+
+[[package]]
+name = "visor_draw"
+version = "0.1.0"
+dependencies = [
+ "nannou",
+]
+
+[[package]]
+name = "visor_engine"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "nannou",
+ "tao",
+ "tokio",
+ "uuid",
+ "visor_display",
+ "visor_draw",
+ "visor_plugin",
+ "visor_plugin_draw",
+ "visor_runtime",
+ "visor_wgpu",
+]
+
+[[package]]
+name = "visor_live_cli"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "notify",
+ "tao",
+ "visor_engine",
+]
+
+[[package]]
+name = "visor_plugin"
+version = "0.1.0"
+dependencies = [
+ "deno_core",
+]
+
+[[package]]
+name = "visor_plugin_draw"
+version = "0.1.0"
+dependencies = [
+ "deno_core",
+ "nannou",
+ "visor_draw",
+ "visor_plugin",
+]
+
+[[package]]
+name = "visor_runtime"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "deno_ast",
+ "deno_core",
+ "nannou",
+ "tokio",
+ "visor_draw",
+ "visor_plugin",
+]
+
+[[package]]
+name = "visor_wgpu"
+version = "0.1.0"
+dependencies = [
+ "nannou",
+ "raw-window-handle",
+]
+
+[[package]]
 name = "walkdir"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4628,14 +4636,6 @@ name = "weezl"
 version = "0.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "53a85b86a771b1c87058196170769dd264f66c0782acf1ae6cc51bfd64b39082"
-
-[[package]]
-name = "wgpu"
-version = "0.1.0"
-dependencies = [
- "nannou",
- "raw-window-handle",
-]
 
 [[package]]
 name = "wgpu"

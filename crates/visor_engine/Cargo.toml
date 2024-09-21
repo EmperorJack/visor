@@ -1,5 +1,5 @@
 [package]
-name = "engine"
+name = "visor_engine"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,13 +7,13 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0"
-display = { path = "../display" }
-draw = { path = "../draw" }
 nannou = { version = "0.19.0" }
-plugin = { path = "../plugin" }
-plugin-draw = { path = "../../plugins/plugin-draw" }
-runtime = { path = "../runtime" }
 tao = { version = "0.16.2" }
 tokio = { version = "1.26.0", features = ["full"] }
 uuid = { version = "1.10.0", features = ["v4", "fast-rng"] }
-wgpu = { path = "../wgpu" }
+visor_display = { path = "../visor_display" }
+visor_draw = { path = "../visor_draw" }
+visor_plugin = { path = "../visor_plugin" }
+visor_plugin_draw = { path = "../../plugins/visor_plugin_draw" }
+visor_runtime = { path = "../visor_runtime" }
+visor_wgpu = { path = "../visor_wgpu" }

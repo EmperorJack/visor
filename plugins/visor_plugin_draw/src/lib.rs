@@ -1,6 +1,6 @@
 use deno_core::{error::AnyError, extension, op2, Extension, OpState};
-use draw::draw::Draw;
-use plugin::plugin::Plugin;
+use visor_draw::draw::Draw;
+use visor_plugin::plugin::Plugin;
 
 pub struct DrawPlugin;
 
