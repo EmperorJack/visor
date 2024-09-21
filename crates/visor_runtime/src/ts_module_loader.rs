@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use deno_ast::MediaType;
 use deno_ast::ParseParams;
 use deno_core::futures::FutureExt;
@@ -25,9 +26,12 @@ impl deno_core::ModuleLoader for TsModuleLoader {
 
         deno_core::ModuleLoadResponse::Async(
             async move {
-                let path = module_specifier
-                    .to_file_path()
-                    .expect("Unexpected: could not convert module specifier to file path");
+                let path = module_specifier.to_file_path().map_err(|_| {
+                    anyhow!(
+                        "Import error: could not resolve file path: {}",
+                        module_specifier
+                    )
+                })?;
 
                 let media_type = MediaType::from_path(&path);
 
