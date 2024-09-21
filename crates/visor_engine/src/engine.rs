@@ -9,7 +9,7 @@ use uuid::Uuid;
 use visor_display::display_manager::{DisplayId, DisplayManager};
 use visor_plugin::plugin::Plugin;
 use visor_plugin_draw::DrawPlugin;
-use visor_runtime::plugin_snapshot::{PluginSnapshot, PLUGIN_SNAPSHOT_CELL};
+use visor_runtime::startup_snapshot::{StartupSnapshot, STARTUP_SNAPSHOT_CELL};
 use visor_wgpu::render_texture::RenderTexture;
 
 use crate::{
@@ -58,7 +58,11 @@ impl EngineBuilder {
 
         let plugins: Vec<Box<dyn Plugin>> = vec![Box::new(DrawPlugin)];
 
-        PLUGIN_SNAPSHOT_CELL.get_or_init(|| PluginSnapshot::new(&plugins));
+        STARTUP_SNAPSHOT_CELL.get_or_init(|| {
+            let plugin_extensions = plugins.iter().map(|plugin| plugin.extension()).collect();
+
+            StartupSnapshot::new(plugin_extensions)
+        });
 
         let wgpu_instance = nannou::wgpu::Instance::default();
 

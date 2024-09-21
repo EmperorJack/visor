@@ -4448,7 +4448,6 @@ dependencies = [
  "nannou",
  "tokio",
  "visor_draw",
- "visor_plugin",
 ]
 
 [[package]]

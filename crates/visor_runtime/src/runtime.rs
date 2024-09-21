@@ -4,7 +4,7 @@ use anyhow::Error;
 use deno_core::{error::AnyError, v8, Extension, JsRuntime, ModuleId};
 use visor_draw::draw::Draw;
 
-use crate::{plugin_snapshot::PLUGIN_SNAPSHOT_CELL, ts_module_loader::TsModuleLoader};
+use crate::{startup_snapshot::STARTUP_SNAPSHOT_CELL, ts_module_loader::TsModuleLoader};
 
 pub enum SketchFunction {
     Setup,
@@ -38,19 +38,19 @@ impl Runtime {
         path: &Path,
         draw: Draw,
     ) -> Result<(Option<Self>, Option<Error>), AnyError> {
-        let plugin_snapshot = PLUGIN_SNAPSHOT_CELL
+        let startup_snapshot = STARTUP_SNAPSHOT_CELL
             .get()
-            .expect("Unexpected: plugin snapshot should be created by now");
+            .expect("Unexpected: startup snapshot should be created by now");
 
         let ops_extension = Extension {
             name: "ops",
-            ops: std::borrow::Cow::Borrowed(&plugin_snapshot.ops),
+            ops: std::borrow::Cow::Borrowed(&startup_snapshot.ops),
             ..Default::default()
         };
 
         let mut js_runtime = deno_core::JsRuntime::new(deno_core::RuntimeOptions {
             module_loader: Some(Rc::new(TsModuleLoader)),
-            startup_snapshot: Some(&plugin_snapshot.snapshot),
+            startup_snapshot: Some(&startup_snapshot.snapshot),
             skip_op_registration: true,
             extensions: vec![ops_extension],
             ..Default::default()

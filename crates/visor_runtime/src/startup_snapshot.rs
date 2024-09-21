@@ -1,25 +1,22 @@
 use std::sync::OnceLock;
 
-use deno_core::OpDecl;
-use visor_plugin::plugin::Plugin;
+use deno_core::{Extension, OpDecl};
 
-pub static PLUGIN_SNAPSHOT_CELL: OnceLock<PluginSnapshot> = OnceLock::new();
+pub static STARTUP_SNAPSHOT_CELL: OnceLock<StartupSnapshot> = OnceLock::new();
 
-pub struct PluginSnapshot {
+pub struct StartupSnapshot {
     pub(crate) ops: Vec<OpDecl>,
     pub(crate) snapshot: Vec<u8>,
 }
 
 // Note: This is required for shared access across threads
 // Should be safe given the cell value is never mutated
-unsafe impl Send for PluginSnapshot {}
-unsafe impl Sync for PluginSnapshot {}
+unsafe impl Send for StartupSnapshot {}
+unsafe impl Sync for StartupSnapshot {}
 
-impl PluginSnapshot {
-    pub fn new(plugins: &[Box<dyn Plugin>]) -> Self {
-        let plugin_extensions: Vec<_> = plugins.iter().map(|plugin| plugin.extension()).collect();
-
-        let ops: Vec<_> = plugin_extensions
+impl StartupSnapshot {
+    pub fn new(extensions: Vec<Extension>) -> Self {
+        let ops: Vec<_> = extensions
             .iter()
             .flat_map(|extension| extension.ops.to_vec())
             .collect();
@@ -29,8 +26,8 @@ impl PluginSnapshot {
                 cargo_manifest_dir: env!("CARGO_MANIFEST_DIR"),
                 startup_snapshot: None,
                 skip_op_registration: false,
-                extensions: plugin_extensions,
-                // TODO: try use TsModuleLoader for transpiling plugins?
+                extensions,
+                // TODO: try use TsModuleLoader for transpiling extensions?
                 extension_transpiler: None,
                 with_runtime_cb: None,
             },
