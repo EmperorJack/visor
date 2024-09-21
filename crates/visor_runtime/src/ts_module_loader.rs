@@ -51,7 +51,7 @@ impl deno_core::ModuleLoader for TsModuleLoader {
 
                 let module_source_code = if should_transpile {
                     let parsed = deno_ast::parse_module(ParseParams {
-                        specifier: module_specifier.clone().into(),
+                        specifier: module_specifier.clone(),
                         text: code.into(),
                         media_type,
                         capture_tokens: false,

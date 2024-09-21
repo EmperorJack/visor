@@ -51,7 +51,7 @@ impl Stats {
 
         let millis = since_last_update.subsec_millis() as f32;
         if millis == 0.0 {
-            return std::f32::MAX;
+            return f32::MAX;
         }
 
         1000.0 / millis

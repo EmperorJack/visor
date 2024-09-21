@@ -99,10 +99,12 @@ impl Runtime {
     ) -> RuntimeExecuteFunctionResult {
         self.execute_sketch_function_inner(&sketch_function)
             .await
-            .expect(&format!(
-                "Unexpected: could not call {} function on sketch",
-                sketch_function.export_name(),
-            ))
+            .unwrap_or_else(|_| {
+                panic!(
+                    "Unexpected: could not call {} function on sketch",
+                    sketch_function.export_name()
+                )
+            })
     }
 
     async fn execute_sketch_function_inner(
@@ -114,9 +116,9 @@ impl Runtime {
         let function = {
             let module_namespace = self.js_runtime.get_module_namespace(self.main_module_id)?;
 
-            let mut scope = &mut self.js_runtime.handle_scope();
+            let scope = &mut self.js_runtime.handle_scope();
 
-            let module_namespace = v8::Local::new(&mut scope, module_namespace);
+            let module_namespace = v8::Local::new(scope, module_namespace);
 
             let function_export_string = v8::String::new(scope, function_export_name)
                 .unwrap_or_else(|| {

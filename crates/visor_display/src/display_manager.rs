@@ -31,14 +31,12 @@ impl DisplayManager {
     pub fn handle_tao_window_event(&mut self, window_id: &WindowId, event: &WindowEvent) {
         match event {
             WindowEvent::CloseRequested => {
-                let display_id = self
-                    .display_id_map
-                    .get(window_id)
-                    .expect(&format!(
+                let display_id = *self.display_id_map.get(window_id).unwrap_or_else(|| {
+                    panic!(
                         "Unexpected: could not find display id for window with id {:?}",
                         window_id
-                    ))
-                    .clone();
+                    )
+                });
 
                 self.remove_display(&display_id);
             }
@@ -50,15 +48,19 @@ impl DisplayManager {
             }
 
             WindowEvent::Resized(size) => {
-                let display_id = self.display_id_map.get(window_id).expect(&format!(
-                    "Unexpected: could not find display id for window with id {:?}",
-                    window_id
-                ));
+                let display_id = self.display_id_map.get(window_id).unwrap_or_else(|| {
+                    panic!(
+                        "Unexpected: could not find display id for window with id {:?}",
+                        window_id
+                    )
+                });
 
-                let display = self.displays.get_mut(display_id).expect(&format!(
-                    "Unexpected: could not find display with id {}",
-                    display_id.0.to_string()
-                ));
+                let display = self.displays.get_mut(display_id).unwrap_or_else(|| {
+                    panic!(
+                        "Unexpected: could not find display with id {}",
+                        display_id.0
+                    )
+                });
 
                 display.handle_resize(*size);
             }

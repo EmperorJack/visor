@@ -18,7 +18,7 @@ impl Display {
         let size = window.inner_size();
 
         // TODO: ensure this is run on the main thread
-        let wgpu_display = WgpuDisplay::new(&wgpu_instance, &window, size.width, size.height).await;
+        let wgpu_display = WgpuDisplay::new(wgpu_instance, &window, size.width, size.height).await;
 
         Self {
             window,

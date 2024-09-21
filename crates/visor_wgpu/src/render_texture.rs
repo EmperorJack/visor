@@ -34,6 +34,6 @@ impl RenderTexture {
         encoder: &mut nannou::wgpu::CommandEncoder,
     ) {
         self.renderer
-            .render_to_texture(&device, encoder, draw, &self.texture);
+            .render_to_texture(device, encoder, draw, &self.texture);
     }
 }

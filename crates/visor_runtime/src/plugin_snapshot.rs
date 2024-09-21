@@ -16,7 +16,7 @@ unsafe impl Send for PluginSnapshot {}
 unsafe impl Sync for PluginSnapshot {}
 
 impl PluginSnapshot {
-    pub fn new(plugins: &Vec<Box<dyn Plugin>>) -> Self {
+    pub fn new(plugins: &[Box<dyn Plugin>]) -> Self {
         let plugin_extensions: Vec<_> = plugins.iter().map(|plugin| plugin.extension()).collect();
 
         let ops: Vec<_> = plugin_extensions

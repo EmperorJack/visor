@@ -109,29 +109,28 @@ impl SketchWorker {
         runtime: &mut Runtime,
     ) -> Option<Error> {
         if request_setup {
-            match runtime
+            if let RuntimeExecuteFunctionResult::Error(error) = runtime
                 .execute_runtime_function(SketchFunction::Setup)
                 .await
             {
-                RuntimeExecuteFunctionResult::Error(error) => return Some(error),
-                _ => {}
+                return Some(error);
             }
         }
 
-        match runtime
+        if let RuntimeExecuteFunctionResult::Error(error) = runtime
             .execute_runtime_function(SketchFunction::Update)
             .await
         {
-            RuntimeExecuteFunctionResult::Error(error) => return Some(error),
-            _ => {}
+            return Some(error);
         }
 
         draw.reset();
         draw.background().rgba(0.0, 0.0, 0.0, 0.0);
 
-        match runtime.execute_runtime_function(SketchFunction::Draw).await {
-            RuntimeExecuteFunctionResult::Error(error) => return Some(error),
-            _ => {}
+        if let RuntimeExecuteFunctionResult::Error(error) =
+            runtime.execute_runtime_function(SketchFunction::Draw).await
+        {
+            return Some(error);
         }
 
         None
