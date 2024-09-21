@@ -11,7 +11,7 @@ display = { path = "../display" }
 draw = { path = "../draw" }
 nannou = { version = "0.19.0" }
 plugin = { path = "../plugin" }
-plugin-draw = { path = "../plugin-draw" }
+plugin-draw = { path = "../../plugins/plugin-draw" }
 runtime = { path = "../runtime" }
 tao = { version = "0.16.2" }
 tokio = { version = "1.26.0", features = ["full"] }
