@@ -2,7 +2,6 @@ use std::{path::Path, rc::Rc};
 
 use anyhow::Error;
 use deno_core::{error::AnyError, v8, Extension, JsRuntime, ModuleId};
-use visor_draw::draw::Draw;
 
 use crate::{startup_snapshot::STARTUP_SNAPSHOT_CELL, ts_module_loader::TsModuleLoader};
 
@@ -34,10 +33,7 @@ pub struct Runtime {
 }
 
 impl Runtime {
-    pub async fn compile(
-        path: &Path,
-        draw: Draw,
-    ) -> Result<(Option<Self>, Option<Error>), AnyError> {
+    pub async fn compile(path: &Path) -> Result<(Option<Self>, Option<Error>), AnyError> {
         let startup_snapshot = STARTUP_SNAPSHOT_CELL
             .get()
             .expect("Unexpected: startup snapshot should be created by now");
@@ -55,8 +51,6 @@ impl Runtime {
             extensions: vec![ops_extension],
             ..Default::default()
         });
-
-        js_runtime.op_state().borrow_mut().put(draw);
 
         let path = path
             .to_str()
@@ -91,6 +85,10 @@ impl Runtime {
         }
 
         Ok((Some(runtime), None))
+    }
+
+    pub fn put_state<T: 'static>(&mut self, state: T) {
+        self.js_runtime.op_state().borrow_mut().put(state);
     }
 
     pub async fn execute_runtime_function(

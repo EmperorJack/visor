@@ -7,12 +7,11 @@ use tao::{
 use tokio::{runtime::Runtime, sync::mpsc, task::JoinSet};
 use uuid::Uuid;
 use visor_display::display_manager::{DisplayId, DisplayManager};
-use visor_plugin::plugin::Plugin;
-use visor_plugin_draw::DrawPlugin;
 use visor_runtime::startup_snapshot::{StartupSnapshot, STARTUP_SNAPSHOT_CELL};
 use visor_wgpu::render_texture::RenderTexture;
 
 use crate::{
+    plugin::Plugin,
     sketch::{Sketch, SketchId},
     stats::Stats,
 };
@@ -22,30 +21,31 @@ pub trait WindowCreator {
     fn create_window(&self, window_builder: WindowBuilder) -> Arc<Window>;
 }
 
-#[derive(Default)]
-pub struct EngineBuilder {
-    runtime: Option<Runtime>,
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+pub struct RenderTextureId(Uuid);
+
+pub struct Engine {
+    runtime: Arc<Runtime>,
+    sketches: HashMap<SketchId, Sketch>,
+    render_textures: HashMap<RenderTextureId, RenderTexture>,
+    display_manager: DisplayManager,
     window_creator: Option<Box<dyn WindowCreator>>,
+    tao_window_event_sender: mpsc::UnboundedSender<(WindowId, WindowEvent<'static>)>,
+    tao_window_event_receiver: mpsc::UnboundedReceiver<(WindowId, WindowEvent<'static>)>,
+    _plugins: Vec<Box<dyn Plugin>>,
+    stats: Stats,
+    wgpu_instance: nannou::wgpu::Instance,
+    wgpu_device: nannou::wgpu::Device,
+    wgpu_queue: nannou::wgpu::Queue,
 }
 
-impl EngineBuilder {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    pub fn with_runtime(mut self, runtime: Runtime) -> Self {
-        self.runtime = Some(runtime);
-        self
-    }
-
-    pub fn with_window_creator(mut self, callback: Box<dyn WindowCreator>) -> Self {
-        self.window_creator = Some(callback);
-        self
-    }
-
-    pub fn build(self) -> Engine {
-        let runtime: Arc<Runtime> = self
-            .runtime
+impl Engine {
+    pub fn new(
+        runtime: Option<Runtime>,
+        window_creator: Option<Box<dyn WindowCreator>>,
+        plugins: Vec<Box<dyn Plugin>>,
+    ) -> Self {
+        let runtime: Arc<Runtime> = runtime
             .unwrap_or(
                 tokio::runtime::Builder::new_multi_thread()
                     .enable_all()
@@ -55,8 +55,6 @@ impl EngineBuilder {
             .into();
 
         let (tao_window_event_sender, tao_window_event_receiver) = mpsc::unbounded_channel();
-
-        let plugins: Vec<Box<dyn Plugin>> = vec![Box::new(DrawPlugin)];
 
         STARTUP_SNAPSHOT_CELL.get_or_init(|| {
             let plugin_extensions = plugins.iter().map(|plugin| plugin.extension()).collect();
@@ -94,7 +92,7 @@ impl EngineBuilder {
             sketches: Default::default(),
             render_textures: Default::default(),
             display_manager: DisplayManager::new(runtime),
-            window_creator: self.window_creator,
+            window_creator,
             tao_window_event_sender,
             tao_window_event_receiver,
             _plugins: plugins,
@@ -104,27 +102,7 @@ impl EngineBuilder {
             wgpu_queue,
         }
     }
-}
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
-pub struct RenderTextureId(Uuid);
-
-pub struct Engine {
-    runtime: Arc<Runtime>,
-    sketches: HashMap<SketchId, Sketch>,
-    render_textures: HashMap<RenderTextureId, RenderTexture>,
-    display_manager: DisplayManager,
-    window_creator: Option<Box<dyn WindowCreator>>,
-    tao_window_event_sender: mpsc::UnboundedSender<(WindowId, WindowEvent<'static>)>,
-    tao_window_event_receiver: mpsc::UnboundedReceiver<(WindowId, WindowEvent<'static>)>,
-    _plugins: Vec<Box<dyn Plugin>>,
-    stats: Stats,
-    wgpu_instance: nannou::wgpu::Instance,
-    wgpu_device: nannou::wgpu::Device,
-    wgpu_queue: nannou::wgpu::Queue,
-}
-
-impl Engine {
     pub fn tao_window_event_sender(
         &self,
     ) -> mpsc::UnboundedSender<(WindowId, WindowEvent<'static>)> {

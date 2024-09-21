@@ -2,9 +2,9 @@ use std::path::PathBuf;
 
 use tokio::sync::{mpsc, oneshot};
 use uuid::Uuid;
-use visor_draw::draw::Draw;
 
 use crate::{
+    draw::Draw,
     engine::RenderTextureId,
     sketch_worker::{SketchWorker, SketchWorkerTask},
 };

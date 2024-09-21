@@ -4377,6 +4377,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 
 [[package]]
+name = "visor"
+version = "0.1.0"
+dependencies = [
+ "visor_engine",
+ "visor_engine_builder",
+]
+
+[[package]]
 name = "visor_display"
 version = "0.1.0"
 dependencies = [
@@ -4385,13 +4393,6 @@ dependencies = [
  "tokio",
  "uuid",
  "visor_wgpu",
-]
-
-[[package]]
-name = "visor_draw"
-version = "0.1.0"
-dependencies = [
- "nannou",
 ]
 
 [[package]]
@@ -4404,11 +4405,17 @@ dependencies = [
  "tokio",
  "uuid",
  "visor_display",
- "visor_draw",
- "visor_plugin",
- "visor_plugin_draw",
  "visor_runtime",
  "visor_wgpu",
+]
+
+[[package]]
+name = "visor_engine_builder"
+version = "0.1.0"
+dependencies = [
+ "tokio",
+ "visor_engine",
+ "visor_plugin_draw",
 ]
 
 [[package]]
@@ -4418,14 +4425,7 @@ dependencies = [
  "clap",
  "notify",
  "tao",
- "visor_engine",
-]
-
-[[package]]
-name = "visor_plugin"
-version = "0.1.0"
-dependencies = [
- "deno_core",
+ "visor",
 ]
 
 [[package]]
@@ -4434,8 +4434,7 @@ version = "0.1.0"
 dependencies = [
  "deno_core",
  "nannou",
- "visor_draw",
- "visor_plugin",
+ "visor_engine",
 ]
 
 [[package]]
@@ -4445,9 +4444,7 @@ dependencies = [
  "anyhow",
  "deno_ast",
  "deno_core",
- "nannou",
  "tokio",
- "visor_draw",
 ]
 
 [[package]]

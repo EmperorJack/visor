@@ -9,4 +9,4 @@ edition = "2021"
 clap = { version = "4.5.17", features = ["derive"] }
 notify = "6.1.1"
 tao = { version = "0.16.2" }
-visor_engine = { path = "../crates/visor_engine" }
+visor = { path = "../visor" }

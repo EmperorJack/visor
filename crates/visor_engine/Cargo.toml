@@ -12,8 +12,5 @@ tao = { version = "0.16.2" }
 tokio = { version = "1.26.0", features = ["full"] }
 uuid = { version = "1.10.0", features = ["v4", "fast-rng"] }
 visor_display = { path = "../visor_display" }
-visor_draw = { path = "../visor_draw" }
-visor_plugin = { path = "../visor_plugin" }
-visor_plugin_draw = { path = "../../plugins/visor_plugin_draw" }
 visor_runtime = { path = "../visor_runtime" }
 visor_wgpu = { path = "../visor_wgpu" }

@@ -8,5 +8,4 @@ edition = "2021"
 [dependencies]
 deno_core = "0.303.0"
 nannou = { version = "0.19.0" }
-visor_draw = { path = "../../crates/visor_draw" }
-visor_plugin = { path = "../../crates/visor_plugin" }
+visor_engine = { path = "../../crates/visor_engine" }

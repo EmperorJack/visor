@@ -2,8 +2,9 @@ use std::path::PathBuf;
 
 use anyhow::Error;
 use tokio::sync::{mpsc, oneshot};
-use visor_draw::draw::Draw;
 use visor_runtime::runtime::{Runtime, RuntimeExecuteFunctionResult, SketchFunction};
+
+use crate::draw::Draw;
 
 pub(crate) enum SketchWorkerTask {
     Compile(oneshot::Sender<()>),
@@ -71,9 +72,13 @@ impl SketchWorker {
             // Drop the current runtime if there is one
             self.runtime = None;
 
-            let (runtime, compile_error) = Runtime::compile(&self.file_path, self.draw.clone())
+            let (mut runtime, compile_error) = Runtime::compile(&self.file_path)
                 .await
                 .expect("Unexpected: could not compile sketch into runtime");
+
+            if let Some(runtime) = runtime.as_mut() {
+                runtime.put_state(self.draw.clone());
+            }
 
             error = compile_error;
 

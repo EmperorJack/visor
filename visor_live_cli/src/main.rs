@@ -6,7 +6,7 @@ use std::{
 use clap::Parser;
 use notify::{RecommendedWatcher, Watcher};
 use tao::{event::Event, event_loop::EventLoopWindowTarget};
-use visor_engine::engine::{EngineBuilder, WindowCreator};
+use visor::{engine::WindowCreator, engine_builder::EngineBuilder};
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
