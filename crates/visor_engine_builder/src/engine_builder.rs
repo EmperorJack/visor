@@ -5,15 +5,29 @@ use visor_engine::{
 };
 use visor_plugin_draw::DrawPlugin;
 
-#[derive(Default)]
 pub struct EngineBuilder {
     runtime: Option<Runtime>,
     window_creator: Option<Box<dyn WindowCreator>>,
+    plugins: Vec<Box<dyn Plugin>>,
+}
+
+impl Default for EngineBuilder {
+    fn default() -> Self {
+        Self {
+            runtime: None,
+            window_creator: None,
+            plugins: EngineBuilder::default_plugins(),
+        }
+    }
 }
 
 impl EngineBuilder {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    pub fn default_plugins() -> Vec<Box<dyn Plugin>> {
+        vec![Box::new(DrawPlugin)]
     }
 
     pub fn with_runtime(mut self, runtime: Runtime) -> Self {
@@ -26,9 +40,12 @@ impl EngineBuilder {
         self
     }
 
-    pub fn build(self) -> Engine {
-        let plugins: Vec<Box<dyn Plugin>> = vec![Box::new(DrawPlugin)];
+    pub fn with_plugins(mut self, plugins: Vec<Box<dyn Plugin>>) -> Self {
+        self.plugins = plugins;
+        self
+    }
 
-        Engine::new(self.runtime, self.window_creator, plugins)
+    pub fn build(self) -> Engine {
+        Engine::new(self.runtime, self.window_creator, self.plugins)
     }
 }
