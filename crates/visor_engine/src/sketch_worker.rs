@@ -4,7 +4,10 @@ use anyhow::Error;
 use tokio::sync::{mpsc, oneshot};
 use visor_runtime::runtime::{Runtime, RuntimeExecuteFunctionResult, SketchFunction};
 
-use crate::draw::Draw;
+use crate::{
+    draw::Draw,
+    engine::{ENGINE_STORE, PLUGINS_CELL},
+};
 
 pub(crate) enum SketchWorkerTask {
     Compile(oneshot::Sender<()>),
@@ -94,6 +97,10 @@ impl SketchWorker {
         }
 
         if let Some(runtime) = &mut self.runtime {
+            for plugin in PLUGINS_CELL.get().expect("TODO") {
+                plugin.sketch_update(runtime, &ENGINE_STORE);
+            }
+
             let runtime_error =
                 Self::execute_sketch_lifecycle(self.request_setup, &self.draw.inner, runtime).await;
 

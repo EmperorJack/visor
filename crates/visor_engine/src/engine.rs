@@ -1,4 +1,8 @@
-use std::{collections::HashMap, path::PathBuf, sync::Arc};
+use std::{
+    collections::HashMap,
+    path::PathBuf,
+    sync::{Arc, OnceLock},
+};
 
 use tao::{
     event::WindowEvent,
@@ -13,7 +17,7 @@ use visor_wgpu::render_texture::RenderTexture;
 use crate::{
     plugin::Plugin,
     sketch::{Sketch, SketchId},
-    stats::Stats,
+    store::Store,
 };
 
 // TODO: see if there is a more elegant way to achieve this
@@ -24,6 +28,10 @@ pub trait WindowCreator {
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct RenderTextureId(Uuid);
 
+pub static PLUGINS_CELL: OnceLock<Vec<Box<dyn Plugin>>> = OnceLock::new();
+
+pub static ENGINE_STORE: Store = Store::new();
+
 pub struct Engine {
     runtime: Arc<Runtime>,
     sketches: HashMap<SketchId, Sketch>,
@@ -32,8 +40,6 @@ pub struct Engine {
     window_creator: Option<Box<dyn WindowCreator>>,
     tao_window_event_sender: mpsc::UnboundedSender<(WindowId, WindowEvent<'static>)>,
     tao_window_event_receiver: mpsc::UnboundedReceiver<(WindowId, WindowEvent<'static>)>,
-    _plugins: Vec<Box<dyn Plugin>>,
-    stats: Stats,
     wgpu_instance: nannou::wgpu::Instance,
     wgpu_device: nannou::wgpu::Device,
     wgpu_queue: nannou::wgpu::Queue,
@@ -62,6 +68,8 @@ impl Engine {
             StartupSnapshot::new(plugin_extensions)
         });
 
+        PLUGINS_CELL.get_or_init(|| plugins);
+
         let wgpu_instance = nannou::wgpu::Instance::default();
 
         let (wgpu_device, wgpu_queue) = runtime.block_on(async {
@@ -87,7 +95,7 @@ impl Engine {
                 .expect("Unexpected: could not connect to wgpu device")
         });
 
-        Engine {
+        let mut engine = Engine {
             runtime: runtime.clone(),
             sketches: Default::default(),
             render_textures: Default::default(),
@@ -95,12 +103,16 @@ impl Engine {
             window_creator,
             tao_window_event_sender,
             tao_window_event_receiver,
-            _plugins: plugins,
-            stats: Stats::new(),
             wgpu_instance,
             wgpu_device,
             wgpu_queue,
+        };
+
+        for plugin in PLUGINS_CELL.get().expect("TODO") {
+            plugin.build(&mut engine, &ENGINE_STORE);
         }
+
+        engine
     }
 
     pub fn tao_window_event_sender(
@@ -110,7 +122,9 @@ impl Engine {
     }
 
     pub fn update(&mut self) {
-        self.stats.before_update();
+        for plugin in PLUGINS_CELL.get().expect("TODO") {
+            plugin.engine_update(self, &ENGINE_STORE);
+        }
 
         while let Ok((window_id, event)) = self.tao_window_event_receiver.try_recv() {
             self.display_manager
@@ -154,8 +168,6 @@ impl Engine {
         self.wgpu_queue.submit(Some(encoder.finish()));
 
         self.display_manager.render();
-
-        self.stats.after_update();
     }
 
     pub fn create_sketch(&mut self, file_path: PathBuf) -> SketchId {
