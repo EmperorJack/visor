@@ -4,6 +4,7 @@ use visor_engine::{
     plugin::Plugin,
 };
 use visor_plugin_draw::DrawPlugin;
+use visor_plugin_log::LogPlugin;
 use visor_plugin_time::TimePlugin;
 
 pub struct EngineBuilder {
@@ -28,7 +29,11 @@ impl EngineBuilder {
     }
 
     pub fn default_plugins() -> Vec<Box<dyn Plugin>> {
-        vec![Box::new(TimePlugin), Box::new(DrawPlugin)]
+        vec![
+            Box::new(TimePlugin),
+            Box::new(LogPlugin),
+            Box::new(DrawPlugin),
+        ]
     }
 
     pub fn with_runtime(mut self, runtime: Runtime) -> Self {

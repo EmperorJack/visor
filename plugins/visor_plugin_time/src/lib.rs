@@ -53,8 +53,8 @@ impl Plugin for TimePlugin {
     }
 
     fn engine_update(&self, _engine: &mut Engine, store: &Store) {
-        let state = store.get::<RwLock<State>>();
-        let mut state = state
+        let mut state = store
+            .get::<RwLock<State>>()
             .write()
             .expect("Unexpected: could not acquire write lock for state");
 
@@ -70,9 +70,9 @@ impl Plugin for TimePlugin {
         state.frame_count += 1;
     }
 
-    fn sketch_update(&self, runtime: &mut Runtime, store: &Store) {
-        let state = store.get::<RwLock<State>>();
-        let state = state
+    fn before_sketch_update(&self, _sketch_id: &str, runtime: &mut Runtime, store: &Store) {
+        let state = store
+            .get::<RwLock<State>>()
             .read()
             .expect("Unexpected: could not acquire read lock for state");
 

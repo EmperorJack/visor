@@ -9,5 +9,6 @@ pub trait Plugin: Send + Sync {
 
     fn engine_update(&self, _engine: &mut Engine, _state: &Store) {}
 
-    fn sketch_update(&self, _runtime: &mut Runtime, _state: &Store) {}
+    fn before_sketch_update(&self, _sketch_id: &str, _runtime: &mut Runtime, _state: &Store) {}
+    fn after_sketch_update(&self, _sketch_id: &str, _runtime: &mut Runtime, _state: &Store) {}
 }

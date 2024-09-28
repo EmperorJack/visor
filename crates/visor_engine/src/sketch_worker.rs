@@ -15,6 +15,7 @@ pub(crate) enum SketchWorkerTask {
 }
 
 pub(crate) struct SketchWorker {
+    id: String,
     file_path: PathBuf,
     draw: Draw,
     task_receiver: mpsc::Receiver<SketchWorkerTask>,
@@ -25,11 +26,13 @@ pub(crate) struct SketchWorker {
 
 impl SketchWorker {
     pub fn new(
+        id: String,
         file_path: PathBuf,
         draw: Draw,
         task_receiver: mpsc::Receiver<SketchWorkerTask>,
     ) -> Self {
         Self {
+            id,
             file_path,
             draw,
             task_receiver,
@@ -75,19 +78,30 @@ impl SketchWorker {
             // Drop the current runtime if there is one
             self.runtime = None;
 
-            let (mut runtime, compile_error) = Runtime::compile(&self.file_path)
+            let mut runtime = Runtime::default();
+
+            runtime.put_state(self.draw.clone());
+
+            for plugin in PLUGINS_CELL.get().expect("TODO") {
+                plugin.before_sketch_update(&self.id, &mut runtime, &ENGINE_STORE);
+            }
+
+            let compile_error = runtime
+                .compile(&self.file_path)
                 .await
                 .expect("Unexpected: could not compile sketch into runtime");
 
-            if let Some(runtime) = runtime.as_mut() {
-                runtime.put_state(self.draw.clone());
+            if compile_error.is_none() {
+                self.runtime = Some(runtime);
             }
 
             error = compile_error;
 
-            self.runtime = runtime;
-
             self.request_compile = false;
+        } else if let Some(runtime) = &mut self.runtime {
+            for plugin in PLUGINS_CELL.get().expect("TODO") {
+                plugin.before_sketch_update(&self.id, runtime, &ENGINE_STORE);
+            }
         }
 
         if let Some(error) = error {
@@ -97,10 +111,6 @@ impl SketchWorker {
         }
 
         if let Some(runtime) = &mut self.runtime {
-            for plugin in PLUGINS_CELL.get().expect("TODO") {
-                plugin.sketch_update(runtime, &ENGINE_STORE);
-            }
-
             let runtime_error =
                 Self::execute_sketch_lifecycle(self.request_setup, &self.draw.inner, runtime).await;
 
@@ -110,6 +120,10 @@ impl SketchWorker {
 
             if let Some(error) = error {
                 println!("Runtime error: {}", error);
+            }
+
+            for plugin in PLUGINS_CELL.get().expect("TODO") {
+                plugin.after_sketch_update(&self.id, runtime, &ENGINE_STORE);
             }
         }
     }
