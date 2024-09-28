@@ -28,9 +28,9 @@ pub trait WindowCreator {
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct RenderTextureId(Uuid);
 
-pub static PLUGINS_CELL: OnceLock<Vec<Box<dyn Plugin>>> = OnceLock::new();
+static PLUGINS_CELL: OnceLock<Vec<Box<dyn Plugin>>> = OnceLock::new();
 
-pub static ENGINE_STORE: Store = Store::new();
+static ENGINE_STORE: Store = Store::new();
 
 pub struct Engine {
     runtime: Arc<Runtime>,
@@ -108,8 +108,8 @@ impl Engine {
             wgpu_queue,
         };
 
-        for plugin in PLUGINS_CELL.get().expect("TODO") {
-            plugin.build(&mut engine, &ENGINE_STORE);
+        for plugin in Self::plugins() {
+            plugin.build(&mut engine, Self::store());
         }
 
         engine
@@ -122,8 +122,8 @@ impl Engine {
     }
 
     pub fn update(&mut self) {
-        for plugin in PLUGINS_CELL.get().expect("TODO") {
-            plugin.engine_update(self, &ENGINE_STORE);
+        for plugin in Self::plugins() {
+            plugin.engine_update(self, Self::store());
         }
 
         while let Ok((window_id, event)) = self.tao_window_event_receiver.try_recv() {
@@ -255,5 +255,15 @@ impl Engine {
 
         self.display_manager
             .set_display_source_texture(display_id, render_texture_view.as_ref());
+    }
+
+    pub(crate) fn plugins() -> &'static Vec<Box<dyn Plugin>> {
+        PLUGINS_CELL
+            .get()
+            .expect("Unexpected: plugins cell not initialised yet")
+    }
+
+    pub(crate) fn store() -> &'static Store {
+        &ENGINE_STORE
     }
 }

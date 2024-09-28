@@ -4,10 +4,7 @@ use anyhow::Error;
 use tokio::sync::{mpsc, oneshot};
 use visor_runtime::runtime::{Runtime, RuntimeExecuteFunctionResult, SketchFunction};
 
-use crate::{
-    draw::Draw,
-    engine::{ENGINE_STORE, PLUGINS_CELL},
-};
+use crate::{draw::Draw, engine::Engine};
 
 pub(crate) enum SketchWorkerTask {
     Compile(oneshot::Sender<()>),
@@ -82,8 +79,8 @@ impl SketchWorker {
 
             runtime.put_state(self.draw.clone());
 
-            for plugin in PLUGINS_CELL.get().expect("TODO") {
-                plugin.before_sketch_update(&self.id, &mut runtime, &ENGINE_STORE);
+            for plugin in Engine::plugins() {
+                plugin.before_sketch_update(&self.id, &mut runtime, Engine::store());
             }
 
             let compile_error = runtime
@@ -99,8 +96,8 @@ impl SketchWorker {
 
             self.request_compile = false;
         } else if let Some(runtime) = &mut self.runtime {
-            for plugin in PLUGINS_CELL.get().expect("TODO") {
-                plugin.before_sketch_update(&self.id, runtime, &ENGINE_STORE);
+            for plugin in Engine::plugins() {
+                plugin.before_sketch_update(&self.id, runtime, Engine::store());
             }
         }
 
@@ -122,8 +119,8 @@ impl SketchWorker {
                 println!("Runtime error: {}", error);
             }
 
-            for plugin in PLUGINS_CELL.get().expect("TODO") {
-                plugin.after_sketch_update(&self.id, runtime, &ENGINE_STORE);
+            for plugin in Engine::plugins() {
+                plugin.after_sketch_update(&self.id, runtime, Engine::store());
             }
         }
     }
