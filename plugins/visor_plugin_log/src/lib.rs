@@ -1,11 +1,11 @@
 use std::{collections::HashMap, sync::RwLock};
 
 use deno_core::{extension, op2, Extension, OpState};
-use visor_engine::{engine::Engine, plugin::Plugin, store::Store, Runtime};
+use visor_engine::{engine::Engine, plugin::Plugin, sketch::SketchId, store::Store, Runtime};
 
 pub struct LogPlugin;
 
-pub type State = HashMap<String, Logs>;
+pub type State = RwLock<HashMap<SketchId, Logs>>;
 pub type Logs = Vec<LogEntry>;
 
 pub struct LogEntry {
@@ -34,25 +34,23 @@ impl Plugin for LogPlugin {
     }
 
     fn build(&self, _engine: &mut Engine, store: &Store) {
-        store.set(RwLock::new(State::default()));
+        store.set(State::default());
     }
 
-    fn before_sketch_update(&self, _sketch_id: &str, runtime: &mut Runtime, _store: &Store) {
+    fn before_sketch_update(&self, _sketch_id: &SketchId, runtime: &mut Runtime, _store: &Store) {
         runtime.put_state(Logs::default());
     }
 
-    fn after_sketch_update(&self, sketch_id: &str, runtime: &mut Runtime, store: &Store) {
+    fn after_sketch_update(&self, sketch_id: &SketchId, runtime: &mut Runtime, store: &Store) {
         let logs: Logs = runtime.take_state();
 
-        if !logs.is_empty() {
-            let mut state = store
-                .get::<RwLock<State>>()
-                .write()
-                .expect("Unexpected: could not acquire read lock for state");
+        // TODO: consider supporting a persistent per-sketch store to reduce possible lock contention
+        let mut state = store
+            .get::<State>()
+            .write()
+            .expect("Unexpected: could not acquire write lock for state");
 
-            let logs_entry = state.entry(sketch_id.into()).or_default();
-            logs_entry.extend(logs);
-        }
+        state.insert(*sketch_id, logs);
     }
 }
 

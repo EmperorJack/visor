@@ -4,7 +4,7 @@ use anyhow::Error;
 use tokio::sync::{mpsc, oneshot};
 use visor_runtime::runtime::{Runtime, RuntimeExecuteFunctionResult, SketchFunction};
 
-use crate::{draw::Draw, engine::Engine};
+use crate::{draw::Draw, engine::Engine, sketch::SketchId};
 
 pub(crate) enum SketchWorkerTask {
     Compile(oneshot::Sender<()>),
@@ -12,7 +12,7 @@ pub(crate) enum SketchWorkerTask {
 }
 
 pub(crate) struct SketchWorker {
-    id: String,
+    id: SketchId,
     file_path: PathBuf,
     draw: Draw,
     task_receiver: mpsc::Receiver<SketchWorkerTask>,
@@ -23,7 +23,7 @@ pub(crate) struct SketchWorker {
 
 impl SketchWorker {
     pub fn new(
-        id: String,
+        id: SketchId,
         file_path: PathBuf,
         draw: Draw,
         task_receiver: mpsc::Receiver<SketchWorkerTask>,

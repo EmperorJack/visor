@@ -173,7 +173,7 @@ impl Engine {
     pub fn create_sketch(&mut self, file_path: PathBuf) -> SketchId {
         let id = SketchId(Uuid::new_v4());
 
-        let sketch = Sketch::new(id.0.to_string(), file_path);
+        let sketch = Sketch::new(id, file_path);
 
         self.sketches.insert(id, sketch);
 
@@ -265,5 +265,9 @@ impl Engine {
 
     pub(crate) fn store() -> &'static Store {
         &ENGINE_STORE
+    }
+
+    pub fn get_from_store<T: Send + Sync + 'static>(&self) -> &T {
+        Self::store().get()
     }
 }

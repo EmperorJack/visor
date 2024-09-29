@@ -10,3 +10,4 @@ clap = { version = "4.5.17", features = ["derive"] }
 notify = "6.1.1"
 tao = { version = "0.16.2" }
 visor = { path = "../visor" }
+visor_plugin_log = { path = "../plugins/visor_plugin_log" }

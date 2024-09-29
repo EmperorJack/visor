@@ -4561,6 +4561,7 @@ dependencies = [
  "notify",
  "tao",
  "visor",
+ "visor_plugin_log",
 ]
 
 [[package]]

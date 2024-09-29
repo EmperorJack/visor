@@ -19,7 +19,7 @@ pub(crate) struct Sketch {
 }
 
 impl Sketch {
-    pub fn new(id: String, file_path: PathBuf) -> Self {
+    pub fn new(id: SketchId, file_path: PathBuf) -> Self {
         let (worker_task_sender, worker_task_receiver) = mpsc::channel::<SketchWorkerTask>(1);
 
         let draw = Draw::default();

@@ -118,6 +118,24 @@ fn main() {
 
             Event::MainEventsCleared => {
                 engine.update();
+
+                let state = engine
+                    .get_from_store::<visor_plugin_log::State>()
+                    .read()
+                    .expect("Unexpected: could not acquire read lock for log plugin state");
+
+                if let Some(logs) = state.get(&sketch_id) {
+                    for log in logs {
+                        match log.message_type {
+                            visor_plugin_log::LogEntryType::Stdout => {
+                                println!("Log: {}", log.message)
+                            }
+                            visor_plugin_log::LogEntryType::Stderr => {
+                                eprintln!("Error: {}", log.message)
+                            }
+                        };
+                    }
+                }
             }
             _ => (),
         }

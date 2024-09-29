@@ -1,7 +1,7 @@
 pub mod draw;
 pub mod engine;
 pub mod plugin;
-mod sketch;
+pub mod sketch;
 mod sketch_worker;
 pub mod store;
 

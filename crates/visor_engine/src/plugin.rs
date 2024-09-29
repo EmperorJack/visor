@@ -1,6 +1,6 @@
 use visor_runtime::{runtime::Runtime, Extension};
 
-use crate::{engine::Engine, store::Store};
+use crate::{engine::Engine, sketch::SketchId, store::Store};
 
 pub trait Plugin: Send + Sync {
     fn extension(&self) -> Extension;
@@ -9,6 +9,6 @@ pub trait Plugin: Send + Sync {
 
     fn engine_update(&self, _engine: &mut Engine, _state: &Store) {}
 
-    fn before_sketch_update(&self, _sketch_id: &str, _runtime: &mut Runtime, _state: &Store) {}
-    fn after_sketch_update(&self, _sketch_id: &str, _runtime: &mut Runtime, _state: &Store) {}
+    fn before_sketch_update(&self, _sketch_id: &SketchId, _runtime: &mut Runtime, _state: &Store) {}
+    fn after_sketch_update(&self, _sketch_id: &SketchId, _runtime: &mut Runtime, _state: &Store) {}
 }

@@ -4,7 +4,7 @@ use std::{
 };
 
 use deno_core::{extension, op2, Extension, OpState};
-use visor_engine::{engine::Engine, plugin::Plugin, store::Store, Runtime};
+use visor_engine::{engine::Engine, plugin::Plugin, sketch::SketchId, store::Store, Runtime};
 
 pub struct TimePlugin;
 
@@ -70,7 +70,7 @@ impl Plugin for TimePlugin {
         state.frame_count += 1;
     }
 
-    fn before_sketch_update(&self, _sketch_id: &str, runtime: &mut Runtime, store: &Store) {
+    fn before_sketch_update(&self, _sketch_id: &SketchId, runtime: &mut Runtime, store: &Store) {
         let state = store
             .get::<RwLock<State>>()
             .read()
