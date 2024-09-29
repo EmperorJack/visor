@@ -51,6 +51,9 @@ impl Engine {
         window_creator: Option<Box<dyn WindowCreator>>,
         plugins: Vec<Box<dyn Plugin>>,
     ) -> Self {
+        // TODO: use a logging crate
+        println!("[Engine] Setting up Visor engine...");
+
         let runtime: Arc<Runtime> = runtime
             .unwrap_or(
                 tokio::runtime::Builder::new_multi_thread()
@@ -111,6 +114,10 @@ impl Engine {
         for plugin in Self::plugins() {
             plugin.build(&mut engine, Self::store());
         }
+
+        println!("[Engine] {} plugins loaded.", Self::plugins().len());
+
+        println!("[Engine] Visor engine ready!");
 
         engine
     }

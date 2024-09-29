@@ -71,18 +71,18 @@ impl Display {
         match self.wgpu_display.render() {
             Ok(()) => {}
             Err(nannou::wgpu::SurfaceError::Lost) => {
-                eprintln!("Surface error: display surface texture lost!");
+                eprintln!("[Engine] Surface error: display surface texture lost!");
 
                 let size = self.window.inner_size();
                 self.wgpu_display.resize(size.width, size.height);
             }
             Err(nannou::wgpu::SurfaceError::OutOfMemory) => {
-                eprintln!("Surface error: out of memory!");
+                eprintln!("[Engine] Surface error: out of memory!");
 
                 panic!("Surface error: out of memory!")
             }
             Err(e) => {
-                eprintln!("Surface error: {:?}", e);
+                eprintln!("[Engine] Surface error: {:?}", e);
             }
         }
     }

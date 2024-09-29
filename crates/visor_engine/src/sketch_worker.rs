@@ -102,7 +102,7 @@ impl SketchWorker {
         }
 
         if let Some(error) = error {
-            println!("Compile error: {}", error);
+            println!("[Sketch compile error] {}", error);
 
             return;
         }
@@ -116,7 +116,7 @@ impl SketchWorker {
             error = runtime_error;
 
             if let Some(error) = error {
-                println!("Runtime error: {}", error);
+                println!("[Sketch runtime error] {}", error);
             }
 
             for plugin in Engine::plugins() {

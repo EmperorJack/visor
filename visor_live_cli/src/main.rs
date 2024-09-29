@@ -100,7 +100,7 @@ fn main() {
             }
 
             if sketch_file_updated {
-                println!("Detected file change, recompiling sketch...");
+                println!("[Live CLI] Detected file change, recompiling sketch...");
                 engine.recompile_sketch(&sketch_id);
             }
         }
@@ -128,10 +128,10 @@ fn main() {
                     for log in logs {
                         match log.message_type {
                             visor_plugin_log::LogEntryType::Stdout => {
-                                println!("Log: {}", log.message)
+                                println!("[Sketch log] {}", log.message)
                             }
                             visor_plugin_log::LogEntryType::Stderr => {
-                                eprintln!("Error: {}", log.message)
+                                eprintln!("[Sketch error] {}", log.message)
                             }
                         };
                     }
