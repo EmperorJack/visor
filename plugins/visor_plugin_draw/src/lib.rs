@@ -5,7 +5,7 @@ pub struct DrawPlugin;
 
 extension!(
     extension,
-    ops = [op_draw_rect],
+    ops = [op_draw_ellipse, op_draw_rect],
     esm_entry_point = "visor:draw",
     esm = [
         dir "src",
@@ -20,12 +20,23 @@ impl Plugin for DrawPlugin {
 }
 
 #[op2(fast)]
-fn op_draw_rect(state: &mut OpState, x: f32, y: f32, d: f32) {
+fn op_draw_ellipse(state: &mut OpState, x: f32, y: f32, width: f32, height: f32) {
+    let draw = state.borrow::<Draw>();
+
+    draw.inner
+        .ellipse()
+        .x_y(x, y)
+        .w_h(width, height)
+        .color(nannou::prelude::RED);
+}
+
+#[op2(fast)]
+fn op_draw_rect(state: &mut OpState, x: f32, y: f32, width: f32, height: f32) {
     let draw = state.borrow::<Draw>();
 
     draw.inner
         .rect()
         .x_y(x, y)
-        .w_h(d, d)
+        .w_h(width, height)
         .color(nannou::prelude::RED);
 }
