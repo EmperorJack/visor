@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use tokio::runtime::Runtime;
 use visor_engine::{
     engine::{Engine, WindowCreator},
@@ -11,6 +13,7 @@ pub struct EngineBuilder {
     runtime: Option<Runtime>,
     window_creator: Option<Box<dyn WindowCreator>>,
     plugins: Vec<Box<dyn Plugin>>,
+    linked_plugin_paths: Vec<PathBuf>,
 }
 
 impl Default for EngineBuilder {
@@ -19,6 +22,7 @@ impl Default for EngineBuilder {
             runtime: None,
             window_creator: None,
             plugins: EngineBuilder::default_plugins(),
+            linked_plugin_paths: Default::default(),
         }
     }
 }
@@ -51,7 +55,17 @@ impl EngineBuilder {
         self
     }
 
+    pub fn with_linked_plugins(mut self, paths: Vec<PathBuf>) -> Self {
+        self.linked_plugin_paths = paths;
+        self
+    }
+
     pub fn build(self) -> Engine {
-        Engine::new(self.runtime, self.window_creator, self.plugins)
+        Engine::new(
+            self.runtime,
+            self.window_creator,
+            self.plugins,
+            self.linked_plugin_paths,
+        )
     }
 }

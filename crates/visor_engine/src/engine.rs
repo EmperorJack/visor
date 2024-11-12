@@ -15,7 +15,7 @@ use visor_runtime::startup_snapshot::{StartupSnapshot, STARTUP_SNAPSHOT_CELL};
 use visor_wgpu::render_texture::RenderTexture;
 
 use crate::{
-    plugin::Plugin,
+    plugin::{load_plugin, LoadedPlugin, Plugin},
     sketch::{Sketch, SketchId},
     store::Store,
 };
@@ -28,7 +28,7 @@ pub trait WindowCreator {
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct RenderTextureId(Uuid);
 
-static PLUGINS_CELL: OnceLock<Vec<Box<dyn Plugin>>> = OnceLock::new();
+static PLUGINS_CELL: OnceLock<Vec<LoadedPlugin>> = OnceLock::new();
 
 static ENGINE_STORE: Store = Store::new();
 
@@ -50,6 +50,7 @@ impl Engine {
         runtime: Option<Runtime>,
         window_creator: Option<Box<dyn WindowCreator>>,
         plugins: Vec<Box<dyn Plugin>>,
+        linked_plugin_paths: Vec<PathBuf>,
     ) -> Self {
         // TODO: use a logging crate
         println!("[Engine] Setting up Visor engine...");
@@ -65,13 +66,36 @@ impl Engine {
 
         let (tao_window_event_sender, tao_window_event_receiver) = mpsc::unbounded_channel();
 
+        let compiled_plugins: Vec<LoadedPlugin> =
+            plugins.into_iter().map(LoadedPlugin::Compiled).collect();
+
+        let linked_plugins: Vec<LoadedPlugin> = linked_plugin_paths
+            .into_iter()
+            .map(|path| {
+                let plugin = unsafe { load_plugin(&path) }.unwrap_or_else(|_| {
+                    panic!(
+                        "Unexpected: could not load plugin at path {}",
+                        path.display()
+                    )
+                });
+
+                LoadedPlugin::Linked(plugin)
+            })
+            .collect();
+
+        let all_plugins: Vec<LoadedPlugin> =
+            compiled_plugins.into_iter().chain(linked_plugins).collect();
+
         STARTUP_SNAPSHOT_CELL.get_or_init(|| {
-            let plugin_extensions = plugins.iter().map(|plugin| plugin.extension()).collect();
+            let plugin_extensions = all_plugins
+                .iter()
+                .map(|plugin| plugin.extension())
+                .collect();
 
             StartupSnapshot::new(plugin_extensions)
         });
 
-        PLUGINS_CELL.get_or_init(|| plugins);
+        PLUGINS_CELL.get_or_init(|| all_plugins);
 
         let wgpu_instance = nannou::wgpu::Instance::default();
 
@@ -264,7 +288,7 @@ impl Engine {
             .set_display_source_texture(display_id, render_texture_view.as_ref());
     }
 
-    pub(crate) fn plugins() -> &'static Vec<Box<dyn Plugin>> {
+    pub(crate) fn plugins() -> &'static Vec<LoadedPlugin> {
         PLUGINS_CELL
             .get()
             .expect("Unexpected: plugins cell not initialised yet")

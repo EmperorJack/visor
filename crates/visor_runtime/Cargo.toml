@@ -8,5 +8,5 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0"
 deno_ast = { version = "0.41.1", features = ["transpiling"] }
-deno_core = "0.303.0"
+deno_core = "0.319.0"
 tokio = { version = "1.26.0", features = ["full"] }
