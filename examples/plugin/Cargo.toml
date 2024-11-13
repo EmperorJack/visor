@@ -1,0 +1,18 @@
+[package]
+name = "plugin"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+deno_core = "0.319.0"
+pluginator = "1.0.1"
+visor_engine = { path = "../../crates/visor_engine" }
+
+[dev-dependencies]
+visor = { path = "../../visor" }
+visor_plugin_log = { path = "../../plugins/visor_plugin_log" }
+
+[lib]
+crate-type = ["cdylib"]

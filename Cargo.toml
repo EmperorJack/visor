@@ -1,5 +1,5 @@
 [workspace]
-members = ["visor", "visor_live_cli", "crates/*", "plugins/*"]
+members = ["visor", "visor_live_cli", "crates/*", "examples/*", "plugins/*"]
 
 resolver = "2"
 

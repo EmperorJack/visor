@@ -55,6 +55,11 @@ impl EngineBuilder {
         self
     }
 
+    pub fn extend_plugins(mut self, plugins: Vec<Box<dyn Plugin>>) -> Self {
+        self.plugins.extend(plugins);
+        self
+    }
+
     pub fn with_linked_plugins(mut self, paths: Vec<PathBuf>) -> Self {
         self.linked_plugin_paths = paths;
         self
