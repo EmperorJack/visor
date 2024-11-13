@@ -15,8 +15,9 @@ pub trait Plugin: Send + Sync {
     fn after_sketch_update(&self, _sketch_id: &SketchId, _runtime: &mut Runtime, _state: &Store) {}
 }
 
-// TODO: re-export pluginator so easier for consuming crates
 pluginator::plugin_trait!(Plugin);
+
+pub use pluginator::plugin_implementation;
 
 pub(crate) enum LoadedPlugin {
     Compiled(Box<dyn Plugin>),

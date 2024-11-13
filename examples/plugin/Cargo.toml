@@ -7,7 +7,6 @@ edition = "2021"
 
 [dependencies]
 deno_core = "0.319.0"
-pluginator = "1.0.1"
 visor_engine = { path = "../../crates/visor_engine" }
 
 [dev-dependencies]

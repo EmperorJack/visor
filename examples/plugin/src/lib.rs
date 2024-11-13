@@ -1,12 +1,18 @@
 use std::sync::RwLock;
 
 use deno_core::{extension, op2, Extension, OpState};
-use visor_engine::{engine::Engine, plugin::Plugin, sketch::SketchId, store::Store, Runtime};
+use visor_engine::{
+    engine::Engine,
+    plugin::{plugin_implementation, Plugin},
+    sketch::SketchId,
+    store::Store,
+    Runtime,
+};
 
 pub struct CounterPlugin;
 
 // Note: this line is only required for linked plugins
-pluginator::plugin_implementation!(Plugin, CounterPlugin);
+plugin_implementation!(Plugin, CounterPlugin);
 
 struct State {
     count: u32,
