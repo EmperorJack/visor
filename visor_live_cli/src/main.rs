@@ -14,6 +14,9 @@ struct Args {
     sketch_file_path: PathBuf,
 
     #[arg(short, long)]
+    plugins: Option<Vec<PathBuf>>,
+
+    #[arg(short, long)]
     watch: bool,
 }
 
@@ -66,9 +69,14 @@ fn main() {
         event_loop_window_target: event_loop.clone(),
     };
 
-    let mut engine = EngineBuilder::default()
-        .with_window_creator(Box::new(event_loop_window_creator))
-        .build();
+    let mut engine_builder =
+        EngineBuilder::default().with_window_creator(Box::new(event_loop_window_creator));
+
+    if let Some(plugins) = args.plugins {
+        engine_builder = engine_builder.with_linked_plugins(plugins)
+    }
+
+    let mut engine = engine_builder.build();
 
     let sketch_id = engine.create_sketch(args.sketch_file_path);
 
