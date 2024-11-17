@@ -13,6 +13,14 @@ pub trait Plugin: Send + Sync {
 
     fn before_sketch_update(&self, _sketch_id: &SketchId, _runtime: &mut Runtime, _state: &Store) {}
     fn after_sketch_update(&self, _sketch_id: &SketchId, _runtime: &mut Runtime, _state: &Store) {}
+
+    fn engine_render(
+        &self,
+        _engine: &mut Engine,
+        _state: &Store,
+        _encoder: &mut nannou::wgpu::CommandEncoder,
+    ) {
+    }
 }
 
 pluginator::plugin_trait!(Plugin);

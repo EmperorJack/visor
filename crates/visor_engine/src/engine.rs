@@ -205,6 +205,10 @@ impl Engine {
             }
         }
 
+        for plugin in Self::plugins() {
+            plugin.engine_render(self, Self::store(), &mut encoder);
+        }
+
         self.wgpu_queue.submit(Some(encoder.finish()));
 
         self.display_manager.render();
