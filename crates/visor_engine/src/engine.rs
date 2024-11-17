@@ -6,7 +6,7 @@ use std::{
 
 use tao::{
     event::WindowEvent,
-    window::{Window, WindowBuilder, WindowId},
+    window::{Window, WindowId},
 };
 use tokio::{
     runtime::{Handle, Runtime},
@@ -24,11 +24,6 @@ use crate::{
     store::Store,
 };
 
-// TODO: see if there is a more elegant way to achieve this
-pub trait WindowCreator {
-    fn create_window(&self, window_builder: WindowBuilder) -> Arc<Window>;
-}
-
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct RenderTextureId(Uuid);
 
@@ -42,7 +37,6 @@ pub struct Engine {
     sketches: HashMap<SketchId, Sketch>,
     render_textures: HashMap<RenderTextureId, RenderTexture>,
     display_manager: DisplayManager,
-    window_creator: Option<Box<dyn WindowCreator>>,
     tao_window_event_sender: mpsc::UnboundedSender<(WindowId, WindowEvent<'static>)>,
     tao_window_event_receiver: mpsc::UnboundedReceiver<(WindowId, WindowEvent<'static>)>,
     wgpu_instance: nannou::wgpu::Instance,
@@ -53,7 +47,6 @@ pub struct Engine {
 impl Engine {
     pub fn new(
         runtime_handle: Option<Handle>,
-        window_creator: Option<Box<dyn WindowCreator>>,
         plugins: Vec<Box<dyn Plugin>>,
         linked_plugin_paths: Vec<PathBuf>,
     ) -> Self {
@@ -140,7 +133,6 @@ impl Engine {
             sketches: Default::default(),
             render_textures: Default::default(),
             display_manager,
-            window_creator,
             tao_window_event_sender,
             tao_window_event_receiver,
             wgpu_instance,
@@ -270,19 +262,9 @@ impl Engine {
         id
     }
 
-    pub fn create_display(&mut self, title: String, width: u32, height: u32) -> DisplayId {
-        if let Some(window_creator) = &self.window_creator {
-            let window_builder = WindowBuilder::new()
-                .with_title(title)
-                .with_inner_size(tao::dpi::PhysicalSize::new(width, height));
-
-            let window = window_creator.create_window(window_builder);
-
-            self.display_manager
-                .add_display(&self.wgpu_instance, window)
-        } else {
-            panic!("Engine error: cannot create display without a window creator, make sure to call with_window_creator when building the engine!")
-        }
+    pub fn create_display(&mut self, window: Arc<Window>) -> DisplayId {
+        self.display_manager
+            .add_display(&self.wgpu_instance, window)
     }
 
     pub fn set_display_source_texture(

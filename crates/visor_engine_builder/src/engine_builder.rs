@@ -1,17 +1,13 @@
 use std::path::PathBuf;
 
 use tokio::runtime::Handle;
-use visor_engine::{
-    engine::{Engine, WindowCreator},
-    plugin::Plugin,
-};
+use visor_engine::{engine::Engine, plugin::Plugin};
 use visor_plugin_draw::DrawPlugin;
 use visor_plugin_log::LogPlugin;
 use visor_plugin_time::TimePlugin;
 
 pub struct EngineBuilder {
     runtime_handle: Option<Handle>,
-    window_creator: Option<Box<dyn WindowCreator>>,
     plugins: Vec<Box<dyn Plugin>>,
     linked_plugin_paths: Vec<PathBuf>,
 }
@@ -20,7 +16,6 @@ impl Default for EngineBuilder {
     fn default() -> Self {
         Self {
             runtime_handle: None,
-            window_creator: None,
             plugins: EngineBuilder::default_plugins(),
             linked_plugin_paths: Default::default(),
         }
@@ -45,11 +40,6 @@ impl EngineBuilder {
         self
     }
 
-    pub fn with_window_creator(mut self, callback: Box<dyn WindowCreator>) -> Self {
-        self.window_creator = Some(callback);
-        self
-    }
-
     pub fn with_plugins(mut self, plugins: Vec<Box<dyn Plugin>>) -> Self {
         self.plugins = plugins;
         self
@@ -66,11 +56,6 @@ impl EngineBuilder {
     }
 
     pub fn build(self) -> Engine {
-        Engine::new(
-            self.runtime_handle,
-            self.window_creator,
-            self.plugins,
-            self.linked_plugin_paths,
-        )
+        Engine::new(self.runtime_handle, self.plugins, self.linked_plugin_paths)
     }
 }

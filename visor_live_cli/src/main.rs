@@ -5,8 +5,8 @@ use std::{
 
 use clap::Parser;
 use notify::{RecommendedWatcher, Watcher};
-use tao::{event::Event, event_loop::EventLoopWindowTarget};
-use visor::{engine::WindowCreator, engine_builder::EngineBuilder};
+use tao::{event::Event, window::WindowBuilder};
+use visor::engine_builder::EngineBuilder;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -18,23 +18,6 @@ struct Args {
 
     #[arg(short, long)]
     watch: bool,
-}
-
-struct EventLoopWindowCreator {
-    event_loop_window_target: EventLoopWindowTarget<()>,
-}
-
-impl WindowCreator for EventLoopWindowCreator {
-    fn create_window(
-        &self,
-        window_builder: tao::window::WindowBuilder,
-    ) -> Arc<tao::window::Window> {
-        let window = window_builder
-            .build(&self.event_loop_window_target)
-            .expect("Unexpected: could not build window");
-
-        Arc::new(window)
-    }
 }
 
 fn main() {
@@ -65,12 +48,7 @@ fn main() {
 
     let event_loop = tao::event_loop::EventLoop::new();
 
-    let event_loop_window_creator = EventLoopWindowCreator {
-        event_loop_window_target: event_loop.clone(),
-    };
-
-    let mut engine_builder =
-        EngineBuilder::default().with_window_creator(Box::new(event_loop_window_creator));
+    let mut engine_builder = EngineBuilder::default();
 
     if let Some(plugins) = args.plugins {
         engine_builder = engine_builder.with_linked_plugins(plugins)
@@ -83,7 +61,13 @@ fn main() {
     let render_texture_id = engine.create_render_texture(600, 400);
     engine.set_sketch_target_render_texture_id(&sketch_id, Some(&render_texture_id));
 
-    let display_id = engine.create_display("Display".into(), 600, 400);
+    let window = WindowBuilder::new()
+        .with_title("Display")
+        .with_inner_size(tao::dpi::PhysicalSize::new(600, 400))
+        .build(&event_loop)
+        .expect("Unexpected: could not build display window");
+
+    let display_id = engine.create_display(Arc::new(window));
     engine.set_display_source_texture(&display_id, Some(&render_texture_id));
 
     let engine_window_event_sender = engine.tao_window_event_sender();
