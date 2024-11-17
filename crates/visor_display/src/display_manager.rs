@@ -11,7 +11,7 @@ use uuid::Uuid;
 use crate::display::Display;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
-pub struct DisplayId(pub(crate) Uuid);
+pub struct DisplayId(pub Uuid);
 
 pub struct DisplayManager {
     runtime_handle: Arc<Handle>,

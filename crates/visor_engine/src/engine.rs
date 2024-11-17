@@ -14,15 +14,19 @@ use tokio::{
     task::JoinSet,
 };
 use uuid::Uuid;
-use visor_display::display_manager::{DisplayId, DisplayManager};
+use visor_display::display_manager::DisplayManager;
 use visor_runtime::startup_snapshot::{StartupSnapshot, STARTUP_SNAPSHOT_CELL};
 use visor_wgpu::render_texture::RenderTexture;
 
 use crate::{
     plugin::{load_plugin, LoadedPlugin, Plugin},
-    sketch::{Sketch, SketchId},
+    sketch::Sketch,
     store::Store,
 };
+
+pub use crate::sketch::SketchId;
+
+pub use visor_display::display_manager::DisplayId;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct RenderTextureId(Uuid);

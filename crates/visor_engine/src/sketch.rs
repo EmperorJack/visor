@@ -10,7 +10,7 @@ use crate::{
 };
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
-pub struct SketchId(pub(crate) Uuid);
+pub struct SketchId(pub Uuid);
 
 pub(crate) struct Sketch {
     draw: Draw,
