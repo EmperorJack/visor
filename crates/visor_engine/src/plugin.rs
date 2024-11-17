@@ -7,17 +7,17 @@ use crate::{engine::Engine, sketch::SketchId, store::Store};
 pub trait Plugin: Send + Sync {
     fn extension(&self) -> Extension;
 
-    fn build(&self, _engine: &mut Engine, _state: &Store) {}
+    fn build(&self, _engine: &mut Engine, _store: &Store) {}
 
-    fn engine_update(&self, _engine: &mut Engine, _state: &Store) {}
+    fn engine_update(&self, _engine: &mut Engine, _store: &Store) {}
 
-    fn before_sketch_update(&self, _sketch_id: &SketchId, _runtime: &mut Runtime, _state: &Store) {}
-    fn after_sketch_update(&self, _sketch_id: &SketchId, _runtime: &mut Runtime, _state: &Store) {}
+    fn before_sketch_update(&self, _sketch_id: &SketchId, _runtime: &mut Runtime, _store: &Store) {}
+    fn after_sketch_update(&self, _sketch_id: &SketchId, _runtime: &mut Runtime, _store: &Store) {}
 
     fn engine_render(
         &self,
         _engine: &mut Engine,
-        _state: &Store,
+        _store: &Store,
         _encoder: &mut nannou::wgpu::CommandEncoder,
     ) {
     }

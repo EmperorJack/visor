@@ -21,7 +21,7 @@ use visor_wgpu::render_texture::RenderTexture;
 use crate::{
     plugin::{load_plugin, LoadedPlugin, Plugin},
     sketch::Sketch,
-    store::Store,
+    store::{Store, ENGINE_STORE},
 };
 
 pub use crate::sketch::SketchId;
@@ -32,8 +32,6 @@ pub use visor_display::display_manager::DisplayId;
 pub struct RenderTextureId(Uuid);
 
 static PLUGINS_CELL: OnceLock<Vec<LoadedPlugin>> = OnceLock::new();
-
-static ENGINE_STORE: Store = Store::new();
 
 pub struct Engine {
     _runtime: Option<Runtime>,
@@ -145,7 +143,7 @@ impl Engine {
         };
 
         for plugin in Self::plugins() {
-            plugin.build(&mut engine, Self::store());
+            plugin.build(&mut engine, &ENGINE_STORE);
         }
 
         println!("[Engine] {} plugins loaded.", Self::plugins().len());
@@ -163,7 +161,7 @@ impl Engine {
 
     pub fn update(&mut self) {
         for plugin in Self::plugins() {
-            plugin.engine_update(self, Self::store());
+            plugin.engine_update(self, &ENGINE_STORE);
         }
 
         while let Ok((window_id, event)) = self.tao_window_event_receiver.try_recv() {
@@ -206,7 +204,7 @@ impl Engine {
         }
 
         for plugin in Self::plugins() {
-            plugin.engine_render(self, Self::store(), &mut encoder);
+            plugin.engine_render(self, &ENGINE_STORE, &mut encoder);
         }
 
         self.wgpu_queue.submit(Some(encoder.finish()));
@@ -297,11 +295,7 @@ impl Engine {
             .expect("Unexpected: plugins cell not initialised yet")
     }
 
-    pub(crate) fn store() -> &'static Store {
+    pub fn store(&self) -> &'static Store {
         &ENGINE_STORE
-    }
-
-    pub fn get_from_store<T: Send + Sync + 'static>(&self) -> &T {
-        Self::store().get()
     }
 }

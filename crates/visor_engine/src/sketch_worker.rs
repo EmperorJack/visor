@@ -4,7 +4,7 @@ use anyhow::Error;
 use tokio::sync::{mpsc, oneshot};
 use visor_runtime::runtime::{Runtime, RuntimeExecuteFunctionResult, SketchFunction};
 
-use crate::{draw::Draw, engine::Engine, sketch::SketchId};
+use crate::{draw::Draw, engine::Engine, sketch::SketchId, store::ENGINE_STORE};
 
 pub(crate) enum SketchWorkerTask {
     Compile(oneshot::Sender<()>),
@@ -80,7 +80,7 @@ impl SketchWorker {
             runtime.put_state(self.draw.clone());
 
             for plugin in Engine::plugins() {
-                plugin.before_sketch_update(&self.id, &mut runtime, Engine::store());
+                plugin.before_sketch_update(&self.id, &mut runtime, &ENGINE_STORE);
             }
 
             let compile_error = runtime
@@ -97,7 +97,7 @@ impl SketchWorker {
             self.request_compile = false;
         } else if let Some(runtime) = &mut self.runtime {
             for plugin in Engine::plugins() {
-                plugin.before_sketch_update(&self.id, runtime, Engine::store());
+                plugin.before_sketch_update(&self.id, runtime, &ENGINE_STORE);
             }
         }
 
@@ -120,7 +120,7 @@ impl SketchWorker {
             }
 
             for plugin in Engine::plugins() {
-                plugin.after_sketch_update(&self.id, runtime, Engine::store());
+                plugin.after_sketch_update(&self.id, runtime, &ENGINE_STORE);
             }
         }
     }

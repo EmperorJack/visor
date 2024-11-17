@@ -1,6 +1,7 @@
 use state::TypeMap;
 
-#[derive(Default)]
+pub(crate) static ENGINE_STORE: Store = Store::new();
+
 pub struct Store {
     type_map: TypeMap![Send + Sync],
 }
