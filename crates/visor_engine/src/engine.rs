@@ -272,6 +272,21 @@ impl Engine {
         id
     }
 
+    pub fn render_to_texture(
+        &mut self,
+        render_texture_id: &RenderTextureId,
+        draw: &nannou::Draw,
+        encoder: &mut nannou::wgpu::CommandEncoder,
+    ) {
+        let render_texture = self
+            .render_textures
+            .get_mut(render_texture_id)
+            // TODO: handle error
+            .expect("Engine error: no render texture found for given id!");
+
+        render_texture.render(draw, &self.wgpu_device, encoder);
+    }
+
     pub fn create_display(&mut self, window: Arc<Window>) -> DisplayId {
         self.display_manager
             .add_display(&self.wgpu_instance, window)
