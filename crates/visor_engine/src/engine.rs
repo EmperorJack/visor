@@ -8,7 +8,11 @@ use tao::{
     event::WindowEvent,
     window::{Window, WindowBuilder, WindowId},
 };
-use tokio::{runtime::Runtime, sync::mpsc, task::JoinSet};
+use tokio::{
+    runtime::{Handle, Runtime},
+    sync::mpsc,
+    task::JoinSet,
+};
 use uuid::Uuid;
 use visor_display::display_manager::{DisplayId, DisplayManager};
 use visor_runtime::startup_snapshot::{StartupSnapshot, STARTUP_SNAPSHOT_CELL};
@@ -33,7 +37,8 @@ static PLUGINS_CELL: OnceLock<Vec<LoadedPlugin>> = OnceLock::new();
 static ENGINE_STORE: Store = Store::new();
 
 pub struct Engine {
-    runtime: Arc<Runtime>,
+    _runtime: Option<Runtime>,
+    runtime_handle: Arc<Handle>,
     sketches: HashMap<SketchId, Sketch>,
     render_textures: HashMap<RenderTextureId, RenderTexture>,
     display_manager: DisplayManager,
@@ -47,7 +52,7 @@ pub struct Engine {
 
 impl Engine {
     pub fn new(
-        runtime: Option<Runtime>,
+        runtime_handle: Option<Handle>,
         window_creator: Option<Box<dyn WindowCreator>>,
         plugins: Vec<Box<dyn Plugin>>,
         linked_plugin_paths: Vec<PathBuf>,
@@ -55,13 +60,18 @@ impl Engine {
         // TODO: use a logging crate
         println!("[Engine] Setting up Visor engine...");
 
-        let runtime: Arc<Runtime> = runtime
-            .unwrap_or(
-                tokio::runtime::Builder::new_multi_thread()
+        let (runtime, runtime_handle) = runtime_handle
+            .map(|runtime_handle| (None, Arc::new(runtime_handle)))
+            .unwrap_or_else(|| {
+                let runtime = tokio::runtime::Builder::new_multi_thread()
                     .enable_all()
                     .build()
-                    .expect("Unexpected: could not create tokio runtime"),
-            )
+                    .expect("Unexpected: could not create tokio runtime");
+
+                let runtime_handle = runtime.handle().clone();
+
+                (Some(runtime), Arc::new(runtime_handle))
+            })
             .into();
 
         let (tao_window_event_sender, tao_window_event_receiver) = mpsc::unbounded_channel();
@@ -99,7 +109,7 @@ impl Engine {
 
         let wgpu_instance = nannou::wgpu::Instance::default();
 
-        let (wgpu_device, wgpu_queue) = runtime.block_on(async {
+        let (wgpu_device, wgpu_queue) = runtime_handle.block_on(async {
             let adapter = wgpu_instance
                 .request_adapter(&nannou::wgpu::RequestAdapterOptions {
                     power_preference: nannou::wgpu::PowerPreference::HighPerformance,
@@ -122,11 +132,14 @@ impl Engine {
                 .expect("Unexpected: could not connect to wgpu device")
         });
 
+        let display_manager = DisplayManager::new(runtime_handle.clone());
+
         let mut engine = Engine {
-            runtime: runtime.clone(),
+            _runtime: runtime,
+            runtime_handle,
             sketches: Default::default(),
             render_textures: Default::default(),
-            display_manager: DisplayManager::new(runtime),
+            display_manager,
             window_creator,
             tao_window_event_sender,
             tao_window_event_receiver,
@@ -162,7 +175,7 @@ impl Engine {
                 .handle_tao_window_event(&window_id, &event);
         }
 
-        self.runtime.block_on(async {
+        self.runtime_handle.block_on(async {
             let mut join_set = JoinSet::new();
 
             for sketch in self.sketches.values() {
@@ -217,7 +230,7 @@ impl Engine {
             .get_mut(sketch_id)
             .expect("Engine error: no sketch found for given id!"); // TODO: handle error
 
-        self.runtime.block_on(async {
+        self.runtime_handle.block_on(async {
             let result_receiver = sketch.request_compile().await;
 
             result_receiver
@@ -249,7 +262,7 @@ impl Engine {
         let id = RenderTextureId(Uuid::new_v4());
 
         let render_texture = self
-            .runtime
+            .runtime_handle
             .block_on(async { RenderTexture::new(&self.wgpu_device, width, height).await });
 
         self.render_textures.insert(id, render_texture);

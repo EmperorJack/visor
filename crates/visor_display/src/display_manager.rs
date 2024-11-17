@@ -5,7 +5,7 @@ use tao::{
     event::WindowEvent,
     window::{Window, WindowId},
 };
-use tokio::runtime::Runtime;
+use tokio::runtime::Handle;
 use uuid::Uuid;
 
 use crate::display::Display;
@@ -14,15 +14,15 @@ use crate::display::Display;
 pub struct DisplayId(pub(crate) Uuid);
 
 pub struct DisplayManager {
-    runtime: Arc<Runtime>,
+    runtime_handle: Arc<Handle>,
     displays: HashMap<DisplayId, Display>,
     display_id_map: HashMap<WindowId, DisplayId>,
 }
 
 impl DisplayManager {
-    pub fn new(runtime: Arc<Runtime>) -> Self {
+    pub fn new(runtime_handle: Arc<Handle>) -> Self {
         Self {
-            runtime,
+            runtime_handle,
             displays: HashMap::new(),
             display_id_map: HashMap::new(),
         }
@@ -72,7 +72,7 @@ impl DisplayManager {
         let id = DisplayId(Uuid::new_v4());
 
         let display = self
-            .runtime
+            .runtime_handle
             .block_on(async { Display::new(wgpu_instance, window).await });
 
         self.display_id_map.insert(display.window_id(), id);
