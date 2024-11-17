@@ -12,14 +12,14 @@ use crate::{
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct SketchId(pub Uuid);
 
-pub(crate) struct Sketch {
+pub struct Sketch {
     draw: Draw,
     target_render_texture_id: Option<RenderTextureId>,
     worker_task_sender: mpsc::Sender<SketchWorkerTask>,
 }
 
 impl Sketch {
-    pub fn new(id: SketchId, file_path: PathBuf) -> Self {
+    pub(crate) fn new(id: SketchId, file_path: PathBuf) -> Self {
         let (worker_task_sender, worker_task_receiver) = mpsc::channel::<SketchWorkerTask>(1);
 
         let draw = Draw::default();
@@ -39,11 +39,11 @@ impl Sketch {
         }
     }
 
-    pub fn get_draw(&self) -> &Draw {
-        &self.draw
+    pub fn get_draw(&self) -> &nannou::Draw {
+        &self.draw.inner
     }
 
-    pub fn target_render_texture_id(&self) -> Option<&RenderTextureId> {
+    pub fn get_target_render_texture_id(&self) -> Option<&RenderTextureId> {
         self.target_render_texture_id.as_ref()
     }
 
@@ -51,7 +51,7 @@ impl Sketch {
         self.target_render_texture_id = id.copied();
     }
 
-    pub async fn request_compile(&self) -> oneshot::Receiver<()> {
+    pub(crate) async fn request_compile(&self) -> oneshot::Receiver<()> {
         let (result_sender, result_receiver) = oneshot::channel::<()>();
 
         self.worker_task_sender
@@ -62,7 +62,7 @@ impl Sketch {
         result_receiver
     }
 
-    pub async fn request_update(&self) -> oneshot::Receiver<()> {
+    pub(crate) async fn request_update(&self) -> oneshot::Receiver<()> {
         let (result_sender, result_receiver) = oneshot::channel::<()>();
 
         self.worker_task_sender

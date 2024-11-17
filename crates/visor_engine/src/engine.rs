@@ -192,14 +192,14 @@ impl Engine {
                 });
 
         for sketch in self.sketches.values() {
-            if let Some(render_texture_id) = sketch.target_render_texture_id() {
+            if let Some(render_texture_id) = sketch.get_target_render_texture_id() {
                 let render_texture = self
                     .render_textures
                     .get_mut(render_texture_id)
                     // TODO: handle error
                     .expect("Engine error: no render texture found for given id!");
 
-                render_texture.render(&sketch.get_draw().inner, &self.wgpu_device, &mut encoder);
+                render_texture.render(&sketch.get_draw(), &self.wgpu_device, &mut encoder);
             }
         }
 
@@ -235,6 +235,10 @@ impl Engine {
                 .await
                 .expect("Unexpected: error occurred during sketch compile");
         });
+    }
+
+    pub fn get_sketches(&self) -> &HashMap<SketchId, Sketch> {
+        &self.sketches
     }
 
     pub fn set_sketch_target_render_texture_id(
