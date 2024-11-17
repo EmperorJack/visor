@@ -302,4 +302,16 @@ impl Engine {
     pub fn store(&self) -> &'static Store {
         &ENGINE_STORE
     }
+
+    pub fn wgpu_instance(&self) -> &nannou::wgpu::Instance {
+        &self.wgpu_instance
+    }
+
+    pub fn wgpu_device(&self) -> &nannou::wgpu::Device {
+        &self.wgpu_device
+    }
+
+    pub fn wgpu_queue(&self) -> &nannou::wgpu::Queue {
+        &self.wgpu_queue
+    }
 }
