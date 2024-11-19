@@ -111,9 +111,7 @@ fn main() {
             Event::MainEventsCleared => {
                 engine.update();
 
-                let state = engine
-                    .store()
-                    .get::<visor_plugin_log::State>()
+                let state = visor_plugin_log::LogPlugin::get_state(&engine)
                     .read()
                     .expect("Unexpected: could not acquire read lock for log plugin state");
 

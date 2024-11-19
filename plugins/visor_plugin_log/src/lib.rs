@@ -5,8 +5,7 @@ use visor_engine::{engine::Engine, plugin::Plugin, sketch::SketchId, store::Stor
 
 pub struct LogPlugin;
 
-pub type State = RwLock<HashMap<SketchId, Logs>>;
-pub type Logs = Vec<LogEntry>;
+pub type State = HashMap<SketchId, Vec<LogEntry>>;
 
 pub struct LogEntry {
     pub message: String,
@@ -28,25 +27,31 @@ extension!(
     ]
 );
 
+impl LogPlugin {
+    pub fn get_state(engine: &Engine) -> &RwLock<State> {
+        engine.store().get::<RwLock<State>>()
+    }
+}
+
 impl Plugin for LogPlugin {
     fn extension(&self) -> Extension {
         extension::init_ops_and_esm()
     }
 
     fn build(&self, _engine: &mut Engine, store: &Store) {
-        store.set(State::default());
+        store.set(RwLock::new(State::default()));
     }
 
     fn before_sketch_update(&self, _sketch_id: &SketchId, runtime: &mut Runtime, _store: &Store) {
-        runtime.put_state(Logs::default());
+        runtime.put_state(Vec::<LogEntry>::default());
     }
 
     fn after_sketch_update(&self, sketch_id: &SketchId, runtime: &mut Runtime, store: &Store) {
-        let logs: Logs = runtime.take_state();
+        let logs: Vec<LogEntry> = runtime.take_state();
 
         // TODO: consider supporting a persistent per-sketch store to reduce possible lock contention
         let mut state = store
-            .get::<State>()
+            .get::<RwLock<State>>()
             .write()
             .expect("Unexpected: could not acquire write lock for state");
 
@@ -56,7 +61,7 @@ impl Plugin for LogPlugin {
 
 #[op2(fast)]
 fn op_log_console_log(state: &mut OpState, #[string] message: String) {
-    let logs = state.borrow_mut::<Logs>();
+    let logs = state.borrow_mut::<Vec<LogEntry>>();
 
     logs.push(LogEntry {
         message,
@@ -66,7 +71,7 @@ fn op_log_console_log(state: &mut OpState, #[string] message: String) {
 
 #[op2(fast)]
 fn op_log_console_error(state: &mut OpState, #[string] message: String) {
-    let logs = state.borrow_mut::<Logs>();
+    let logs = state.borrow_mut::<Vec<LogEntry>>();
 
     logs.push(LogEntry {
         message,

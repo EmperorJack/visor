@@ -90,9 +90,7 @@ mod tests {
 
         engine.update();
 
-        let log_state = engine
-            .store()
-            .get::<visor_plugin_log::State>()
+        let log_state = visor_plugin_log::LogPlugin::get_state(&engine)
             .read()
             .expect("Unexpected: could not acquire read lock for log plugin state");
 
