@@ -17,7 +17,6 @@ impl Display {
     pub async fn new(wgpu_instance: &nannou::wgpu::Instance, window: Arc<Window>) -> Self {
         let size = window.inner_size();
 
-        // TODO: ensure this is run on the main thread
         let wgpu_display = WgpuDisplay::new(wgpu_instance, &window, size.width, size.height).await;
 
         Self {
@@ -44,7 +43,6 @@ impl Display {
         }
     }
 
-    // TODO: ensure this is run on the main thread
     pub fn set_fullscreen(&self, enabled: bool) {
         // Note: simple fullscreen hides the menu bar in other spaces, which is not great for a VJing app
         // TODO: open an issue with the tao library
