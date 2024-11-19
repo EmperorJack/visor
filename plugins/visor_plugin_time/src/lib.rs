@@ -8,13 +8,13 @@ use visor_engine::{engine::Engine, plugin::Plugin, sketch::SketchId, store::Stor
 
 pub struct TimePlugin;
 
-struct State {
-    frame_count: i32,
-    frame_rate: f32,
-    seconds_elapsed: f32,
+pub struct State {
+    pub frame_count: i32,
+    pub frame_rate: f32,
+    pub seconds_elapsed: f32,
     time_started: Instant,
     time_last_updated: Instant,
-    since_last_update: Duration,
+    pub since_last_update: Duration,
 }
 
 struct SketchState {
@@ -31,6 +31,12 @@ extension!(
         "visor:time" = "visor-time.js",
     ]
 );
+
+impl TimePlugin {
+    pub fn get_state(engine: &Engine) -> &RwLock<State> {
+        engine.store().get::<RwLock<State>>()
+    }
+}
 
 impl Plugin for TimePlugin {
     fn extension(&self) -> Extension {
