@@ -14,6 +14,7 @@ pub struct SketchId(pub Uuid);
 
 pub struct Sketch {
     draw: Draw,
+    is_enabled: bool,
     target_render_texture_id: Option<RenderTextureId>,
     worker_task_sender: mpsc::Sender<SketchWorkerTask>,
 }
@@ -34,6 +35,7 @@ impl Sketch {
 
         Self {
             draw,
+            is_enabled: true,
             target_render_texture_id: None,
             worker_task_sender,
         }
@@ -41,6 +43,14 @@ impl Sketch {
 
     pub fn get_draw(&self) -> &nannou::Draw {
         &self.draw.inner
+    }
+
+    pub fn is_enabled(&self) -> bool {
+        self.is_enabled
+    }
+
+    pub fn set_enabled(&mut self, id: bool) {
+        self.is_enabled = id;
     }
 
     pub fn get_target_render_texture_id(&self) -> Option<&RenderTextureId> {

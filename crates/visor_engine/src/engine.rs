@@ -172,7 +172,7 @@ impl Engine {
         self.runtime_handle.block_on(async {
             let mut join_set = JoinSet::new();
 
-            for sketch in self.sketches.values() {
+            for sketch in self.sketches.values().filter(|sketch| sketch.is_enabled()) {
                 let result_receiver = sketch.request_update().await;
 
                 join_set.spawn(async move {
@@ -191,7 +191,7 @@ impl Engine {
                     label: Some("Engine texture render encoder"),
                 });
 
-        for sketch in self.sketches.values() {
+        for sketch in self.sketches.values().filter(|sketch| sketch.is_enabled()) {
             if let Some(render_texture_id) = sketch.get_target_render_texture_id() {
                 let render_texture = self
                     .render_textures
@@ -239,6 +239,15 @@ impl Engine {
 
     pub fn get_sketches(&self) -> &HashMap<SketchId, Sketch> {
         &self.sketches
+    }
+
+    pub fn set_sketch_enabled(&mut self, sketch_id: &SketchId, is_enabled: bool) {
+        let sketch = self
+            .sketches
+            .get_mut(sketch_id)
+            .expect("Engine error: no sketch found for given id!"); // TODO: handle error
+
+        sketch.set_enabled(is_enabled);
     }
 
     pub fn set_sketch_target_render_texture_id(
