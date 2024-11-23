@@ -222,6 +222,15 @@ impl Engine {
         id
     }
 
+    // TODO: refactor sketch creation to use builder pattern
+    pub fn create_sketch_with_id(&mut self, id: SketchId, file_path: PathBuf) -> SketchId {
+        let sketch = Sketch::new(id, file_path);
+
+        self.sketches.insert(id, sketch);
+
+        id
+    }
+
     pub fn recompile_sketch(&mut self, sketch_id: &SketchId) {
         let sketch = self
             .sketches
