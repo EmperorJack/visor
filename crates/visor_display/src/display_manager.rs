@@ -14,13 +14,13 @@ use crate::display::Display;
 pub struct DisplayId(pub Uuid);
 
 pub struct DisplayManager {
-    runtime_handle: Arc<Handle>,
+    runtime_handle: Handle,
     displays: HashMap<DisplayId, Display>,
     display_id_map: HashMap<WindowId, DisplayId>,
 }
 
 impl DisplayManager {
-    pub fn new(runtime_handle: Arc<Handle>) -> Self {
+    pub fn new(runtime_handle: Handle) -> Self {
         Self {
             runtime_handle,
             displays: HashMap::new(),

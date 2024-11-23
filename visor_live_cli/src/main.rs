@@ -56,10 +56,14 @@ fn main() {
 
     let mut engine = engine_builder.build();
 
-    let sketch_id = engine.create_sketch(args.sketch_file_path);
+    let sketch_id = engine.create_sketch(args.sketch_file_path).id().clone();
 
     let render_texture_id = engine.create_render_texture(600, 400);
-    engine.set_sketch_target_render_texture_id(&sketch_id, Some(&render_texture_id));
+    engine
+        .sketches_mut()
+        .get_mut(&sketch_id)
+        .expect("Unexpected: could not find sketch")
+        .set_target_render_texture_id(Some(&render_texture_id));
 
     let window = WindowBuilder::new()
         .with_title("Display")
@@ -93,7 +97,12 @@ fn main() {
 
             if sketch_file_updated {
                 println!("[Live CLI] Detected file change, recompiling sketch...");
-                engine.recompile_sketch(&sketch_id);
+
+                engine
+                    .sketches()
+                    .get(&sketch_id)
+                    .expect("Unexpected: could not find sketch")
+                    .recompile();
             }
         }
 

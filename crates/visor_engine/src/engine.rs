@@ -35,7 +35,7 @@ static PLUGINS_CELL: OnceLock<Vec<LoadedPlugin>> = OnceLock::new();
 
 pub struct Engine {
     _runtime: Option<Runtime>,
-    runtime_handle: Arc<Handle>,
+    runtime_handle: Handle,
     sketches: HashMap<SketchId, Sketch>,
     render_textures: HashMap<RenderTextureId, RenderTexture>,
     display_manager: DisplayManager,
@@ -56,7 +56,7 @@ impl Engine {
         println!("[Engine] Setting up Visor engine...");
 
         let (runtime, runtime_handle) = runtime_handle
-            .map(|runtime_handle| (None, Arc::new(runtime_handle)))
+            .map(|runtime_handle| (None, runtime_handle))
             .unwrap_or_else(|| {
                 let runtime = tokio::runtime::Builder::new_multi_thread()
                     .enable_all()
@@ -65,7 +65,7 @@ impl Engine {
 
                 let runtime_handle = runtime.handle().clone();
 
-                (Some(runtime), Arc::new(runtime_handle))
+                (Some(runtime), runtime_handle)
             })
             .into();
 
@@ -199,7 +199,7 @@ impl Engine {
                     // TODO: handle error
                     .expect("Engine error: no render texture found for given id!");
 
-                render_texture.render(&sketch.get_draw(), &self.wgpu_device, &mut encoder);
+                render_texture.render(&sketch.draw(), &self.wgpu_device, &mut encoder);
             }
         }
 
@@ -212,70 +212,29 @@ impl Engine {
         self.display_manager.render();
     }
 
-    pub fn create_sketch(&mut self, file_path: PathBuf) -> SketchId {
+    pub fn create_sketch(&mut self, file_path: PathBuf) -> &Sketch {
         let id = SketchId(Uuid::new_v4());
 
-        let sketch = Sketch::new(id, file_path);
+        let sketch = Sketch::new(self.runtime_handle.clone(), id, file_path);
 
-        self.sketches.insert(id, sketch);
-
-        id
+        self.sketches.entry(id).or_insert(sketch)
     }
 
     // TODO: refactor sketch creation to use builder pattern
     pub fn create_sketch_with_id(&mut self, id: SketchId, file_path: PathBuf) -> SketchId {
-        let sketch = Sketch::new(id, file_path);
+        let sketch = Sketch::new(self.runtime_handle.clone(), id, file_path);
 
         self.sketches.insert(id, sketch);
 
         id
     }
 
-    pub fn recompile_sketch(&mut self, sketch_id: &SketchId) {
-        let sketch = self
-            .sketches
-            .get_mut(sketch_id)
-            .expect("Engine error: no sketch found for given id!"); // TODO: handle error
-
-        self.runtime_handle.block_on(async {
-            let result_receiver = sketch.request_compile().await;
-
-            result_receiver
-                .await
-                .expect("Unexpected: error occurred during sketch compile");
-        });
-    }
-
-    pub fn get_sketches(&self) -> &HashMap<SketchId, Sketch> {
+    pub fn sketches(&self) -> &HashMap<SketchId, Sketch> {
         &self.sketches
     }
 
-    pub fn set_sketch_enabled(&mut self, sketch_id: &SketchId, is_enabled: bool) {
-        let sketch = self
-            .sketches
-            .get_mut(sketch_id)
-            .expect("Engine error: no sketch found for given id!"); // TODO: handle error
-
-        sketch.set_enabled(is_enabled);
-    }
-
-    pub fn set_sketch_target_render_texture_id(
-        &mut self,
-        sketch_id: &SketchId,
-        render_texture_id: Option<&RenderTextureId>,
-    ) {
-        let sketch = self
-            .sketches
-            .get_mut(sketch_id)
-            .expect("Engine error: no sketch found for given id!"); // TODO: handle error
-
-        if let Some(render_texture_id) = render_texture_id {
-            if !self.render_textures.contains_key(render_texture_id) {
-                panic!("Engine error: no render texture found for given id!"); // TODO: handle error
-            }
-        }
-
-        sketch.set_target_render_texture_id(render_texture_id);
+    pub fn sketches_mut(&mut self) -> &mut HashMap<SketchId, Sketch> {
+        &mut self.sketches
     }
 
     pub fn create_render_texture(&mut self, width: u32, height: u32) -> RenderTextureId {
