@@ -9,10 +9,10 @@ use uuid::Uuid;
 use crate::{
     draw::Draw,
     engine::RenderTextureId,
-    sketch_worker::{SketchWorker, SketchWorkerTask},
+    sketch_worker::{SketchErrors, SketchWorker, SketchWorkerTask},
 };
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct SketchId(pub Uuid);
 
 pub struct Sketch {
@@ -23,6 +23,8 @@ pub struct Sketch {
     is_enabled: bool,
     target_render_texture_id: Option<RenderTextureId>,
     worker_task_sender: mpsc::Sender<SketchWorkerTask>,
+    compile_error: Option<String>,
+    runtime_error: Option<String>,
 }
 
 impl Sketch {
@@ -48,6 +50,8 @@ impl Sketch {
             is_enabled: true,
             target_render_texture_id: None,
             worker_task_sender,
+            compile_error: None,
+            runtime_error: None,
         }
     }
 
@@ -79,12 +83,12 @@ impl Sketch {
         self.target_render_texture_id = id.copied();
     }
 
-    pub fn recompile(&self) {
+    pub fn request_compile(&self) {
         self.runtime_handle.block_on(async {
-            let (result_sender, result_receiver) = oneshot::channel::<()>();
+            let (result_sender, result_receiver) = oneshot::channel();
 
             self.worker_task_sender
-                .send(SketchWorkerTask::Compile(result_sender))
+                .send(SketchWorkerTask::RequestCompile(result_sender))
                 .await
                 .expect("Unexpected: could not send update task to sketch worker");
 
@@ -94,8 +98,8 @@ impl Sketch {
         });
     }
 
-    pub(crate) async fn request_update(&self) -> oneshot::Receiver<()> {
-        let (result_sender, result_receiver) = oneshot::channel::<()>();
+    pub(crate) async fn request_update(&self) -> oneshot::Receiver<SketchErrors> {
+        let (result_sender, result_receiver) = oneshot::channel();
 
         self.worker_task_sender
             .send(SketchWorkerTask::Update(result_sender))
@@ -103,5 +107,18 @@ impl Sketch {
             .expect("Unexpected: could not send update task to sketch worker");
 
         result_receiver
+    }
+
+    pub(crate) fn set_errors(&mut self, errors: SketchErrors) {
+        self.compile_error = errors.compile_error;
+        self.runtime_error = errors.runtime_error;
+    }
+
+    pub fn compile_error(&self) -> &Option<String> {
+        &self.compile_error
+    }
+
+    pub fn runtime_error(&self) -> &Option<String> {
+        &self.runtime_error
     }
 }

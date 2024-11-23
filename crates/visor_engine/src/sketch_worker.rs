@@ -6,9 +6,16 @@ use visor_runtime::runtime::{Runtime, RuntimeExecuteFunctionResult, SketchFuncti
 
 use crate::{draw::Draw, engine::Engine, sketch::SketchId, store::ENGINE_STORE};
 
+#[derive(Debug)]
+pub(crate) struct SketchErrors {
+    pub id: SketchId,
+    pub compile_error: Option<String>,
+    pub runtime_error: Option<String>,
+}
+
 pub(crate) enum SketchWorkerTask {
-    Compile(oneshot::Sender<()>),
-    Update(oneshot::Sender<()>),
+    RequestCompile(oneshot::Sender<()>),
+    Update(oneshot::Sender<SketchErrors>),
 }
 
 pub(crate) struct SketchWorker {
@@ -19,6 +26,8 @@ pub(crate) struct SketchWorker {
     runtime: Option<Runtime>,
     request_compile: bool,
     request_setup: bool,
+    compile_error: Option<String>,
+    runtime_error: Option<String>,
 }
 
 impl SketchWorker {
@@ -36,6 +45,8 @@ impl SketchWorker {
             runtime: None,
             request_compile: true,
             request_setup: true,
+            compile_error: None,
+            runtime_error: None,
         }
     }
 
@@ -48,20 +59,24 @@ impl SketchWorker {
         tokio_runtime.block_on(async {
             while let Some(task) = self.task_receiver.recv().await {
                 match task {
-                    SketchWorkerTask::Compile(result_sender) => {
+                    SketchWorkerTask::RequestCompile(result_sender) => {
                         self.request_compile = true;
 
-                        result_sender
-                            .send(())
-                            .expect("Unexpected: could not send result back to sketch");
+                        result_sender.send(()).expect(
+                            "Unexpected: could not send request compile result back to sketch",
+                        );
                     }
 
                     SketchWorkerTask::Update(result_sender) => {
                         self.update().await;
 
                         result_sender
-                            .send(())
-                            .expect("Unexpected: could not send result back to sketch");
+                            .send(SketchErrors {
+                                id: self.id,
+                                compile_error: self.compile_error.clone(),
+                                runtime_error: self.runtime_error.clone(),
+                            })
+                            .expect("Unexpected: could not send update result back to sketch");
                     }
                 }
             }
@@ -69,8 +84,6 @@ impl SketchWorker {
     }
 
     async fn update(&mut self) {
-        let mut error: Option<Error> = None;
-
         if self.request_compile {
             // Drop the current runtime if there is one
             self.runtime = None;
@@ -88,11 +101,9 @@ impl SketchWorker {
                 .await
                 .expect("Unexpected: could not compile sketch into runtime");
 
-            if compile_error.is_none() {
-                self.runtime = Some(runtime);
-            }
+            self.runtime = Some(runtime);
 
-            error = compile_error;
+            self.compile_error = compile_error.map(|error| error.to_string());
 
             self.request_compile = false;
         } else if let Some(runtime) = &mut self.runtime {
@@ -101,22 +112,15 @@ impl SketchWorker {
             }
         }
 
-        if let Some(error) = error {
-            println!("[Sketch compile error] {}", error);
-
-            return;
-        }
-
         if let Some(runtime) = &mut self.runtime {
-            let runtime_error =
-                Self::execute_sketch_lifecycle(self.request_setup, &self.draw.inner, runtime).await;
+            if self.compile_error.is_none() {
+                let runtime_error =
+                    Self::execute_sketch_lifecycle(self.request_setup, &self.draw.inner, runtime)
+                        .await;
 
-            self.request_setup = false;
+                self.request_setup = false;
 
-            error = runtime_error;
-
-            if let Some(error) = error {
-                println!("[Sketch runtime error] {}", error);
+                self.runtime_error = runtime_error.map(|error| error.to_string());
             }
 
             for plugin in Engine::plugins() {

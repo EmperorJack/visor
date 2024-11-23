@@ -76,6 +76,8 @@ fn main() {
 
     let engine_window_event_sender = engine.tao_window_event_sender();
 
+    let mut just_recompiled = false;
+
     event_loop.run(move |event, _event_loop, control_flow| {
         *control_flow = tao::event_loop::ControlFlow::Poll;
 
@@ -98,11 +100,15 @@ fn main() {
             if sketch_file_updated {
                 println!("[Live CLI] Detected file change, recompiling sketch...");
 
+                // TODO: should calling recompile actually do the compile?
+                // The issue is it might actually draw, if code is outside the lifecycle functions, maybe that is fine?
                 engine
                     .sketches()
                     .get(&sketch_id)
                     .expect("Unexpected: could not find sketch")
-                    .recompile();
+                    .request_compile();
+
+                just_recompiled = true;
             }
         }
 
@@ -120,7 +126,24 @@ fn main() {
             Event::MainEventsCleared => {
                 engine.update();
 
-                let state = visor_plugin_log::LogPlugin::get_state(&engine)
+                let sketch = engine
+                    .sketches()
+                    .get(&sketch_id)
+                    .expect("Unexpected: could not find sketch");
+
+                if just_recompiled {
+                    if let Some(error) = sketch.compile_error() {
+                        println!("[Sketch compile error] {}", error);
+                    }
+
+                    just_recompiled = false;
+                }
+
+                if let Some(error) = sketch.runtime_error() {
+                    println!("[Sketch runtime error] {}", error);
+                }
+
+                let state = visor_plugin_log::LogPlugin::get_state(engine.store())
                     .read()
                     .expect("Unexpected: could not acquire read lock for log plugin state");
 

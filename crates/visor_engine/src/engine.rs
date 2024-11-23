@@ -178,11 +178,19 @@ impl Engine {
                 join_set.spawn(async move {
                     result_receiver
                         .await
-                        .expect("Unexpected: error occurred during sketch update");
+                        .expect("Unexpected: error occurred during sketch update")
                 });
             }
 
-            while (join_set.join_next().await).is_some() {}
+            while let Some(sketch_errors) = join_set.join_next().await {
+                let sketch_errors = sketch_errors
+                    .expect("Unexpected: could not join the next sketch update result");
+
+                self.sketches
+                    .get_mut(&sketch_errors.id)
+                    .expect("Unexpected: could not find sketch")
+                    .set_errors(sketch_errors);
+            }
         });
 
         let mut encoder =

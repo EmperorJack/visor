@@ -28,8 +28,8 @@ extension!(
 );
 
 impl LogPlugin {
-    pub fn get_state(engine: &Engine) -> &RwLock<State> {
-        engine.store().get::<RwLock<State>>()
+    pub fn get_state(store: &Store) -> &RwLock<State> {
+        store.get::<RwLock<State>>()
     }
 }
 
