@@ -274,6 +274,10 @@ impl Engine {
             .add_display(id, &self.wgpu_instance, window)
     }
 
+    pub fn remove_display(&mut self, id: &DisplayId) {
+        self.display_manager.remove_display(id)
+    }
+
     pub fn displays(&self) -> &HashMap<DisplayId, Display> {
         &self.display_manager.displays()
     }
