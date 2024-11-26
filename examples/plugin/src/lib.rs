@@ -86,11 +86,11 @@ mod tests {
         let sketch_path =
             PathBuf::from(format!("{}/example-sketch.js", env!("CARGO_MANIFEST_DIR")));
 
-        let sketch_id = engine.create_sketch(sketch_path);
+        let sketch_id = engine.create_sketch(sketch_path).id().clone();
 
         engine.update();
 
-        let log_state = visor_plugin_log::LogPlugin::get_state(&engine)
+        let log_state = visor_plugin_log::LogPlugin::get_state(&engine.store())
             .read()
             .expect("Unexpected: could not acquire read lock for log plugin state");
 
