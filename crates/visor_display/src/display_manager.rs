@@ -6,7 +6,6 @@ use tao::{
     window::{Window, WindowId},
 };
 use tokio::runtime::Handle;
-use uuid::Uuid;
 
 use crate::display::{Display, DisplayId};
 
@@ -67,15 +66,19 @@ impl DisplayManager {
                     )
                 });
 
-                display.handle_resize(*size);
+                display.resize_surface(*size);
             }
             _ => {}
         }
     }
 
-    pub fn add_display(&mut self, wgpu_instance: &Instance, window: Arc<Window>) -> &Display {
+    pub fn add_display(
+        &mut self,
+        id: DisplayId,
+        wgpu_instance: &Instance,
+        window: Arc<Window>,
+    ) -> &Display {
         // TODO: should display id just be a window id?
-        let id = DisplayId(Uuid::new_v4());
         let window_id = window.id();
 
         let display = self

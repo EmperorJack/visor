@@ -39,7 +39,7 @@ impl Display {
         &self.window
     }
 
-    pub(crate) fn handle_resize(&mut self, size: PhysicalSize<u32>) {
+    pub fn resize_surface(&mut self, size: PhysicalSize<u32>) {
         self.wgpu_display.resize(size.width, size.height);
     }
 

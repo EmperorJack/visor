@@ -261,9 +261,17 @@ impl Engine {
         &mut self.render_textures
     }
 
+    // TODO: refactor display creation to use builder pattern
     pub fn create_display(&mut self, window: Arc<Window>) -> &Display {
+        let id = DisplayId(Uuid::new_v4());
+
         self.display_manager
-            .add_display(&self.wgpu_instance, window)
+            .add_display(id, &self.wgpu_instance, window)
+    }
+
+    pub fn create_display_with_id(&mut self, id: DisplayId, window: Arc<Window>) -> &Display {
+        self.display_manager
+            .add_display(id, &self.wgpu_instance, window)
     }
 
     pub fn displays(&self) -> &HashMap<DisplayId, Display> {
