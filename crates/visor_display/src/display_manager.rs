@@ -1,10 +1,7 @@
 use std::{collections::HashMap, sync::Arc};
 
 use nannou::wgpu::{Instance, TextureView};
-use tao::{
-    event::WindowEvent,
-    window::{Window, WindowId},
-};
+use tao::window::{Window, WindowId};
 use tokio::runtime::Handle;
 
 use crate::display::{Display, DisplayId};
@@ -32,44 +29,13 @@ impl DisplayManager {
         &mut self.displays
     }
 
-    pub fn handle_tao_window_event(&mut self, window_id: &WindowId, event: &WindowEvent) {
-        match event {
-            WindowEvent::CloseRequested => {
-                let display_id = *self.display_id_map.get(window_id).unwrap_or_else(|| {
-                    panic!(
-                        "Unexpected: could not find display id for window with id {:?}",
-                        window_id
-                    )
-                });
-
-                self.remove_display(&display_id);
-            }
-
-            WindowEvent::Destroyed => {
-                if self.displays.is_empty() {
-                    std::process::exit(0)
-                }
-            }
-
-            WindowEvent::Resized(size) => {
-                let display_id = self.display_id_map.get(window_id).unwrap_or_else(|| {
-                    panic!(
-                        "Unexpected: could not find display id for window with id {:?}",
-                        window_id
-                    )
-                });
-
-                let display = self.displays.get_mut(display_id).unwrap_or_else(|| {
-                    panic!(
-                        "Unexpected: could not find display with id {}",
-                        display_id.0
-                    )
-                });
-
-                display.resize_surface(*size);
-            }
-            _ => {}
-        }
+    pub fn display_id_for_window_id(&self, window_id: &WindowId) -> &DisplayId {
+        self.display_id_map.get(window_id).unwrap_or_else(|| {
+            panic!(
+                "Unexpected: could not find display id for window with id {:?}",
+                window_id
+            )
+        })
     }
 
     pub fn add_display(

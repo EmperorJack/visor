@@ -4,13 +4,9 @@ use std::{
     sync::{Arc, OnceLock},
 };
 
-use tao::{
-    event::WindowEvent,
-    window::{Window, WindowId},
-};
+use tao::window::{Window, WindowId};
 use tokio::{
     runtime::{Handle, Runtime},
-    sync::mpsc,
     task::JoinSet,
 };
 use uuid::Uuid;
@@ -37,8 +33,6 @@ pub struct Engine {
     sketches: HashMap<SketchId, Sketch>,
     render_textures: HashMap<RenderTextureId, RenderTexture>,
     display_manager: DisplayManager,
-    tao_window_event_sender: mpsc::UnboundedSender<(WindowId, WindowEvent<'static>)>,
-    tao_window_event_receiver: mpsc::UnboundedReceiver<(WindowId, WindowEvent<'static>)>,
     wgpu_instance: nannou::wgpu::Instance,
     wgpu_device: Arc<nannou::wgpu::Device>,
     wgpu_queue: nannou::wgpu::Queue,
@@ -66,8 +60,6 @@ impl Engine {
                 (Some(runtime), runtime_handle)
             })
             .into();
-
-        let (tao_window_event_sender, tao_window_event_receiver) = mpsc::unbounded_channel();
 
         let compiled_plugins: Vec<LoadedPlugin> =
             plugins.into_iter().map(LoadedPlugin::Compiled).collect();
@@ -133,8 +125,6 @@ impl Engine {
             sketches: Default::default(),
             render_textures: Default::default(),
             display_manager,
-            tao_window_event_sender,
-            tao_window_event_receiver,
             wgpu_instance,
             wgpu_device: Arc::new(wgpu_device),
             wgpu_queue,
@@ -151,20 +141,9 @@ impl Engine {
         engine
     }
 
-    pub fn tao_window_event_sender(
-        &self,
-    ) -> mpsc::UnboundedSender<(WindowId, WindowEvent<'static>)> {
-        self.tao_window_event_sender.clone()
-    }
-
     pub fn update(&mut self) {
         for plugin in Self::plugins() {
             plugin.engine_update(self, &ENGINE_STORE);
-        }
-
-        while let Ok((window_id, event)) = self.tao_window_event_receiver.try_recv() {
-            self.display_manager
-                .handle_tao_window_event(&window_id, &event);
         }
 
         self.runtime_handle.block_on(async {
@@ -284,6 +263,10 @@ impl Engine {
 
     pub fn displays_mut(&mut self) -> &mut HashMap<DisplayId, Display> {
         self.display_manager.displays_mut()
+    }
+
+    pub fn display_id_for_window_id(&self, window_id: &WindowId) -> &DisplayId {
+        self.display_manager.display_id_for_window_id(window_id)
     }
 
     pub(crate) fn plugins() -> &'static Vec<LoadedPlugin> {

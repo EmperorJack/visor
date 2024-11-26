@@ -5,7 +5,10 @@ use std::{
 
 use clap::Parser;
 use notify::{RecommendedWatcher, Watcher};
-use tao::{event::Event, window::WindowBuilder};
+use tao::{
+    event::{Event, WindowEvent},
+    window::WindowBuilder,
+};
 use visor::engine_builder::EngineBuilder;
 
 #[derive(Parser, Debug)]
@@ -81,8 +84,6 @@ fn main() {
         .expect("Unexpected: could not find display")
         .set_source_texture(Some(&render_texture_view));
 
-    let engine_window_event_sender = engine.tao_window_event_sender();
-
     let mut just_recompiled = false;
 
     event_loop.run(move |event, _event_loop, control_flow| {
@@ -122,13 +123,36 @@ fn main() {
         match event {
             Event::WindowEvent {
                 window_id, event, ..
-            } => {
-                if let Some(event) = event.to_static() {
-                    engine_window_event_sender
-                        .send((window_id, event))
-                        .expect("Unexpected: could not send window event to engine");
+            } => match event {
+                WindowEvent::CloseRequested => {
+                    let display_id = engine.display_id_for_window_id(&window_id).clone();
+
+                    engine.remove_display(&display_id);
                 }
-            }
+
+                WindowEvent::Destroyed => {
+                    if engine.displays().is_empty() {
+                        std::process::exit(0)
+                    }
+                }
+
+                WindowEvent::Resized(size) => {
+                    let display_id = engine.display_id_for_window_id(&window_id).clone();
+
+                    let display = engine
+                        .displays_mut()
+                        .get_mut(&display_id)
+                        .unwrap_or_else(|| {
+                            panic!(
+                                "Unexpected: could not find display with id {}",
+                                display_id.0
+                            )
+                        });
+
+                    display.resize_surface(size);
+                }
+                _ => {}
+            },
 
             Event::MainEventsCleared => {
                 engine.update();

@@ -35,7 +35,7 @@ impl Display {
         &self.id
     }
 
-    pub fn window(&self) -> &Window {
+    pub fn window(&self) -> &Arc<Window> {
         &self.window
     }
 
