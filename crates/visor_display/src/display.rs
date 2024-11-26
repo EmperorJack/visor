@@ -5,9 +5,10 @@ use tao::{dpi::PhysicalSize, window::Window};
 use uuid::Uuid;
 use visor_wgpu::display::Display as WgpuDisplay;
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct DisplayId(pub Uuid);
 
+#[derive(Debug)]
 pub struct Display {
     id: DisplayId,
     window: Arc<Window>,

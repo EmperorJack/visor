@@ -33,7 +33,7 @@ pub struct Engine {
     sketches: HashMap<SketchId, Sketch>,
     render_textures: HashMap<RenderTextureId, RenderTexture>,
     display_manager: DisplayManager,
-    wgpu_instance: nannou::wgpu::Instance,
+    wgpu_instance: Arc<nannou::wgpu::Instance>,
     wgpu_device: Arc<nannou::wgpu::Device>,
     wgpu_queue: nannou::wgpu::Queue,
 }
@@ -125,7 +125,7 @@ impl Engine {
             sketches: Default::default(),
             render_textures: Default::default(),
             display_manager,
-            wgpu_instance,
+            wgpu_instance: Arc::new(wgpu_instance),
             wgpu_device: Arc::new(wgpu_device),
             wgpu_queue,
         };
@@ -253,6 +253,10 @@ impl Engine {
             .add_display(id, &self.wgpu_instance, window)
     }
 
+    pub fn manage_display(&mut self, display: Display) -> &Display {
+        self.display_manager.manage_display(display)
+    }
+
     pub fn remove_display(&mut self, id: &DisplayId) {
         self.display_manager.remove_display(id)
     }
@@ -279,7 +283,7 @@ impl Engine {
         &ENGINE_STORE
     }
 
-    pub fn wgpu_instance(&self) -> &nannou::wgpu::Instance {
+    pub fn wgpu_instance(&self) -> &Arc<nannou::wgpu::Instance> {
         &self.wgpu_instance
     }
 

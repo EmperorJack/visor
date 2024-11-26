@@ -55,6 +55,14 @@ impl DisplayManager {
         self.displays.entry(id).or_insert(display)
     }
 
+    pub fn manage_display(&mut self, display: Display) -> &Display {
+        let id = display.id();
+        let window_id = display.window().id();
+
+        self.display_id_map.insert(window_id, *id);
+        self.displays.entry(*id).or_insert(display)
+    }
+
     pub fn remove_display(&mut self, id: &DisplayId) {
         self.display_id_map.retain(|_, v| v != id);
         self.displays.remove(id);

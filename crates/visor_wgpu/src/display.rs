@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+#[derive(Debug)]
 pub struct Display {
     surface: nannou::wgpu::Surface,
     surface_format: nannou::wgpu::TextureFormat,
