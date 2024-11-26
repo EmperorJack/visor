@@ -8,10 +8,7 @@ use tao::{
 use tokio::runtime::Handle;
 use uuid::Uuid;
 
-use crate::display::Display;
-
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
-pub struct DisplayId(pub Uuid);
+use crate::display::{Display, DisplayId};
 
 pub struct DisplayManager {
     runtime_handle: Handle,
@@ -26,6 +23,14 @@ impl DisplayManager {
             displays: HashMap::new(),
             display_id_map: HashMap::new(),
         }
+    }
+
+    pub fn displays(&self) -> &HashMap<DisplayId, Display> {
+        &self.displays
+    }
+
+    pub fn displays_mut(&mut self) -> &mut HashMap<DisplayId, Display> {
+        &mut self.displays
     }
 
     pub fn handle_tao_window_event(&mut self, window_id: &WindowId, event: &WindowEvent) {
@@ -68,36 +73,22 @@ impl DisplayManager {
         }
     }
 
-    pub fn add_display(&mut self, wgpu_instance: &Instance, window: Arc<Window>) -> DisplayId {
+    pub fn add_display(&mut self, wgpu_instance: &Instance, window: Arc<Window>) -> &Display {
+        // TODO: should display id just be a window id?
         let id = DisplayId(Uuid::new_v4());
+        let window_id = window.id();
 
         let display = self
             .runtime_handle
-            .block_on(async { Display::new(wgpu_instance, window).await });
+            .block_on(async { Display::new(id, wgpu_instance, window).await });
 
-        self.display_id_map.insert(display.window_id(), id);
-        self.displays.insert(id, display);
-
-        id
-    }
-
-    pub fn focus_display(&mut self, id: &DisplayId) {
-        self.get_display(id).focus();
+        self.display_id_map.insert(window_id, id);
+        self.displays.entry(id).or_insert(display)
     }
 
     pub fn remove_display(&mut self, id: &DisplayId) {
         self.display_id_map.retain(|_, v| v != id);
         self.displays.remove(id);
-    }
-
-    fn get_display(&self, id: &DisplayId) -> &Display {
-        self.displays
-            .get(id)
-            .unwrap_or_else(|| panic!("Unexpected: could not find display with id {}", id.0))
-    }
-
-    pub fn set_display_fullscreen(&self, id: &DisplayId, enabled: bool) {
-        self.get_display(id).set_fullscreen(enabled);
     }
 
     pub fn set_display_source_texture(

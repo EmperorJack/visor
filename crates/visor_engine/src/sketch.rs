@@ -5,10 +5,10 @@ use tokio::{
     sync::{mpsc, oneshot},
 };
 use uuid::Uuid;
+use visor_wgpu::render_texture::RenderTextureId;
 
 use crate::{
     draw::Draw,
-    engine::RenderTextureId,
     sketch_worker::{SketchErrors, SketchWorker, SketchWorkerTask},
 };
 

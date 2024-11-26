@@ -58,7 +58,10 @@ fn main() {
 
     let sketch_id = engine.create_sketch(args.sketch_file_path).id().clone();
 
-    let render_texture_id = engine.create_render_texture(600, 400);
+    let render_texture = engine.create_render_texture(600, 400);
+    let render_texture_id = render_texture.id().clone();
+    let render_texture_view = render_texture.texture_view();
+
     engine
         .sketches_mut()
         .get_mut(&sketch_id)
@@ -71,8 +74,12 @@ fn main() {
         .build(&event_loop)
         .expect("Unexpected: could not build display window");
 
-    let display_id = engine.create_display(Arc::new(window));
-    engine.set_display_source_texture(&display_id, Some(&render_texture_id));
+    let display_id = engine.create_display(Arc::new(window)).id().clone();
+    engine
+        .displays_mut()
+        .get_mut(&display_id)
+        .expect("Unexpected: could not find display")
+        .set_source_texture(Some(&render_texture_view));
 
     let engine_window_event_sender = engine.tao_window_event_sender();
 

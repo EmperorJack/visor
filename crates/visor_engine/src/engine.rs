@@ -26,10 +26,8 @@ use crate::{
 
 pub use crate::sketch::SketchId;
 
-pub use visor_display::display_manager::DisplayId;
-
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
-pub struct RenderTextureId(Uuid);
+pub use visor_display::display::{Display, DisplayId};
+pub use visor_wgpu::render_texture::RenderTextureId;
 
 static PLUGINS_CELL: OnceLock<Vec<LoadedPlugin>> = OnceLock::new();
 
@@ -42,7 +40,7 @@ pub struct Engine {
     tao_window_event_sender: mpsc::UnboundedSender<(WindowId, WindowEvent<'static>)>,
     tao_window_event_receiver: mpsc::UnboundedReceiver<(WindowId, WindowEvent<'static>)>,
     wgpu_instance: nannou::wgpu::Instance,
-    wgpu_device: nannou::wgpu::Device,
+    wgpu_device: Arc<nannou::wgpu::Device>,
     wgpu_queue: nannou::wgpu::Queue,
 }
 
@@ -138,7 +136,7 @@ impl Engine {
             tao_window_event_sender,
             tao_window_event_receiver,
             wgpu_instance,
-            wgpu_device,
+            wgpu_device: Arc::new(wgpu_device),
             wgpu_queue,
         };
 
@@ -207,7 +205,7 @@ impl Engine {
                     // TODO: handle error
                     .expect("Engine error: no render texture found for given id!");
 
-                render_texture.render(&sketch.draw(), &self.wgpu_device, &mut encoder);
+                render_texture.render(&sketch.draw(), &mut encoder);
             }
         }
 
@@ -245,52 +243,35 @@ impl Engine {
         &mut self.sketches
     }
 
-    pub fn create_render_texture(&mut self, width: u32, height: u32) -> RenderTextureId {
+    pub fn create_render_texture(&mut self, width: u32, height: u32) -> &RenderTexture {
         let id = RenderTextureId(Uuid::new_v4());
 
-        let render_texture = self
-            .runtime_handle
-            .block_on(async { RenderTexture::new(&self.wgpu_device, width, height).await });
+        let render_texture = self.runtime_handle.block_on(async {
+            RenderTexture::new(id, self.wgpu_device.clone(), width, height).await
+        });
 
-        self.render_textures.insert(id, render_texture);
-
-        id
+        self.render_textures.entry(id).or_insert(render_texture)
     }
 
-    pub fn render_to_texture(
-        &mut self,
-        render_texture_id: &RenderTextureId,
-        draw: &nannou::Draw,
-        encoder: &mut nannou::wgpu::CommandEncoder,
-    ) {
-        let render_texture = self
-            .render_textures
-            .get_mut(render_texture_id)
-            // TODO: handle error
-            .expect("Engine error: no render texture found for given id!");
-
-        render_texture.render(draw, &self.wgpu_device, encoder);
+    pub fn render_textures(&self) -> &HashMap<RenderTextureId, RenderTexture> {
+        &self.render_textures
     }
 
-    pub fn create_display(&mut self, window: Arc<Window>) -> DisplayId {
+    pub fn render_textures_mut(&mut self) -> &mut HashMap<RenderTextureId, RenderTexture> {
+        &mut self.render_textures
+    }
+
+    pub fn create_display(&mut self, window: Arc<Window>) -> &Display {
         self.display_manager
             .add_display(&self.wgpu_instance, window)
     }
 
-    pub fn set_display_source_texture(
-        &mut self,
-        display_id: &DisplayId,
-        render_texture_id: Option<&RenderTextureId>,
-    ) {
-        let render_texture_view = render_texture_id.map(|render_texture_id| {
-            self.render_textures
-                .get(render_texture_id)
-                .expect("Engine error: no render texture found for given id!") // TODO: handle error
-                .texture_view()
-        });
+    pub fn displays(&self) -> &HashMap<DisplayId, Display> {
+        &self.display_manager.displays()
+    }
 
-        self.display_manager
-            .set_display_source_texture(display_id, render_texture_view.as_ref());
+    pub fn displays_mut(&mut self) -> &mut HashMap<DisplayId, Display> {
+        self.display_manager.displays_mut()
     }
 
     pub(crate) fn plugins() -> &'static Vec<LoadedPlugin> {

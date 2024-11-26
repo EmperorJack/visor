@@ -1,10 +1,24 @@
+use std::sync::Arc;
+
+use uuid::Uuid;
+
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+pub struct RenderTextureId(pub Uuid);
+
 pub struct RenderTexture {
+    id: RenderTextureId,
     texture: nannou::wgpu::Texture,
     renderer: nannou::draw::Renderer,
+    device: Arc<nannou::wgpu::Device>,
 }
 
 impl RenderTexture {
-    pub async fn new(device: &nannou::wgpu::Device, width: u32, height: u32) -> Self {
+    pub async fn new(
+        id: RenderTextureId,
+        device: Arc<nannou::wgpu::Device>,
+        width: u32,
+        height: u32,
+    ) -> Self {
         let format = nannou::wgpu::TextureFormat::Rgba16Float;
 
         let texture = nannou::wgpu::TextureBuilder::new()
@@ -15,25 +29,29 @@ impl RenderTexture {
             )
             .sample_count(1)
             .format(format)
-            .build(device);
+            .build(&device);
 
         let renderer = nannou::draw::RendererBuilder::new()
-            .build_from_texture_descriptor(device, texture.descriptor());
+            .build_from_texture_descriptor(&device, texture.descriptor());
 
-        Self { texture, renderer }
+        Self {
+            id,
+            texture,
+            renderer,
+            device,
+        }
+    }
+
+    pub fn id(&self) -> &RenderTextureId {
+        &self.id
     }
 
     pub fn texture_view(&self) -> nannou::wgpu::TextureView {
         self.texture.view().build()
     }
 
-    pub fn render(
-        &mut self,
-        draw: &nannou::Draw,
-        device: &nannou::wgpu::Device,
-        encoder: &mut nannou::wgpu::CommandEncoder,
-    ) {
+    pub fn render(&mut self, draw: &nannou::Draw, encoder: &mut nannou::wgpu::CommandEncoder) {
         self.renderer
-            .render_to_texture(device, encoder, draw, &self.texture);
+            .render_to_texture(&self.device, encoder, draw, &self.texture);
     }
 }
