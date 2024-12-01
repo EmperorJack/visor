@@ -1,8 +1,8 @@
-use std::sync::Arc;
+use tao::rwh_06;
 
 #[derive(Debug)]
 pub struct Display {
-    surface: nannou::wgpu::Surface,
+    surface: nannou::wgpu::Surface<'static>,
     surface_format: nannou::wgpu::TextureFormat,
     surface_config: nannou::wgpu::SurfaceConfiguration,
     device: nannou::wgpu::Device,
@@ -13,14 +13,15 @@ pub struct Display {
 impl Display {
     pub async fn new<W>(
         instance: &nannou::wgpu::Instance,
-        window: &Arc<W>,
+        window: W,
         width: u32,
         height: u32,
     ) -> Self
     where
-        W: raw_window_handle::HasRawWindowHandle + raw_window_handle::HasRawDisplayHandle,
+        W: rwh_06::HasWindowHandle + rwh_06::HasDisplayHandle + Send + Sync + 'static,
     {
-        let surface = unsafe { instance.create_surface(window.as_ref()) }
+        let surface = instance
+            .create_surface(window)
             .expect("Unexpeced: could not create wgpu surface");
 
         let adapter = instance
@@ -35,8 +36,8 @@ impl Display {
         let (device, queue) = adapter
             .request_device(
                 &nannou::wgpu::DeviceDescriptor {
-                    features: nannou::wgpu::Features::empty(),
-                    limits: nannou::wgpu::Limits::default(),
+                    required_features: nannou::wgpu::Features::empty(),
+                    required_limits: nannou::wgpu::Limits::default(),
                     label: None,
                 },
                 None,
@@ -61,6 +62,7 @@ impl Display {
             present_mode: surface_capabilities.present_modes[0],
             alpha_mode: surface_capabilities.alpha_modes[0],
             view_formats: vec![],
+            desired_maximum_frame_latency: 2,
         };
 
         surface.configure(&device, &surface_config);

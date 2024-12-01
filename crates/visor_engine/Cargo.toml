@@ -7,10 +7,10 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0"
-nannou = { version = "0.19.0" }
+nannou = { path = "../../../nannou/nannou" }
 pluginator = "1.0.1"
 state = { version = "0.6.0" }
-tao = { version = "0.16.2" }
+tao = { version = "0.30.8" }
 tokio = { version = "1.26.0", features = ["full"] }
 uuid = { version = "1.10.0", features = ["v4", "fast-rng"] }
 visor_display = { path = "../visor_display" }

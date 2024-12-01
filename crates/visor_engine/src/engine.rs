@@ -107,8 +107,8 @@ impl Engine {
             adapter
                 .request_device(
                     &nannou::wgpu::DeviceDescriptor {
-                        features: nannou::wgpu::Features::empty(),
-                        limits: nannou::wgpu::Limits::default(),
+                        required_features: nannou::wgpu::Features::empty(),
+                        required_limits: nannou::wgpu::Limits::default(),
                         label: None,
                     },
                     None,

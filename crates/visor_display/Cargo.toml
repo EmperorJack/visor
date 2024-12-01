@@ -6,8 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-nannou = { version = "0.19.0" }
-tao = { version = "0.16.2" }
+nannou = { path = "../../../nannou/nannou" }
+tao = { version = "0.30.8" }
 tokio = { version = "1.26.0", features = ["full"] }
 uuid = { version = "1.10.0", features = ["v4", "fast-rng"] }
 visor_wgpu = { path = "../visor_wgpu" }
