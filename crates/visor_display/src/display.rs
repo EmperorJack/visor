@@ -3,7 +3,7 @@ use std::sync::Arc;
 use nannou::wgpu::TextureView;
 use tao::{dpi::PhysicalSize, window::Window};
 use uuid::Uuid;
-use visor_wgpu::display::Display as WgpuDisplay;
+use visor_wgpu::{display::Display as WgpuDisplay, handle::WgpuHandle};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct DisplayId(pub Uuid);
@@ -16,15 +16,11 @@ pub struct Display {
 }
 
 impl Display {
-    pub async fn new(
-        id: DisplayId,
-        wgpu_instance: &nannou::wgpu::Instance,
-        window: Arc<Window>,
-    ) -> Self {
+    pub async fn new(wgpu_handle: Arc<WgpuHandle>, id: DisplayId, window: Arc<Window>) -> Self {
         let size = window.inner_size();
 
         let wgpu_display =
-            WgpuDisplay::new(wgpu_instance, window.clone(), size.width, size.height).await;
+            WgpuDisplay::new(wgpu_handle, window.clone(), size.width, size.height).await;
 
         Self {
             id,

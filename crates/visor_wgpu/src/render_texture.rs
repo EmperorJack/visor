@@ -2,6 +2,8 @@ use std::sync::Arc;
 
 use uuid::Uuid;
 
+use crate::handle::WgpuHandle;
+
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct RenderTextureId(pub Uuid);
 
@@ -9,13 +11,13 @@ pub struct RenderTexture {
     id: RenderTextureId,
     texture: nannou::wgpu::Texture,
     renderer: nannou::draw::Renderer,
-    device: Arc<nannou::wgpu::Device>,
+    wgpu_handle: Arc<WgpuHandle>,
 }
 
 impl RenderTexture {
     pub async fn new(
+        wgpu_handle: Arc<WgpuHandle>,
         id: RenderTextureId,
-        device: Arc<nannou::wgpu::Device>,
         width: u32,
         height: u32,
     ) -> Self {
@@ -29,16 +31,16 @@ impl RenderTexture {
             )
             .sample_count(1)
             .format(format)
-            .build(&device);
+            .build(&wgpu_handle.device);
 
         let renderer = nannou::draw::RendererBuilder::new()
-            .build_from_texture_descriptor(&device, texture.descriptor());
+            .build_from_texture_descriptor(&wgpu_handle.device, texture.descriptor());
 
         Self {
             id,
             texture,
             renderer,
-            device,
+            wgpu_handle,
         }
     }
 
@@ -52,6 +54,6 @@ impl RenderTexture {
 
     pub fn render(&mut self, draw: &nannou::Draw, encoder: &mut nannou::wgpu::CommandEncoder) {
         self.renderer
-            .render_to_texture(&self.device, encoder, draw, &self.texture);
+            .render_to_texture(&self.wgpu_handle.device, encoder, draw, &self.texture);
     }
 }

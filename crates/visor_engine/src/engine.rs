@@ -12,7 +12,7 @@ use tokio::{
 use uuid::Uuid;
 use visor_display::display_manager::DisplayManager;
 use visor_runtime::startup_snapshot::{StartupSnapshot, STARTUP_SNAPSHOT_CELL};
-use visor_wgpu::render_texture::RenderTexture;
+use visor_wgpu::{handle::WgpuHandle, render_texture::RenderTexture};
 
 use crate::{
     plugin::{load_plugin, LoadedPlugin, Plugin},
@@ -33,9 +33,7 @@ pub struct Engine {
     sketches: HashMap<SketchId, Sketch>,
     render_textures: HashMap<RenderTextureId, RenderTexture>,
     display_manager: DisplayManager,
-    wgpu_instance: Arc<nannou::wgpu::Instance>,
-    wgpu_device: Arc<nannou::wgpu::Device>,
-    wgpu_queue: nannou::wgpu::Queue,
+    wgpu_handle: Arc<WgpuHandle>,
 }
 
 impl Engine {
@@ -117,7 +115,13 @@ impl Engine {
                 .expect("Unexpected: could not connect to wgpu device")
         });
 
-        let display_manager = DisplayManager::new(runtime_handle.clone());
+        let wgpu_handle = Arc::new(WgpuHandle {
+            instance: wgpu_instance,
+            device: wgpu_device,
+            queue: wgpu_queue,
+        });
+
+        let display_manager = DisplayManager::new(runtime_handle.clone(), wgpu_handle.clone());
 
         let mut engine = Engine {
             _runtime: runtime,
@@ -125,9 +129,7 @@ impl Engine {
             sketches: Default::default(),
             render_textures: Default::default(),
             display_manager,
-            wgpu_instance: Arc::new(wgpu_instance),
-            wgpu_device: Arc::new(wgpu_device),
-            wgpu_queue,
+            wgpu_handle,
         };
 
         for plugin in Self::plugins() {
@@ -170,11 +172,11 @@ impl Engine {
             }
         });
 
-        let mut encoder =
-            self.wgpu_device
-                .create_command_encoder(&nannou::wgpu::CommandEncoderDescriptor {
-                    label: Some("Engine texture render encoder"),
-                });
+        let mut encoder = self.wgpu_handle.device.create_command_encoder(
+            &nannou::wgpu::CommandEncoderDescriptor {
+                label: Some("Engine texture render encoder"),
+            },
+        );
 
         for sketch in self.sketches.values().filter(|sketch| sketch.is_enabled()) {
             if let Some(render_texture_id) = sketch.get_target_render_texture_id() {
@@ -192,7 +194,7 @@ impl Engine {
             plugin.engine_render(self, &ENGINE_STORE, &mut encoder);
         }
 
-        self.wgpu_queue.submit(Some(encoder.finish()));
+        self.wgpu_handle.queue.submit(Some(encoder.finish()));
 
         self.display_manager.render();
     }
@@ -226,7 +228,7 @@ impl Engine {
         let id = RenderTextureId(Uuid::new_v4());
 
         let render_texture = self.runtime_handle.block_on(async {
-            RenderTexture::new(id, self.wgpu_device.clone(), width, height).await
+            RenderTexture::new(self.wgpu_handle.clone(), id, width, height).await
         });
 
         self.render_textures.entry(id).or_insert(render_texture)
@@ -244,13 +246,11 @@ impl Engine {
     pub fn create_display(&mut self, window: Arc<Window>) -> &Display {
         let id = DisplayId(Uuid::new_v4());
 
-        self.display_manager
-            .add_display(id, &self.wgpu_instance, window)
+        self.display_manager.add_display(id, window)
     }
 
     pub fn create_display_with_id(&mut self, id: DisplayId, window: Arc<Window>) -> &Display {
-        self.display_manager
-            .add_display(id, &self.wgpu_instance, window)
+        self.display_manager.add_display(id, window)
     }
 
     pub fn manage_display(&mut self, display: Display) -> &Display {
@@ -283,15 +283,7 @@ impl Engine {
         &ENGINE_STORE
     }
 
-    pub fn wgpu_instance(&self) -> &Arc<nannou::wgpu::Instance> {
-        &self.wgpu_instance
-    }
-
-    pub fn wgpu_device(&self) -> &nannou::wgpu::Device {
-        &self.wgpu_device
-    }
-
-    pub fn wgpu_queue(&self) -> &nannou::wgpu::Queue {
-        &self.wgpu_queue
+    pub fn wgpu_handle(&self) -> &Arc<WgpuHandle> {
+        &self.wgpu_handle
     }
 }
