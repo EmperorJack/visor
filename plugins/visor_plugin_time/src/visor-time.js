@@ -9,3 +9,6 @@ export function time() {
 
   return op_time_time();
 }
+
+globalThis.frameCount = frameCount;
+globalThis.time = time;

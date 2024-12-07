@@ -21,3 +21,8 @@ export function rect(x, y, width, height) {
 
   op_draw_rect(x, y, width, height);
 }
+
+globalThis.circle = circle;
+globalThis.ellipse = ellipse;
+globalThis.square = square;
+globalThis.rect = rect;
