@@ -161,14 +161,14 @@ impl Engine {
                 });
             }
 
-            while let Some(sketch_errors) = join_set.join_next().await {
-                let sketch_errors = sketch_errors
-                    .expect("Unexpected: could not join the next sketch update result");
+            while let Some(result) = join_set.join_next().await {
+                let result =
+                    result.expect("Unexpected: could not join the next sketch update result");
 
                 self.sketches
-                    .get_mut(&sketch_errors.id)
+                    .get_mut(&result.id)
                     .expect("Unexpected: could not find sketch")
-                    .set_errors(sketch_errors);
+                    .set_errors(result.compile_error, result.runtime_error);
             }
         });
 

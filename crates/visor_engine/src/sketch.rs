@@ -9,7 +9,7 @@ use visor_wgpu::render_texture::RenderTextureId;
 
 use crate::{
     draw::Draw,
-    sketch_worker::{SketchErrors, SketchWorker, SketchWorkerTask},
+    sketch_worker::{SketchUpdateResult, SketchWorker, SketchWorkerTask},
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -98,7 +98,7 @@ impl Sketch {
         });
     }
 
-    pub(crate) async fn request_update(&self) -> oneshot::Receiver<SketchErrors> {
+    pub(crate) async fn request_update(&self) -> oneshot::Receiver<SketchUpdateResult> {
         let (result_sender, result_receiver) = oneshot::channel();
 
         self.worker_task_sender
@@ -109,9 +109,13 @@ impl Sketch {
         result_receiver
     }
 
-    pub(crate) fn set_errors(&mut self, errors: SketchErrors) {
-        self.compile_error = errors.compile_error;
-        self.runtime_error = errors.runtime_error;
+    pub(crate) fn set_errors(
+        &mut self,
+        compile_error: Option<String>,
+        runtime_error: Option<String>,
+    ) {
+        self.compile_error = compile_error;
+        self.runtime_error = runtime_error;
     }
 
     pub fn compile_error(&self) -> &Option<String> {

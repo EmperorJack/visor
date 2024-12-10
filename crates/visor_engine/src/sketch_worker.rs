@@ -2,12 +2,12 @@ use std::path::PathBuf;
 
 use anyhow::Error;
 use tokio::sync::{mpsc, oneshot};
-use visor_runtime::runtime::{Runtime, RuntimeExecuteFunctionResult, SketchFunction};
+use visor_runtime::runtime::{Runtime, RuntimeExecuteFunctionResult};
 
 use crate::{draw::Draw, engine::Engine, sketch::SketchId, store::ENGINE_STORE};
 
 #[derive(Debug)]
-pub(crate) struct SketchErrors {
+pub(crate) struct SketchUpdateResult {
     pub id: SketchId,
     pub compile_error: Option<String>,
     pub runtime_error: Option<String>,
@@ -15,7 +15,7 @@ pub(crate) struct SketchErrors {
 
 pub(crate) enum SketchWorkerTask {
     RequestCompile(oneshot::Sender<()>),
-    Update(oneshot::Sender<SketchErrors>),
+    Update(oneshot::Sender<SketchUpdateResult>),
 }
 
 pub(crate) struct SketchWorker {
