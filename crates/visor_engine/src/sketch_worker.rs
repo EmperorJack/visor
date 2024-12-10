@@ -23,6 +23,7 @@ pub(crate) struct SketchWorker {
     file_path: PathBuf,
     draw: Draw,
     task_receiver: mpsc::Receiver<SketchWorkerTask>,
+    tokio_runtime: tokio::runtime::Runtime,
     runtime: Option<Runtime>,
     request_compile: bool,
     request_setup: bool,
@@ -37,11 +38,17 @@ impl SketchWorker {
         draw: Draw,
         task_receiver: mpsc::Receiver<SketchWorkerTask>,
     ) -> Self {
+        let tokio_runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("Unexpected: could not create tokio runtime for sketch worker");
+
         Self {
             id,
             file_path,
             draw,
             task_receiver,
+            tokio_runtime,
             runtime: None,
             request_compile: true,
             request_setup: true,
@@ -51,44 +58,40 @@ impl SketchWorker {
     }
 
     pub fn run(&mut self) {
-        let tokio_runtime = tokio::runtime::Builder::new_multi_thread()
-            .enable_all()
-            .build()
-            .expect("Unexpected: could not create tokio runtime for sketch worker");
+        while let Some(task) = self.task_receiver.blocking_recv() {
+            match task {
+                SketchWorkerTask::RequestCompile(result_sender) => {
+                    self.request_compile = true;
 
-        tokio_runtime.block_on(async {
-            while let Some(task) = self.task_receiver.recv().await {
-                match task {
-                    SketchWorkerTask::RequestCompile(result_sender) => {
-                        self.request_compile = true;
+                    result_sender
+                        .send(())
+                        .expect("Unexpected: could not send request compile result back to sketch");
+                }
 
-                        result_sender.send(()).expect(
-                            "Unexpected: could not send request compile result back to sketch",
-                        );
-                    }
+                SketchWorkerTask::Update(result_sender) => {
+                    self.update();
 
-                    SketchWorkerTask::Update(result_sender) => {
-                        self.update().await;
-
-                        result_sender
-                            .send(SketchErrors {
-                                id: self.id,
-                                compile_error: self.compile_error.clone(),
-                                runtime_error: self.runtime_error.clone(),
-                            })
-                            .expect("Unexpected: could not send update result back to sketch");
-                    }
+                    result_sender
+                        .send(SketchUpdateResult {
+                            id: self.id,
+                            compile_error: self.compile_error.clone(),
+                            runtime_error: self.runtime_error.clone(),
+                        })
+                        .expect("Unexpected: could not send update result back to sketch");
                 }
             }
-        });
+        }
     }
 
-    async fn update(&mut self) {
+    fn update(&mut self) {
+        self.draw.inner.reset();
+        self.draw.inner.background().rgba(0.0, 0.0, 0.0, 0.0);
+
         if self.request_compile {
             // Drop the current runtime if there is one
             self.runtime = None;
 
-            let mut runtime = Runtime::default();
+            let mut runtime = Runtime::new(self.tokio_runtime.handle().clone());
 
             runtime.put_state(self.draw.clone());
 
@@ -98,7 +101,6 @@ impl SketchWorker {
 
             let compile_error = runtime
                 .compile(&self.file_path)
-                .await
                 .expect("Unexpected: could not compile sketch into runtime");
 
             self.runtime = Some(runtime);
@@ -114,9 +116,7 @@ impl SketchWorker {
 
         if let Some(runtime) = &mut self.runtime {
             if self.compile_error.is_none() {
-                let runtime_error =
-                    Self::execute_sketch_lifecycle(self.request_setup, &self.draw.inner, runtime)
-                        .await;
+                let runtime_error = Self::execute_sketch_lifecycle(self.request_setup, runtime);
 
                 self.request_setup = false;
 
@@ -130,33 +130,18 @@ impl SketchWorker {
     }
 
     // TODO: should this return a Result?
-    async fn execute_sketch_lifecycle(
-        request_setup: bool,
-        draw: &nannou::Draw,
-        runtime: &mut Runtime,
-    ) -> Option<Error> {
+    fn execute_sketch_lifecycle(request_setup: bool, runtime: &mut Runtime) -> Option<Error> {
         if request_setup {
-            if let RuntimeExecuteFunctionResult::Error(error) = runtime
-                .execute_runtime_function(SketchFunction::Setup)
-                .await
-            {
+            if let RuntimeExecuteFunctionResult::Error(error) = runtime.execute_function("setup") {
                 return Some(error);
             }
         }
 
-        if let RuntimeExecuteFunctionResult::Error(error) = runtime
-            .execute_runtime_function(SketchFunction::Update)
-            .await
-        {
+        if let RuntimeExecuteFunctionResult::Error(error) = runtime.execute_function("update") {
             return Some(error);
         }
 
-        draw.reset();
-        draw.background().rgba(0.0, 0.0, 0.0, 0.0);
-
-        if let RuntimeExecuteFunctionResult::Error(error) =
-            runtime.execute_runtime_function(SketchFunction::Draw).await
-        {
+        if let RuntimeExecuteFunctionResult::Error(error) = runtime.execute_function("render") {
             return Some(error);
         }
 
