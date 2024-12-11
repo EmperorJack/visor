@@ -9,7 +9,7 @@ pub trait Plugin: Send + Sync {
 
     fn build(&self, _engine: &mut Engine, _store: &Store) {}
 
-    fn engine_update(&self, _engine: &mut Engine, _store: &Store) {}
+    fn before_engine_update(&self, _engine: &mut Engine, _store: &Store) {}
 
     fn before_sketch_update(&self, _sketch_id: &SketchId, _runtime: &mut Runtime, _store: &Store) {}
     fn after_sketch_update(&self, _sketch_id: &SketchId, _runtime: &mut Runtime, _store: &Store) {}
@@ -21,6 +21,8 @@ pub trait Plugin: Send + Sync {
         _encoder: &mut nannou::wgpu::CommandEncoder,
     ) {
     }
+
+    fn after_engine_update(&self, _engine: &mut Engine, _store: &Store) {}
 }
 
 pluginator::plugin_trait!(Plugin);

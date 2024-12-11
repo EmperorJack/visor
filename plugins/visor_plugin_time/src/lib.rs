@@ -9,7 +9,7 @@ use visor_engine::{engine::Engine, plugin::Plugin, sketch::SketchId, store::Stor
 pub struct TimePlugin;
 
 pub struct State {
-    pub frame_count: i32,
+    pub frame_count: u32,
     pub frame_rate: f32,
     pub seconds_elapsed: f32,
     time_started: Instant,
@@ -19,7 +19,7 @@ pub struct State {
 
 struct SketchState {
     time: f32,
-    frame_count: i32,
+    frame_count: u32,
 }
 
 extension!(
@@ -47,7 +47,7 @@ impl Plugin for TimePlugin {
         let time_started = Instant::now();
 
         let state = State {
-            frame_count: -1, // TODO: consider after_engine_update so this can start at 0
+            frame_count: 0,
             frame_rate: 0.0,
             seconds_elapsed: 0.0,
             time_started,
@@ -58,7 +58,7 @@ impl Plugin for TimePlugin {
         store.set(RwLock::new(state));
     }
 
-    fn engine_update(&self, _engine: &mut Engine, store: &Store) {
+    fn before_engine_update(&self, _engine: &mut Engine, store: &Store) {
         let mut state = store
             .get::<RwLock<State>>()
             .write()
@@ -72,8 +72,6 @@ impl Plugin for TimePlugin {
         state.seconds_elapsed = calculate_seconds_elapsed(state.time_started, time_now);
 
         state.frame_rate = calculate_frame_rate(state.since_last_update);
-
-        state.frame_count += 1;
     }
 
     fn before_sketch_update(&self, _sketch_id: &SketchId, runtime: &mut Runtime, store: &Store) {
@@ -88,6 +86,15 @@ impl Plugin for TimePlugin {
         };
 
         runtime.put_state(sketch_state);
+    }
+
+    fn after_engine_update(&self, _engine: &mut Engine, store: &Store) {
+        let mut state = store
+            .get::<RwLock<State>>()
+            .write()
+            .expect("Unexpected: could not acquire write lock for state");
+
+        state.frame_count += 1;
     }
 }
 
@@ -111,7 +118,7 @@ fn calculate_frame_rate(since_last_update: Duration) -> f32 {
 }
 
 #[op2(fast)]
-fn op_time_frame_count(state: &mut OpState) -> i32 {
+fn op_time_frame_count(state: &mut OpState) -> u32 {
     let state = state.borrow::<SketchState>();
 
     state.frame_count

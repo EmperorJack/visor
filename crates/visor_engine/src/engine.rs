@@ -145,7 +145,7 @@ impl Engine {
 
     pub fn update(&mut self) {
         for plugin in Self::plugins() {
-            plugin.engine_update(self, &ENGINE_STORE);
+            plugin.before_engine_update(self, &ENGINE_STORE);
         }
 
         self.runtime_handle.block_on(async {
@@ -197,6 +197,10 @@ impl Engine {
         self.wgpu_handle.queue.submit(Some(encoder.finish()));
 
         self.display_manager.render();
+
+        for plugin in Self::plugins() {
+            plugin.after_engine_update(self, &ENGINE_STORE);
+        }
     }
 
     pub fn create_sketch(&mut self, file_path: PathBuf) -> &Sketch {
