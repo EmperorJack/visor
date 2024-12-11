@@ -85,7 +85,6 @@ impl SketchWorker {
 
     fn update(&mut self) {
         self.draw.inner.reset();
-        self.draw.inner.background().rgba(0.0, 0.0, 0.0, 0.0);
 
         if self.request_compile {
             // Drop the current runtime if there is one

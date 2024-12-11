@@ -17,7 +17,7 @@ impl DrawId {
 
 extension!(
     extension,
-    ops = [op_draw_ellipse, op_draw_rect, op_draw_translate, op_draw_rotate],
+    ops = [op_draw_background, op_draw_ellipse, op_draw_rect, op_draw_translate, op_draw_rotate],
     esm_entry_point = "visor:draw",
     esm = [
         dir "src",
@@ -59,6 +59,13 @@ fn store_draw(state: &mut OpState, draw: Draw) -> DrawId {
     state.put(id);
 
     id
+}
+
+#[op2(fast)]
+fn op_draw_background(state: &OpState, id: u32, r: f32, g: f32, b: f32) {
+    let draw = get_draw(state, DrawId(id));
+
+    draw.inner.background().rgb(r, g, b);
 }
 
 #[op2(fast)]

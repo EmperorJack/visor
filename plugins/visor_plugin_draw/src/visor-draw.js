@@ -1,5 +1,10 @@
-const { op_draw_ellipse, op_draw_rect, op_draw_translate, op_draw_rotate } =
-  Deno.core.ops;
+const {
+  op_draw_background,
+  op_draw_ellipse,
+  op_draw_rect,
+  op_draw_translate,
+  op_draw_rotate,
+} = Deno.core.ops;
 
 class Draw {
   #id;
@@ -10,6 +15,14 @@ class Draw {
 
   copy() {
     return new Draw(this.#id);
+  }
+
+  // Background
+  clear() {
+    op_draw_background(this.#id, 0, 0, 0);
+  }
+  background(r, g, b) {
+    op_draw_background(this.#id, r, g, b);
   }
 
   // Shapes
