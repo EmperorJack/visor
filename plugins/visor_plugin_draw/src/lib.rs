@@ -63,6 +63,7 @@ extension!(
         op_draw_rect_hsva,
         op_draw_translate,
         op_draw_rotate,
+        op_draw_scale,
     ],
     esm_entry_point = "visor:draw",
     esm = [
@@ -173,6 +174,15 @@ fn op_draw_rotate(state: &mut OpState, id: u32, radians: f32) -> u32 {
     let draw = get_draw(state, &DrawId(id));
 
     let draw = draw.inner.rotate(radians);
+
+    store_draw(state, Draw { inner: draw }).0
+}
+
+#[op2(fast)]
+fn op_draw_scale(state: &mut OpState, id: u32, s: f32) -> u32 {
+    let draw = get_draw(state, &DrawId(id));
+
+    let draw = draw.inner.scale(s);
 
     store_draw(state, Draw { inner: draw }).0
 }

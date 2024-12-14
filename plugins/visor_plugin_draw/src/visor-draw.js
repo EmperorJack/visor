@@ -18,6 +18,7 @@ const {
   op_draw_rect_hsva,
   op_draw_translate,
   op_draw_rotate,
+  op_draw_scale,
 } = Deno.core.ops;
 
 class Draw {
@@ -56,6 +57,10 @@ class Draw {
   }
   rotate(radians) {
     const nextId = op_draw_rotate(this.#id, radians);
+    return new Draw(nextId);
+  }
+  scale(s) {
+    const nextId = op_draw_scale(this.#id, s);
     return new Draw(nextId);
   }
 }
