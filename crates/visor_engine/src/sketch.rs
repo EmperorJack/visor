@@ -9,6 +9,7 @@ use visor_wgpu::render_texture::RenderTextureId;
 
 use crate::{
     draw::Draw,
+    sketch_store::SketchStore,
     sketch_worker::{SketchUpdateResult, SketchWorker, SketchWorkerTask},
 };
 
@@ -28,17 +29,19 @@ pub struct Sketch {
 }
 
 impl Sketch {
-    pub(crate) fn new(runtime_handle: Handle, id: SketchId, file_path: PathBuf) -> Self {
+    pub(crate) fn new(
+        runtime_handle: Handle,
+        id: SketchId,
+        file_path: PathBuf,
+        draw: Draw,
+    ) -> Self {
         let (worker_task_sender, worker_task_receiver) = mpsc::channel::<SketchWorkerTask>(1);
-
-        let draw = Draw::default();
 
         {
             let file_path = file_path.clone();
-            let draw = draw.clone();
 
             std::thread::spawn(move || {
-                SketchWorker::new(id, file_path, draw, worker_task_receiver).run();
+                SketchWorker::new(id, file_path, worker_task_receiver).run();
             });
         }
 
@@ -63,8 +66,8 @@ impl Sketch {
         &self.file_path
     }
 
-    pub fn draw(&self) -> &nannou::Draw {
-        &self.draw.inner
+    pub fn draw(&self) -> &Draw {
+        &self.draw
     }
 
     pub fn is_enabled(&self) -> bool {
@@ -98,11 +101,14 @@ impl Sketch {
         });
     }
 
-    pub(crate) async fn request_update(&self) -> oneshot::Receiver<SketchUpdateResult> {
+    pub(crate) async fn request_update(
+        &self,
+        store: SketchStore,
+    ) -> oneshot::Receiver<SketchUpdateResult> {
         let (result_sender, result_receiver) = oneshot::channel();
 
         self.worker_task_sender
-            .send(SketchWorkerTask::Update(result_sender))
+            .send(SketchWorkerTask::Update(store, result_sender))
             .await
             .expect("Unexpected: could not send update task to sketch worker");
 

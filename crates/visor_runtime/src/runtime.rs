@@ -1,7 +1,7 @@
-use std::{cell::RefCell, path::Path, rc::Rc};
+use std::{path::Path, rc::Rc};
 
 use anyhow::Error;
-use deno_core::{error::AnyError, v8, Extension, JsRuntime, ModuleId, OpState};
+use deno_core::{error::AnyError, v8, Extension, JsRuntime, ModuleId};
 
 use crate::{startup_snapshot::STARTUP_SNAPSHOT_CELL, ts_module_loader::TsModuleLoader};
 
@@ -86,10 +86,6 @@ impl Runtime {
 
     pub fn take_state<T: 'static>(&mut self) -> T {
         self.js_runtime.op_state().borrow_mut().take()
-    }
-
-    pub fn op_state(&mut self) -> Rc<RefCell<OpState>> {
-        self.js_runtime.op_state()
     }
 
     pub fn execute_function(&mut self, function_export_name: &str) -> RuntimeExecuteFunctionResult {

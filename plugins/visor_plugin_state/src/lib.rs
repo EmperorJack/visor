@@ -1,11 +1,15 @@
-use std::{collections::HashMap, sync::RwLock};
+use std::collections::HashMap;
 
 use deno_core::{extension, op2, Extension, OpState};
-use visor_engine::{engine::Engine, plugin::Plugin, sketch::SketchId, store::Store, Runtime};
+use visor_engine::{
+    engine::Engine,
+    plugin::{AccessSketchStore, Plugin},
+    sketch::SketchId,
+    sketch_store::SketchStore,
+    store::Store,
+};
 
 pub struct StatePlugin;
-
-type State = HashMap<SketchId, SketchState>;
 
 type SketchState = HashMap<String, String>;
 
@@ -24,36 +28,20 @@ impl Plugin for StatePlugin {
         extension::init_ops_and_esm()
     }
 
-    fn build(&self, _engine: &mut Engine, store: &Store) {
-        store.set(RwLock::new(State::default()));
-    }
-
-    fn before_sketch_update(&self, sketch_id: &SketchId, runtime: &mut Runtime, store: &Store) {
-        let mut state = store
-            .get::<RwLock<State>>()
-            .write()
-            .expect("Unexpected: could not acquire write lock for state");
-
-        let sketch_state = state.remove(sketch_id).unwrap_or_default();
-
-        runtime.put_state(sketch_state);
-    }
-
-    fn after_sketch_update(&self, sketch_id: &SketchId, runtime: &mut Runtime, store: &Store) {
-        let mut state = store
-            .get::<RwLock<State>>()
-            .write()
-            .expect("Unexpected: could not acquire write lock for state");
-
-        let sketch_state: SketchState = runtime.take_state();
-
-        state.insert(*sketch_id, sketch_state);
+    fn build_sketch(
+        &self,
+        _sketch_id: &SketchId,
+        _engine: &mut Engine,
+        _store: &Store,
+        sketch_store: &mut SketchStore,
+    ) {
+        sketch_store.set(SketchState::default());
     }
 }
 
 #[op2(fast)]
 fn op_state_create(state: &mut OpState, #[string] id: String, #[string] value: String) {
-    let state = state.borrow_mut::<SketchState>();
+    let state = state.sketch_store_mut().get_mut::<SketchState>();
 
     if !state.contains_key(&id) {
         state.insert(id, value);
@@ -62,8 +50,8 @@ fn op_state_create(state: &mut OpState, #[string] id: String, #[string] value: S
 
 #[op2]
 #[string]
-fn op_state_get<'a>(state: &mut OpState, #[string] id: String) -> String {
-    let state = state.borrow_mut::<SketchState>();
+fn op_state_get<'a>(state: &OpState, #[string] id: String) -> String {
+    let state = state.sketch_store().get::<SketchState>();
 
     state
         .get(&id)
@@ -76,14 +64,14 @@ fn op_state_get<'a>(state: &mut OpState, #[string] id: String) -> String {
 
 #[op2(fast)]
 fn op_state_set(state: &mut OpState, #[string] id: String, #[string] value: String) {
-    let state = state.borrow_mut::<SketchState>();
+    let state = state.sketch_store_mut().get_mut::<SketchState>();
 
     state.insert(id, value);
 }
 
 #[op2]
 fn op_state_remove_unused(state: &mut OpState, #[serde] ids: Vec<String>) {
-    let state = state.borrow_mut::<SketchState>();
+    let state = state.sketch_store_mut().get_mut::<SketchState>();
 
     state.retain(|id, _| ids.contains(id));
 }

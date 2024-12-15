@@ -4,24 +4,24 @@ use anyhow::Error;
 use tokio::sync::{mpsc, oneshot};
 use visor_runtime::runtime::{Runtime, RuntimeExecuteFunctionResult};
 
-use crate::{draw::Draw, engine::Engine, sketch::SketchId, store::ENGINE_STORE};
+use crate::{engine::Engine, sketch::SketchId, sketch_store::SketchStore, store::ENGINE_STORE};
 
 #[derive(Debug)]
 pub(crate) struct SketchUpdateResult {
     pub id: SketchId,
+    pub store: SketchStore,
     pub compile_error: Option<String>,
     pub runtime_error: Option<String>,
 }
 
 pub(crate) enum SketchWorkerTask {
     RequestCompile(oneshot::Sender<()>),
-    Update(oneshot::Sender<SketchUpdateResult>),
+    Update(SketchStore, oneshot::Sender<SketchUpdateResult>),
 }
 
 pub(crate) struct SketchWorker {
     id: SketchId,
     file_path: PathBuf,
-    draw: Draw,
     task_receiver: mpsc::Receiver<SketchWorkerTask>,
     tokio_runtime: tokio::runtime::Runtime,
     runtime: Option<Runtime>,
@@ -35,7 +35,6 @@ impl SketchWorker {
     pub fn new(
         id: SketchId,
         file_path: PathBuf,
-        draw: Draw,
         task_receiver: mpsc::Receiver<SketchWorkerTask>,
     ) -> Self {
         let tokio_runtime = tokio::runtime::Builder::new_current_thread()
@@ -46,7 +45,6 @@ impl SketchWorker {
         Self {
             id,
             file_path,
-            draw,
             task_receiver,
             tokio_runtime,
             runtime: None,
@@ -68,12 +66,13 @@ impl SketchWorker {
                         .expect("Unexpected: could not send request compile result back to sketch");
                 }
 
-                SketchWorkerTask::Update(result_sender) => {
-                    self.update();
+                SketchWorkerTask::Update(store, result_sender) => {
+                    let store = self.update(store);
 
                     result_sender
                         .send(SketchUpdateResult {
                             id: self.id,
+                            store,
                             compile_error: self.compile_error.clone(),
                             runtime_error: self.runtime_error.clone(),
                         })
@@ -83,39 +82,43 @@ impl SketchWorker {
         }
     }
 
-    fn update(&mut self) {
-        self.draw.inner.reset();
-
+    fn update(&mut self, mut store: SketchStore) -> SketchStore {
         if self.request_compile {
             // Drop the current runtime if there is one
             self.runtime = None;
 
             let mut runtime = Runtime::new(self.tokio_runtime.handle().clone());
 
-            runtime.put_state(self.draw.clone());
-
             for plugin in Engine::plugins() {
-                plugin.before_sketch_update(&self.id, &mut runtime, &ENGINE_STORE);
+                plugin.before_sketch_update(&self.id, &ENGINE_STORE, &mut store);
             }
+
+            runtime.put_state(store);
 
             let compile_error = runtime
                 .compile(&self.file_path)
                 .expect("Unexpected: could not compile sketch into runtime");
+
+            store = runtime.take_state();
 
             self.runtime = Some(runtime);
 
             self.compile_error = compile_error.map(|error| error.to_string());
 
             self.request_compile = false;
-        } else if let Some(runtime) = &mut self.runtime {
+        } else if self.runtime.is_some() {
             for plugin in Engine::plugins() {
-                plugin.before_sketch_update(&self.id, runtime, &ENGINE_STORE);
+                plugin.before_sketch_update(&self.id, &ENGINE_STORE, &mut store);
             }
         }
 
         if let Some(runtime) = &mut self.runtime {
             if self.compile_error.is_none() {
+                runtime.put_state(store);
+
                 let runtime_error = Self::execute_sketch_lifecycle(self.request_setup, runtime);
+
+                store = runtime.take_state();
 
                 self.request_setup = false;
 
@@ -123,9 +126,11 @@ impl SketchWorker {
             }
 
             for plugin in Engine::plugins() {
-                plugin.after_sketch_update(&self.id, runtime, &ENGINE_STORE);
+                plugin.after_sketch_update(&self.id, &ENGINE_STORE, &mut store);
             }
         }
+
+        store
     }
 
     // TODO: should this return a Result?

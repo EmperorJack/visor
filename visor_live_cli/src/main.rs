@@ -174,21 +174,22 @@ fn main() {
                     println!("[Sketch runtime error] {}", error);
                 }
 
-                let state = visor_plugin_log::LogPlugin::get_state(engine.store())
-                    .read()
-                    .expect("Unexpected: could not acquire read lock for log plugin state");
+                let sketch_store = engine
+                    .sketch_stores()
+                    .get(&sketch_id)
+                    .expect("Unexpected: could not find sketch store");
 
-                if let Some(logs) = state.get(&sketch_id) {
-                    for log in logs {
-                        match log.message_type {
-                            visor_plugin_log::LogEntryType::Stdout => {
-                                println!("[Sketch log] {}", log.message)
-                            }
-                            visor_plugin_log::LogEntryType::Stderr => {
-                                eprintln!("[Sketch error] {}", log.message)
-                            }
-                        };
-                    }
+                let logs = visor_plugin_log::LogPlugin::get_state(sketch_store);
+
+                for log in logs {
+                    match log.message_type {
+                        visor_plugin_log::LogEntryType::Stdout => {
+                            println!("[Sketch log] {}", log.message)
+                        }
+                        visor_plugin_log::LogEntryType::Stderr => {
+                            eprintln!("[Sketch error] {}", log.message)
+                        }
+                    };
                 }
             }
             _ => (),

@@ -1,17 +1,23 @@
-use std::{collections::HashMap, sync::RwLock};
-
 use deno_core::{extension, op2, Extension, OpState};
-use visor_engine::{engine::Engine, plugin::Plugin, sketch::SketchId, store::Store, Runtime};
+use visor_engine::{
+    engine::Engine,
+    plugin::{AccessSketchStore, Plugin},
+    sketch::SketchId,
+    sketch_store::SketchStore,
+    store::Store,
+};
 
 pub struct LogPlugin;
 
-pub type State = HashMap<SketchId, Vec<LogEntry>>;
+type SketchState = Vec<LogEntry>;
 
+#[derive(Clone)]
 pub struct LogEntry {
     pub message: String,
     pub message_type: LogEntryType,
 }
 
+#[derive(Clone)]
 pub enum LogEntryType {
     Stdout,
     Stderr,
@@ -28,8 +34,8 @@ extension!(
 );
 
 impl LogPlugin {
-    pub fn get_state(store: &Store) -> &RwLock<State> {
-        store.get::<RwLock<State>>()
+    pub fn get_state(sketch_store: &SketchStore) -> &SketchState {
+        sketch_store.get()
     }
 }
 
@@ -38,30 +44,29 @@ impl Plugin for LogPlugin {
         extension::init_ops_and_esm()
     }
 
-    fn build(&self, _engine: &mut Engine, store: &Store) {
-        store.set(RwLock::new(State::default()));
+    fn build_sketch(
+        &self,
+        _sketch_id: &SketchId,
+        _engine: &mut Engine,
+        _store: &Store,
+        sketch_store: &mut SketchStore,
+    ) {
+        sketch_store.set(SketchState::default());
     }
 
-    fn before_sketch_update(&self, _sketch_id: &SketchId, runtime: &mut Runtime, _store: &Store) {
-        runtime.put_state(Vec::<LogEntry>::default());
-    }
-
-    fn after_sketch_update(&self, sketch_id: &SketchId, runtime: &mut Runtime, store: &Store) {
-        let logs: Vec<LogEntry> = runtime.take_state();
-
-        // TODO: consider supporting a persistent per-sketch store to reduce possible lock contention
-        let mut state = store
-            .get::<RwLock<State>>()
-            .write()
-            .expect("Unexpected: could not acquire write lock for state");
-
-        state.insert(*sketch_id, logs);
+    fn before_sketch_update(
+        &self,
+        _sketch_id: &SketchId,
+        _store: &Store,
+        sketch_store: &mut SketchStore,
+    ) {
+        sketch_store.get_mut::<SketchState>().clear();
     }
 }
 
 #[op2(fast)]
 fn op_log_console_log(state: &mut OpState, #[string] message: String) {
-    let logs = state.borrow_mut::<Vec<LogEntry>>();
+    let logs = state.sketch_store_mut().get_mut::<SketchState>();
 
     logs.push(LogEntry {
         message,
@@ -71,7 +76,7 @@ fn op_log_console_log(state: &mut OpState, #[string] message: String) {
 
 #[op2(fast)]
 fn op_log_console_error(state: &mut OpState, #[string] message: String) {
-    let logs = state.borrow_mut::<Vec<LogEntry>>();
+    let logs = state.sketch_store_mut().get_mut::<SketchState>();
 
     logs.push(LogEntry {
         message,

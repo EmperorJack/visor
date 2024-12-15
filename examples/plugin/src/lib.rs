@@ -3,10 +3,10 @@ use std::sync::RwLock;
 use deno_core::{extension, op2, Extension, OpState};
 use visor_engine::{
     engine::Engine,
-    plugin::{plugin_implementation, Plugin},
+    plugin::{plugin_implementation, AccessSketchStore, Plugin},
     sketch::SketchId,
+    sketch_store::SketchStore,
     store::Store,
-    Runtime,
 };
 
 pub struct CounterPlugin;
@@ -14,6 +14,7 @@ pub struct CounterPlugin;
 // Note: this line is only required for linked plugins
 plugin_implementation!(Plugin, CounterPlugin);
 
+#[derive(Clone)]
 struct State {
     count: u32,
 }
@@ -39,39 +40,33 @@ impl Plugin for CounterPlugin {
         store.set(RwLock::new(state));
     }
 
-    fn before_sketch_update(&self, _sketch_id: &SketchId, runtime: &mut Runtime, store: &Store) {
+    fn before_sketch_update(
+        &self,
+        _sketch_id: &SketchId,
+        store: &Store,
+        sketch_store: &mut SketchStore,
+    ) {
         let state = store
             .get::<RwLock<State>>()
-            .read()
+            .write()
             .expect("Unexpected: could not acquire read lock for state");
 
-        runtime.put_state(state.count);
-    }
-
-    fn after_sketch_update(&self, _sketch_id: &SketchId, runtime: &mut Runtime, store: &Store) {
-        let count: u32 = runtime.take_state();
-
-        let mut state = store
-            .get::<RwLock<State>>()
-            .write()
-            .expect("Unexpected: could not acquire write lock for state");
-
-        state.count = count;
+        sketch_store.set(state.clone());
     }
 }
 
 #[op2(fast)]
 fn op_counter_count(state: &mut OpState) -> u32 {
-    let count = state.borrow::<u32>();
+    let state = state.sketch_store().get::<State>();
 
-    *count
+    state.count
 }
 
 #[op2(fast)]
 fn op_counter_increment(state: &mut OpState) {
-    let count = state.borrow_mut::<u32>();
+    let state = state.sketch_store_mut().get_mut::<State>();
 
-    *count += 1;
+    state.count += 1;
 }
 
 #[cfg(test)]
@@ -90,13 +85,12 @@ mod tests {
 
         engine.update();
 
-        let log_state = visor_plugin_log::LogPlugin::get_state(&engine.store())
-            .read()
-            .expect("Unexpected: could not acquire read lock for log plugin state");
-
-        let sketch_logs = log_state
+        let sketch_store = engine
+            .sketch_stores()
             .get(&sketch_id)
-            .expect("Unexpected: sketch logs should be defined");
+            .expect("Unexpected: could not find sketch store");
+
+        let sketch_logs = visor_plugin_log::LogPlugin::get_state(sketch_store);
 
         assert_eq!(sketch_logs[0].message, "0");
         assert_eq!(sketch_logs[1].message, "1");

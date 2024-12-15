@@ -15,8 +15,10 @@ use visor_runtime::startup_snapshot::{StartupSnapshot, STARTUP_SNAPSHOT_CELL};
 use visor_wgpu::{handle::WgpuHandle, render_texture::RenderTexture};
 
 use crate::{
+    draw::Draw,
     plugin::{load_plugin, LoadedPlugin, Plugin},
     sketch::Sketch,
+    sketch_store::SketchStore,
     store::{Store, ENGINE_STORE},
 };
 
@@ -31,6 +33,7 @@ pub struct Engine {
     _runtime: Option<Runtime>,
     runtime_handle: Handle,
     sketches: HashMap<SketchId, Sketch>,
+    sketch_stores: Option<HashMap<SketchId, SketchStore>>,
     render_textures: HashMap<RenderTextureId, RenderTexture>,
     display_manager: DisplayManager,
     wgpu_handle: Arc<WgpuHandle>,
@@ -127,6 +130,7 @@ impl Engine {
             _runtime: runtime,
             runtime_handle,
             sketches: Default::default(),
+            sketch_stores: Some(Default::default()),
             render_textures: Default::default(),
             display_manager,
             wgpu_handle,
@@ -148,11 +152,19 @@ impl Engine {
             plugin.before_engine_update(self, &ENGINE_STORE);
         }
 
+        let mut sketch_stores = self
+            .sketch_stores
+            .take()
+            .expect("Unexpected: sketch stores should be defined!");
+
         self.runtime_handle.block_on(async {
             let mut join_set = JoinSet::new();
 
             for sketch in self.sketches.values().filter(|sketch| sketch.is_enabled()) {
-                let result_receiver = sketch.request_update().await;
+                let store = sketch_stores
+                    .remove(sketch.id())
+                    .expect("Unexpected: could not find sketch store");
+                let result_receiver = sketch.request_update(store).await;
 
                 join_set.spawn(async move {
                     result_receiver
@@ -169,8 +181,12 @@ impl Engine {
                     .get_mut(&result.id)
                     .expect("Unexpected: could not find sketch")
                     .set_errors(result.compile_error, result.runtime_error);
+
+                sketch_stores.insert(result.id, result.store);
             }
         });
+
+        self.sketch_stores = Some(sketch_stores);
 
         let mut encoder = self.wgpu_handle.device.create_command_encoder(
             &nannou::wgpu::CommandEncoderDescriptor {
@@ -186,7 +202,7 @@ impl Engine {
                     // TODO: handle error
                     .expect("Engine error: no render texture found for given id!");
 
-                render_texture.render(&sketch.draw(), &mut encoder);
+                render_texture.render(&sketch.draw().inner, &mut encoder);
             }
         }
 
@@ -206,16 +222,48 @@ impl Engine {
     pub fn create_sketch(&mut self, file_path: PathBuf) -> &Sketch {
         let id = SketchId(Uuid::new_v4());
 
-        let sketch = Sketch::new(self.runtime_handle.clone(), id, file_path);
+        let draw = Draw::default();
 
-        self.sketches.entry(id).or_insert(sketch)
+        let sketch = Sketch::new(self.runtime_handle.clone(), id, file_path, draw.clone());
+
+        let mut store = SketchStore::default();
+        store.set(draw);
+
+        self.sketches.insert(id, sketch);
+
+        for plugin in Self::plugins() {
+            plugin.build_sketch(&id, self, &ENGINE_STORE, &mut store);
+        }
+
+        self.sketch_stores
+            .as_mut()
+            .expect("Unexpected: sketch stores should be defined!")
+            .insert(id, store);
+
+        self.sketches
+            .get(&id)
+            .expect("Unexpected: sketch not found")
     }
 
     // TODO: refactor sketch creation to use builder pattern
     pub fn create_sketch_with_id(&mut self, id: SketchId, file_path: PathBuf) -> SketchId {
-        let sketch = Sketch::new(self.runtime_handle.clone(), id, file_path);
+        let draw = Draw::default();
+
+        let sketch = Sketch::new(self.runtime_handle.clone(), id, file_path, draw.clone());
+
+        let mut store = SketchStore::default();
+        store.set(draw);
 
         self.sketches.insert(id, sketch);
+
+        for plugin in Self::plugins() {
+            plugin.build_sketch(&id, self, &ENGINE_STORE, &mut store);
+        }
+
+        self.sketch_stores
+            .as_mut()
+            .expect("Unexpected: sketch stores should be defined!")
+            .insert(id, store);
 
         id
     }
@@ -285,6 +333,19 @@ impl Engine {
 
     pub fn store(&self) -> &'static Store {
         &ENGINE_STORE
+    }
+
+    pub fn sketch_stores(&self) -> &HashMap<SketchId, SketchStore> {
+        &self
+            .sketch_stores
+            .as_ref()
+            .expect("Unexpected: sketch stores should be defined!")
+    }
+
+    pub fn sketch_stores_mut(&mut self) -> &mut HashMap<SketchId, SketchStore> {
+        self.sketch_stores
+            .as_mut()
+            .expect("Unexpected: sketch stores should be defined!")
     }
 
     pub fn wgpu_handle(&self) -> &Arc<WgpuHandle> {

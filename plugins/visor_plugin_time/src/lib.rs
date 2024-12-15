@@ -4,7 +4,13 @@ use std::{
 };
 
 use deno_core::{extension, op2, Extension, OpState};
-use visor_engine::{engine::Engine, plugin::Plugin, sketch::SketchId, store::Store, Runtime};
+use visor_engine::{
+    engine::Engine,
+    plugin::{AccessSketchStore, Plugin},
+    sketch::SketchId,
+    sketch_store::SketchStore,
+    store::Store,
+};
 
 pub struct TimePlugin;
 
@@ -74,10 +80,15 @@ impl Plugin for TimePlugin {
         state.frame_rate = calculate_frame_rate(state.since_last_update);
     }
 
-    fn before_sketch_update(&self, _sketch_id: &SketchId, runtime: &mut Runtime, store: &Store) {
+    fn before_sketch_update(
+        &self,
+        _sketch_id: &SketchId,
+        store: &Store,
+        sketch_store: &mut SketchStore,
+    ) {
         let state = store
             .get::<RwLock<State>>()
-            .read()
+            .write()
             .expect("Unexpected: could not acquire read lock for state");
 
         let sketch_state = SketchState {
@@ -85,7 +96,7 @@ impl Plugin for TimePlugin {
             frame_count: state.frame_count,
         };
 
-        runtime.put_state(sketch_state);
+        sketch_store.set(sketch_state);
     }
 
     fn after_engine_update(&self, _engine: &mut Engine, store: &Store) {
@@ -119,14 +130,14 @@ fn calculate_frame_rate(since_last_update: Duration) -> f32 {
 
 #[op2(fast)]
 fn op_time_frame_count(state: &mut OpState) -> u32 {
-    let state = state.borrow::<SketchState>();
+    let state = state.sketch_store().get::<SketchState>();
 
     state.frame_count
 }
 
 #[op2(fast)]
 fn op_time_time(state: &mut OpState) -> f32 {
-    let state = state.borrow::<SketchState>();
+    let state = state.sketch_store().get::<SketchState>();
 
     state.time
 }

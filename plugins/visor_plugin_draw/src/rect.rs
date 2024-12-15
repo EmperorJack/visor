@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use deno_core::{op2, OpState};
 use nannou::draw::{primitive::Rect, Drawing};
+use visor_engine::{plugin::AccessSketchStore, sketch_store::SketchStore};
 
 use crate::{clamp_draw_id, DrawId, ShapeCommand, ShapeId};
 
@@ -31,8 +32,8 @@ impl ShapeCommand<Rect> for RectCommand {
     }
 }
 
-fn store_rect_command(state: &mut OpState, id: &ShapeId, command: RectCommand) {
-    let shape_command_map = state.borrow_mut::<RectCommandMap>();
+fn store_rect_command(store: &mut SketchStore, id: &ShapeId, command: RectCommand) {
+    let shape_command_map = store.get_mut::<RectCommandMap>();
 
     shape_command_map
         .get_mut(id)
@@ -43,37 +44,47 @@ fn store_rect_command(state: &mut OpState, id: &ShapeId, command: RectCommand) {
 
 #[op2(fast)]
 pub(crate) fn op_draw_rect(state: &mut OpState, draw_id: u32) -> u32 {
-    let mut id = state.take::<ShapeId>();
+    let store = state.sketch_store_mut();
+
+    let mut id = store.take::<ShapeId>();
     id.increment();
 
-    let draw_id = clamp_draw_id(state, DrawId(draw_id));
+    let draw_id = clamp_draw_id(store, DrawId(draw_id));
 
-    let shape_command_map = state.borrow_mut::<RectCommandMap>();
+    let shape_command_map = store.get_mut::<RectCommandMap>();
     shape_command_map.insert(id, (draw_id, Vec::new()));
 
-    state.put(id);
+    store.set(id);
 
     id.0
 }
 
 #[op2(fast)]
 pub(crate) fn op_draw_rect_xy(state: &mut OpState, shape_id: u32, x: f32, y: f32) {
-    store_rect_command(state, &ShapeId(shape_id), RectCommand::XY { x, y });
+    let store = state.sketch_store_mut();
+
+    store_rect_command(store, &ShapeId(shape_id), RectCommand::XY { x, y });
 }
 
 #[op2(fast)]
 pub(crate) fn op_draw_rect_xyz(state: &mut OpState, shape_id: u32, x: f32, y: f32, z: f32) {
-    store_rect_command(state, &ShapeId(shape_id), RectCommand::XYZ { x, y, z });
+    let store = state.sketch_store_mut();
+
+    store_rect_command(store, &ShapeId(shape_id), RectCommand::XYZ { x, y, z });
 }
 
 #[op2(fast)]
 pub(crate) fn op_draw_rect_wh(state: &mut OpState, shape_id: u32, w: f32, h: f32) {
-    store_rect_command(state, &ShapeId(shape_id), RectCommand::WH { w, h });
+    let store = state.sketch_store_mut();
+
+    store_rect_command(store, &ShapeId(shape_id), RectCommand::WH { w, h });
 }
 
 #[op2(fast)]
 pub(crate) fn op_draw_rect_rgb(state: &mut OpState, shape_id: u32, r: f32, g: f32, b: f32) {
-    store_rect_command(state, &ShapeId(shape_id), RectCommand::RGB { r, g, b });
+    let store = state.sketch_store_mut();
+
+    store_rect_command(store, &ShapeId(shape_id), RectCommand::RGB { r, g, b });
 }
 
 #[op2(fast)]
@@ -85,12 +96,16 @@ pub(crate) fn op_draw_rect_rgba(
     b: f32,
     a: f32,
 ) {
-    store_rect_command(state, &ShapeId(shape_id), RectCommand::RGBA { r, g, b, a });
+    let store = state.sketch_store_mut();
+
+    store_rect_command(store, &ShapeId(shape_id), RectCommand::RGBA { r, g, b, a });
 }
 
 #[op2(fast)]
 pub(crate) fn op_draw_rect_hsv(state: &mut OpState, shape_id: u32, h: f32, s: f32, v: f32) {
-    store_rect_command(state, &ShapeId(shape_id), RectCommand::HSV { h, s, v });
+    let store = state.sketch_store_mut();
+
+    store_rect_command(store, &ShapeId(shape_id), RectCommand::HSV { h, s, v });
 }
 
 #[op2(fast)]
@@ -102,5 +117,7 @@ pub(crate) fn op_draw_rect_hsva(
     v: f32,
     a: f32,
 ) {
-    store_rect_command(state, &ShapeId(shape_id), RectCommand::HSVA { h, s, v, a });
+    let store = state.sketch_store_mut();
+
+    store_rect_command(store, &ShapeId(shape_id), RectCommand::HSVA { h, s, v, a });
 }
