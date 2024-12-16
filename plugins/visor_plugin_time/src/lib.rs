@@ -130,14 +130,14 @@ fn calculate_frame_rate(since_last_update: Duration) -> f32 {
 
 #[op2(fast)]
 fn op_time_frame_count(state: &mut OpState) -> u32 {
-    let state = state.sketch_store().get::<SketchState>();
+    let sketch_state = state.sketch_store().get::<SketchState>();
 
-    state.frame_count
+    sketch_state.frame_count
 }
 
 #[op2(fast)]
 fn op_time_time(state: &mut OpState) -> f32 {
-    let state = state.sketch_store().get::<SketchState>();
+    let sketch_state = state.sketch_store().get::<SketchState>();
 
-    state.time
+    sketch_state.time
 }

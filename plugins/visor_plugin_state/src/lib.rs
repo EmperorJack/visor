@@ -41,19 +41,19 @@ impl Plugin for StatePlugin {
 
 #[op2(fast)]
 fn op_state_create(state: &mut OpState, #[string] id: String, #[string] value: String) {
-    let state = state.sketch_store_mut().get_mut::<SketchState>();
+    let sketch_state = state.sketch_store_mut().get_mut::<SketchState>();
 
-    if !state.contains_key(&id) {
-        state.insert(id, value);
+    if !sketch_state.contains_key(&id) {
+        sketch_state.insert(id, value);
     }
 }
 
 #[op2]
 #[string]
 fn op_state_get<'a>(state: &OpState, #[string] id: String) -> String {
-    let state = state.sketch_store().get::<SketchState>();
+    let sketch_state = state.sketch_store().get::<SketchState>();
 
-    state
+    sketch_state
         .get(&id)
         .expect(&format!(
             "Unexpected: could not find sketch state variable with id {:?}",
@@ -64,14 +64,14 @@ fn op_state_get<'a>(state: &OpState, #[string] id: String) -> String {
 
 #[op2(fast)]
 fn op_state_set(state: &mut OpState, #[string] id: String, #[string] value: String) {
-    let state = state.sketch_store_mut().get_mut::<SketchState>();
+    let sketch_state = state.sketch_store_mut().get_mut::<SketchState>();
 
-    state.insert(id, value);
+    sketch_state.insert(id, value);
 }
 
 #[op2]
 fn op_state_remove_unused(state: &mut OpState, #[serde] ids: Vec<String>) {
-    let state = state.sketch_store_mut().get_mut::<SketchState>();
+    let sketch_state = state.sketch_store_mut().get_mut::<SketchState>();
 
-    state.retain(|id, _| ids.contains(id));
+    sketch_state.retain(|id, _| ids.contains(id));
 }

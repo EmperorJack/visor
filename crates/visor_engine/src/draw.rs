@@ -7,3 +7,9 @@ pub struct Draw {
 // We must be careful to never access a draw instance from multiple threads at the same time
 unsafe impl Send for Draw {}
 unsafe impl Sync for Draw {}
+
+impl From<nannou::Draw> for Draw {
+    fn from(value: nannou::Draw) -> Self {
+        Self { inner: value }
+    }
+}

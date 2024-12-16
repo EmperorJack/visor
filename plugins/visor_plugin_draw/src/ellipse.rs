@@ -2,9 +2,9 @@ use std::collections::HashMap;
 
 use deno_core::{op2, OpState};
 use nannou::draw::{primitive::Ellipse, Drawing};
-use visor_engine::{plugin::AccessSketchStore, sketch_store::SketchStore};
+use visor_engine::plugin::AccessSketchStore;
 
-use crate::{clamp_draw_id, DrawId, ShapeCommand, ShapeId};
+use crate::{DrawId, ShapeCommand, ShapeId, SketchState};
 
 pub(crate) type EllipseCommandMap = HashMap<ShapeId, (DrawId, Vec<EllipseCommand>)>;
 
@@ -32,59 +32,39 @@ impl ShapeCommand<Ellipse> for EllipseCommand {
     }
 }
 
-fn store_ellipse_command(store: &mut SketchStore, id: &ShapeId, command: EllipseCommand) {
-    let shape_command_map = store.get_mut::<EllipseCommandMap>();
-
-    shape_command_map
-        .get_mut(id)
-        .expect("Unexpected: could not find shape commands for given id")
-        .1
-        .push(command);
-}
-
 #[op2(fast)]
 pub(crate) fn op_draw_ellipse(state: &mut OpState, draw_id: u32) -> u32 {
-    let store = state.sketch_store_mut();
+    let sketch_state = state.sketch_store_mut().get_mut::<SketchState>();
 
-    let mut id = store.take::<ShapeId>();
-    id.increment();
-
-    let draw_id = clamp_draw_id(store, DrawId(draw_id));
-
-    let shape_command_map = store.get_mut::<EllipseCommandMap>();
-    shape_command_map.insert(id, (draw_id, Vec::new()));
-
-    store.set(id);
-
-    id.0
+    sketch_state.start_drawing_ellipse(DrawId(draw_id)).0
 }
 
 #[op2(fast)]
 pub(crate) fn op_draw_ellipse_xy(state: &mut OpState, shape_id: u32, x: f32, y: f32) {
-    let store = state.sketch_store_mut();
+    let sketch_state = state.sketch_store_mut().get_mut::<SketchState>();
 
-    store_ellipse_command(store, &ShapeId(shape_id), EllipseCommand::XY { x, y });
+    sketch_state.store_ellipse_command(ShapeId(shape_id), EllipseCommand::XY { x, y });
 }
 
 #[op2(fast)]
 pub(crate) fn op_draw_ellipse_xyz(state: &mut OpState, shape_id: u32, x: f32, y: f32, z: f32) {
-    let store = state.sketch_store_mut();
+    let sketch_state = state.sketch_store_mut().get_mut::<SketchState>();
 
-    store_ellipse_command(store, &ShapeId(shape_id), EllipseCommand::XYZ { x, y, z });
+    sketch_state.store_ellipse_command(ShapeId(shape_id), EllipseCommand::XYZ { x, y, z });
 }
 
 #[op2(fast)]
 pub(crate) fn op_draw_ellipse_wh(state: &mut OpState, shape_id: u32, w: f32, h: f32) {
-    let store = state.sketch_store_mut();
+    let sketch_state = state.sketch_store_mut().get_mut::<SketchState>();
 
-    store_ellipse_command(store, &ShapeId(shape_id), EllipseCommand::WH { w, h });
+    sketch_state.store_ellipse_command(ShapeId(shape_id), EllipseCommand::WH { w, h });
 }
 
 #[op2(fast)]
 pub(crate) fn op_draw_ellipse_rgb(state: &mut OpState, shape_id: u32, r: f32, g: f32, b: f32) {
-    let store = state.sketch_store_mut();
+    let sketch_state = state.sketch_store_mut().get_mut::<SketchState>();
 
-    store_ellipse_command(store, &ShapeId(shape_id), EllipseCommand::RGB { r, g, b });
+    sketch_state.store_ellipse_command(ShapeId(shape_id), EllipseCommand::RGB { r, g, b });
 }
 
 #[op2(fast)]
@@ -96,20 +76,16 @@ pub(crate) fn op_draw_ellipse_rgba(
     b: f32,
     a: f32,
 ) {
-    let store = state.sketch_store_mut();
+    let sketch_state = state.sketch_store_mut().get_mut::<SketchState>();
 
-    store_ellipse_command(
-        store,
-        &ShapeId(shape_id),
-        EllipseCommand::RGBA { r, g, b, a },
-    );
+    sketch_state.store_ellipse_command(ShapeId(shape_id), EllipseCommand::RGBA { r, g, b, a });
 }
 
 #[op2(fast)]
 pub(crate) fn op_draw_ellipse_hsv(state: &mut OpState, shape_id: u32, h: f32, s: f32, v: f32) {
-    let store = state.sketch_store_mut();
+    let sketch_state = state.sketch_store_mut().get_mut::<SketchState>();
 
-    store_ellipse_command(store, &ShapeId(shape_id), EllipseCommand::HSV { h, s, v });
+    sketch_state.store_ellipse_command(ShapeId(shape_id), EllipseCommand::HSV { h, s, v });
 }
 
 #[op2(fast)]
@@ -121,11 +97,7 @@ pub(crate) fn op_draw_ellipse_hsva(
     v: f32,
     a: f32,
 ) {
-    let store = state.sketch_store_mut();
+    let sketch_state = state.sketch_store_mut().get_mut::<SketchState>();
 
-    store_ellipse_command(
-        store,
-        &ShapeId(shape_id),
-        EllipseCommand::HSVA { h, s, v, a },
-    );
+    sketch_state.store_ellipse_command(ShapeId(shape_id), EllipseCommand::HSVA { h, s, v, a });
 }

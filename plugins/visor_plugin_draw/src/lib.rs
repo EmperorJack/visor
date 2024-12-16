@@ -4,12 +4,12 @@ use deno_core::{extension, op2, Extension, OpState};
 use ellipse::{
     op_draw_ellipse, op_draw_ellipse_hsv, op_draw_ellipse_hsva, op_draw_ellipse_rgb,
     op_draw_ellipse_rgba, op_draw_ellipse_wh, op_draw_ellipse_xy, op_draw_ellipse_xyz,
-    EllipseCommandMap,
+    EllipseCommand, EllipseCommandMap,
 };
 use nannou::draw::Drawing;
 use rect::{
     op_draw_rect, op_draw_rect_hsv, op_draw_rect_hsva, op_draw_rect_rgb, op_draw_rect_rgba,
-    op_draw_rect_wh, op_draw_rect_xy, op_draw_rect_xyz, RectCommandMap,
+    op_draw_rect_wh, op_draw_rect_xy, op_draw_rect_xyz, RectCommand, RectCommandMap,
 };
 use visor_engine::{
     draw::Draw,
@@ -26,21 +26,125 @@ mod rect;
 pub struct DrawPlugin;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
-struct DrawId(u32);
+pub(crate) struct DrawId(u32);
 type DrawMap = HashMap<DrawId, Draw>;
-
-impl DrawId {
-    fn increment(&mut self) {
-        self.0 += 1
-    }
-}
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 struct ShapeId(u32);
 
-impl ShapeId {
-    fn increment(&mut self) {
-        self.0 += 1
+struct SketchState {
+    draw: Draw,
+    draw_map: DrawMap,
+    next_draw_id: DrawId,
+    next_shape_id: ShapeId,
+    ellipse_command_map: EllipseCommandMap,
+    rect_command_map: RectCommandMap,
+}
+
+impl SketchState {
+    fn get_draw(&self, id: DrawId) -> &Draw {
+        if id.0 == 0 {
+            return &self.draw;
+        }
+
+        if let Some(draw) = self.draw_map.get(&id) {
+            return draw;
+        }
+
+        // Return base draw if the given draw ID is invalid
+        return &self.draw;
+    }
+
+    fn store_draw(&mut self, draw: Draw) -> DrawId {
+        self.next_draw_id.0 += 1;
+
+        self.draw_map.insert(self.next_draw_id, draw);
+
+        self.next_draw_id
+    }
+
+    fn start_drawing_ellipse(&mut self, draw_id: DrawId) -> ShapeId {
+        self.next_shape_id.0 += 1;
+
+        let draw_id = self.clamp_draw_id(draw_id);
+
+        self.ellipse_command_map
+            .insert(self.next_shape_id, (draw_id, Vec::new()));
+
+        self.next_shape_id
+    }
+
+    fn store_ellipse_command(&mut self, id: ShapeId, command: EllipseCommand) {
+        self.ellipse_command_map
+            .get_mut(&id)
+            .expect("Unexpected: could not find shape commands for given id")
+            .1
+            .push(command);
+    }
+
+    fn start_drawing_rect(&mut self, draw_id: DrawId) -> ShapeId {
+        self.next_shape_id.0 += 1;
+
+        let draw_id = self.clamp_draw_id(draw_id);
+
+        self.rect_command_map
+            .insert(self.next_shape_id, (draw_id, Vec::new()));
+
+        self.next_shape_id
+    }
+
+    fn store_rect_command(&mut self, id: ShapeId, command: RectCommand) {
+        self.rect_command_map
+            .get_mut(&id)
+            .expect("Unexpected: could not find shape commands for given id")
+            .1
+            .push(command);
+    }
+
+    fn clamp_draw_id(&self, id: DrawId) -> DrawId {
+        if id.0 == 0 {
+            return id;
+        }
+
+        if id.0 <= self.next_draw_id.0 {
+            return id;
+        }
+
+        return DrawId(0);
+    }
+
+    fn apply_shape_commands(&mut self) {
+        for (draw_id, commands) in self.ellipse_command_map.values() {
+            let draw = self.get_draw(*draw_id);
+
+            let mut ellipse = draw.inner.ellipse();
+
+            for command in commands {
+                ellipse = command.apply(ellipse);
+            }
+        }
+
+        for (draw_id, commands) in self.rect_command_map.values() {
+            let draw = self.get_draw(*draw_id);
+
+            let mut rect = draw.inner.rect();
+
+            for command in commands {
+                rect = command.apply(rect);
+            }
+        }
+
+        self.ellipse_command_map.clear();
+        self.rect_command_map.clear();
+    }
+
+    fn reset(&mut self) {
+        self.draw.inner.reset();
+
+        self.draw_map.clear();
+
+        self.next_draw_id.0 = 0;
+        self.next_shape_id.0 = 0;
     }
 }
 
@@ -97,11 +201,14 @@ impl Plugin for DrawPlugin {
             .expect("Unexpected: could not find sketch")
             .draw();
 
-        sketch_store.set(draw.clone());
-
-        sketch_store.set(DrawMap::default());
-        sketch_store.set(EllipseCommandMap::default());
-        sketch_store.set(RectCommandMap::default());
+        sketch_store.set(SketchState {
+            draw: draw.clone(),
+            draw_map: Default::default(),
+            next_draw_id: DrawId(0),
+            next_shape_id: ShapeId(0),
+            ellipse_command_map: Default::default(),
+            rect_command_map: Default::default(),
+        });
     }
 
     fn before_sketch_update(
@@ -110,12 +217,7 @@ impl Plugin for DrawPlugin {
         _store: &Store,
         sketch_store: &mut SketchStore,
     ) {
-        sketch_store.get::<Draw>().inner.reset();
-
-        sketch_store.set(DrawId(0));
-        sketch_store.set(ShapeId(0));
-
-        sketch_store.get_mut::<DrawMap>().clear();
+        sketch_store.get_mut::<SketchState>().reset();
     }
 
     fn after_sketch_update(
@@ -124,109 +226,50 @@ impl Plugin for DrawPlugin {
         _store: &Store,
         sketch_store: &mut SketchStore,
     ) {
-        let mut ellipse_command_map = sketch_store.take::<EllipseCommandMap>();
-        let mut rect_command_map = sketch_store.take::<RectCommandMap>();
+        let sketch_state = sketch_store.get_mut::<SketchState>();
 
-        for (_, (draw_id, commands)) in ellipse_command_map.drain() {
-            let draw = get_draw(&sketch_store, &draw_id);
-
-            let mut ellipse = draw.inner.ellipse();
-
-            for command in commands {
-                ellipse = command.apply(ellipse);
-            }
-        }
-
-        for (_, (draw_id, commands)) in rect_command_map.drain() {
-            let draw = get_draw(sketch_store, &draw_id);
-
-            let mut rect = draw.inner.rect();
-
-            for command in commands {
-                rect = command.apply(rect);
-            }
-        }
-
-        sketch_store.set(ellipse_command_map);
-        sketch_store.set(rect_command_map);
+        sketch_state.apply_shape_commands();
     }
-}
-
-fn get_draw<'a>(store: &'a SketchStore, id: &DrawId) -> &'a Draw {
-    if id.0 == 0 {
-        return store.get::<Draw>();
-    }
-
-    if let Some(draw) = store.get::<DrawMap>().get(id) {
-        return draw;
-    }
-
-    // Return base draw if the given draw ID is invalid
-    return store.get::<Draw>();
-}
-
-pub(crate) fn clamp_draw_id(store: &SketchStore, id: DrawId) -> DrawId {
-    if id.0 == 0 {
-        return id;
-    }
-
-    if id.0 <= store.get::<DrawId>().0 {
-        return id;
-    }
-
-    return DrawId(0);
-}
-
-fn store_draw(store: &mut SketchStore, draw: Draw) -> DrawId {
-    let mut id = store.take::<DrawId>();
-    id.increment();
-
-    let draw_map = store.get_mut::<DrawMap>();
-    draw_map.insert(id, draw);
-
-    store.set(id);
-
-    id
 }
 
 #[op2(fast)]
 fn op_draw_background(state: &OpState, id: u32, r: f32, g: f32, b: f32) {
-    let store = state.sketch_store();
+    let sketch_state = state.sketch_store().get::<SketchState>();
 
-    let draw = get_draw(store, &DrawId(id));
+    let draw = sketch_state.get_draw(DrawId(id));
 
     draw.inner.background().rgb(r, g, b);
 }
 
 #[op2(fast)]
 fn op_draw_translate(state: &mut OpState, id: u32, x: f32, y: f32) -> u32 {
-    let store = state.sketch_store_mut();
+    let sketch_state = state.sketch_store_mut().get_mut::<SketchState>();
 
-    let draw = get_draw(store, &DrawId(id));
+    let draw = sketch_state.get_draw(DrawId(id));
 
     let draw = draw.inner.x_y(x, y);
 
-    store_draw(store, Draw { inner: draw }).0
+    sketch_state.store_draw(draw.into()).0
 }
 
 #[op2(fast)]
 fn op_draw_rotate(state: &mut OpState, id: u32, radians: f32) -> u32 {
-    let store = state.sketch_store_mut();
+    let sketch_state = state.sketch_store_mut().get_mut::<SketchState>();
 
-    let draw = get_draw(store, &DrawId(id));
+    let draw = sketch_state.get_draw(DrawId(id));
 
     let draw = draw.inner.rotate(radians);
 
-    store_draw(store, Draw { inner: draw }).0
+    sketch_state.store_draw(draw.into()).0
 }
 
 #[op2(fast)]
 fn op_draw_scale(state: &mut OpState, id: u32, s: f32) -> u32 {
-    let store = state.sketch_store_mut();
+    let sketch_state = state.sketch_store_mut().get_mut::<SketchState>();
 
-    let draw = get_draw(store, &DrawId(id));
+    let draw = sketch_state.get_draw(DrawId(id));
 
     let draw = draw.inner.scale(s);
 
-    store_draw(store, Draw { inner: draw }).0
+    sketch_state.store_draw(draw.into()).0
 }
