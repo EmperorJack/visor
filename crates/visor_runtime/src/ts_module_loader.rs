@@ -1,34 +1,36 @@
-use anyhow::anyhow;
-use deno_ast::MediaType;
-use deno_ast::ParseParams;
-use deno_core::futures::FutureExt;
+use anyhow::{anyhow, Error};
+use deno_ast::{MediaType, ParseParams};
+use deno_core::{
+    futures::FutureExt, ModuleLoadResponse, ModuleLoader, ModuleSource, ModuleSourceCode,
+    ModuleSpecifier, ModuleType, RequestedModuleType, ResolutionKind,
+};
 
 pub struct TsModuleLoader;
 
-impl deno_core::ModuleLoader for TsModuleLoader {
+impl ModuleLoader for TsModuleLoader {
     fn resolve(
         &self,
         specifier: &str,
         referrer: &str,
-        _kind: deno_core::ResolutionKind,
-    ) -> Result<deno_core::ModuleSpecifier, deno_core::anyhow::Error> {
+        _kind: ResolutionKind,
+    ) -> Result<ModuleSpecifier, Error> {
         deno_core::resolve_import(specifier, referrer).map_err(|error| error.into())
     }
 
     fn load(
         &self,
-        module_specifier: &deno_core::ModuleSpecifier,
-        _maybe_referrer: Option<&deno_core::ModuleSpecifier>,
+        module_specifier: &ModuleSpecifier,
+        _maybe_referrer: Option<&ModuleSpecifier>,
         _is_dyn_import: bool,
-        _requested_module_type: deno_core::RequestedModuleType,
-    ) -> deno_core::ModuleLoadResponse {
+        _requested_module_type: RequestedModuleType,
+    ) -> ModuleLoadResponse {
         let module_specifier = module_specifier.clone();
 
-        deno_core::ModuleLoadResponse::Async(
+        ModuleLoadResponse::Async(
             async move {
                 let path = module_specifier.to_file_path().map_err(|_| {
                     anyhow!(
-                        "Import error: could not resolve file path: {}",
+                        "Could not resolve file path for import \"{}\"",
                         module_specifier
                     )
                 })?;
@@ -37,21 +39,37 @@ impl deno_core::ModuleLoader for TsModuleLoader {
 
                 let (module_type, should_transpile) = match MediaType::from_path(&path) {
                     MediaType::JavaScript | MediaType::Mjs | MediaType::Cjs => {
-                        (deno_core::ModuleType::JavaScript, false)
+                        (ModuleType::JavaScript, false)
                     }
-                    MediaType::Jsx => (deno_core::ModuleType::JavaScript, true),
+                    MediaType::Jsx => (ModuleType::JavaScript, true),
                     MediaType::TypeScript
                     | MediaType::Mts
                     | MediaType::Cts
                     | MediaType::Dts
                     | MediaType::Dmts
                     | MediaType::Dcts
-                    | MediaType::Tsx => (deno_core::ModuleType::JavaScript, true),
-                    MediaType::Json => (deno_core::ModuleType::Json, false),
-                    _ => panic!("Unknown extension {:?}", path.extension()),
+                    | MediaType::Tsx => (ModuleType::JavaScript, true),
+                    MediaType::Json => (ModuleType::Json, false),
+                    _ => {
+                        let extension = path.extension().and_then(|extension| extension.to_str());
+
+                        return Err(match extension {
+                            Some(extension) => {
+                                anyhow!(
+                                    "Unknown file extension \".{}\" for import \"{}\"",
+                                    extension,
+                                    path.display(),
+                                )
+                            }
+                            None => {
+                                anyhow!("Missing file extension for import \"{}\"", path.display())
+                            }
+                        });
+                    }
                 };
 
-                let code = std::fs::read_to_string(&path)?;
+                let code = std::fs::read_to_string(&path)
+                    .map_err(|_| anyhow!("No such file found for import \"{}\"", path.display()))?;
 
                 let module_source_code = if should_transpile {
                     let parsed = deno_ast::parse_module(ParseParams {
@@ -68,17 +86,13 @@ impl deno_core::ModuleLoader for TsModuleLoader {
                         .into_source()
                         .source;
 
-                    deno_core::ModuleSourceCode::Bytes(source.into_boxed_slice().into())
+                    ModuleSourceCode::Bytes(source.into_boxed_slice().into())
                 } else {
-                    deno_core::ModuleSourceCode::String(code.into())
+                    ModuleSourceCode::String(code.into())
                 };
 
-                let module = deno_core::ModuleSource::new(
-                    module_type,
-                    module_source_code,
-                    &module_specifier,
-                    None,
-                );
+                let module =
+                    ModuleSource::new(module_type, module_source_code, &module_specifier, None);
 
                 Ok(module)
             }

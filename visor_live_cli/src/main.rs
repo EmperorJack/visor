@@ -84,7 +84,7 @@ fn main() {
         .expect("Unexpected: could not find display")
         .set_source_texture(Some(&render_texture_view));
 
-    let mut just_recompiled = false;
+    let mut just_recompiled = true;
 
     event_loop.run(move |event, _event_loop, control_flow| {
         *control_flow = tao::event_loop::ControlFlow::Poll;
