@@ -3,13 +3,16 @@ use std::collections::HashMap;
 use deno_core::{extension, op2, Extension, OpState};
 use ellipse::{
     op_draw_ellipse, op_draw_ellipse_hsv, op_draw_ellipse_hsva, op_draw_ellipse_rgb,
-    op_draw_ellipse_rgba, op_draw_ellipse_wh, op_draw_ellipse_xy, op_draw_ellipse_xyz,
-    EllipseCommand, EllipseCommandMap,
+    op_draw_ellipse_rgba, op_draw_ellipse_stroke_hsv, op_draw_ellipse_stroke_hsva,
+    op_draw_ellipse_stroke_rgb, op_draw_ellipse_stroke_rgba, op_draw_ellipse_stroke_weight,
+    op_draw_ellipse_wh, op_draw_ellipse_xy, op_draw_ellipse_xyz, EllipseCommand, EllipseCommandMap,
 };
 use nannou::draw::Drawing;
 use rect::{
     op_draw_rect, op_draw_rect_hsv, op_draw_rect_hsva, op_draw_rect_rgb, op_draw_rect_rgba,
-    op_draw_rect_wh, op_draw_rect_xy, op_draw_rect_xyz, RectCommand, RectCommandMap,
+    op_draw_rect_stroke_hsv, op_draw_rect_stroke_hsva, op_draw_rect_stroke_rgb,
+    op_draw_rect_stroke_rgba, op_draw_rect_stroke_weight, op_draw_rect_wh, op_draw_rect_xy,
+    op_draw_rect_xyz, RectCommand, RectCommandMap,
 };
 use visor_engine::{
     draw::Draw,
@@ -164,6 +167,11 @@ extension!(
         op_draw_ellipse_rgba,
         op_draw_ellipse_hsv,
         op_draw_ellipse_hsva,
+        op_draw_ellipse_stroke_rgb,
+        op_draw_ellipse_stroke_rgba,
+        op_draw_ellipse_stroke_hsv,
+        op_draw_ellipse_stroke_hsva,
+        op_draw_ellipse_stroke_weight,
         op_draw_rect,
         op_draw_rect_xy,
         op_draw_rect_xyz,
@@ -172,6 +180,11 @@ extension!(
         op_draw_rect_rgba,
         op_draw_rect_hsv,
         op_draw_rect_hsva,
+        op_draw_rect_stroke_rgb,
+        op_draw_rect_stroke_rgba,
+        op_draw_rect_stroke_hsv,
+        op_draw_rect_stroke_hsva,
+        op_draw_rect_stroke_weight,
         op_draw_translate,
         op_draw_rotate,
         op_draw_scale,

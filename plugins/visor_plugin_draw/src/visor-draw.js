@@ -8,6 +8,11 @@ const {
   op_draw_ellipse_rgba,
   op_draw_ellipse_hsv,
   op_draw_ellipse_hsva,
+  op_draw_ellipse_stroke_rgb,
+  op_draw_ellipse_stroke_rgba,
+  op_draw_ellipse_stroke_hsv,
+  op_draw_ellipse_stroke_hsva,
+  op_draw_ellipse_stroke_weight,
   op_draw_rect,
   op_draw_rect_xy,
   op_draw_rect_xyz,
@@ -16,6 +21,11 @@ const {
   op_draw_rect_rgba,
   op_draw_rect_hsv,
   op_draw_rect_hsva,
+  op_draw_rect_stroke_rgb,
+  op_draw_rect_stroke_rgba,
+  op_draw_rect_stroke_hsv,
+  op_draw_rect_stroke_hsva,
+  op_draw_rect_stroke_weight,
   op_draw_translate,
   op_draw_rotate,
   op_draw_scale,
@@ -97,13 +107,38 @@ class Ellipse {
     return this;
   }
 
-  hsv(r, g, b) {
-    op_draw_ellipse_hsv(this.#id, r, g, b);
+  hsv(h, s, v) {
+    op_draw_ellipse_hsv(this.#id, h, s, v);
     return this;
   }
 
-  hsva(r, g, b, a) {
-    op_draw_ellipse_hsva(this.#id, r, g, b, a);
+  hsva(h, s, v, a) {
+    op_draw_ellipse_hsva(this.#id, h, s, v, a);
+    return this;
+  }
+
+  strokeRgb(r, g, b) {
+    op_draw_ellipse_stroke_rgb(this.#id, r, g, b);
+    return this;
+  }
+
+  strokeRgba(r, g, b, a) {
+    op_draw_ellipse_stroke_rgba(this.#id, r, g, b, a);
+    return this;
+  }
+
+  strokeHsv(h, s, v) {
+    op_draw_ellipse_stroke_hsv(this.#id, h, s, v);
+    return this;
+  }
+
+  strokeHsva(h, s, v, a) {
+    op_draw_ellipse_stroke_hsva(this.#id, h, s, v, a);
+    return this;
+  }
+
+  strokeWeight(w) {
+    op_draw_ellipse_stroke_weight(this.#id, w);
     return this;
   }
 }
@@ -140,13 +175,38 @@ class Rect {
     return this;
   }
 
-  hsv(r, g, b) {
-    op_draw_rect_hsv(this.#id, r, g, b);
+  hsv(h, s, v) {
+    op_draw_rect_hsv(this.#id, h, s, v);
     return this;
   }
 
-  hsva(r, g, b, a) {
-    op_draw_rect_hsva(this.#id, r, g, b, a);
+  hsva(h, s, v, a) {
+    op_draw_rect_hsva(this.#id, h, s, v, a);
+    return this;
+  }
+
+  strokeRgb(r, g, b) {
+    op_draw_rect_stroke_rgb(this.#id, r, g, b);
+    return this;
+  }
+
+  strokeRgba(r, g, b, a) {
+    op_draw_rect_stroke_rgba(this.#id, r, g, b, a);
+    return this;
+  }
+
+  strokeHsv(h, s, v) {
+    op_draw_rect_stroke_hsv(this.#id, h, s, v);
+    return this;
+  }
+
+  strokeHsva(h, s, v, a) {
+    op_draw_rect_stroke_hsva(this.#id, h, s, v, a);
+    return this;
+  }
+
+  strokeWeight(w) {
+    op_draw_rect_stroke_weight(this.#id, w);
     return this;
   }
 }
