@@ -4,26 +4,20 @@ const {
   op_draw_ellipse_xy,
   op_draw_ellipse_xyz,
   op_draw_ellipse_wh,
-  op_draw_ellipse_rgb,
-  op_draw_ellipse_rgba,
-  op_draw_ellipse_hsv,
-  op_draw_ellipse_hsva,
-  op_draw_ellipse_stroke_rgb,
+  op_draw_ellipse_fill_rgba,
+  op_draw_ellipse_fill_hsva,
+  op_draw_ellipse_no_fill,
   op_draw_ellipse_stroke_rgba,
-  op_draw_ellipse_stroke_hsv,
   op_draw_ellipse_stroke_hsva,
   op_draw_ellipse_stroke_weight,
   op_draw_rect,
   op_draw_rect_xy,
   op_draw_rect_xyz,
   op_draw_rect_wh,
-  op_draw_rect_rgb,
-  op_draw_rect_rgba,
-  op_draw_rect_hsv,
-  op_draw_rect_hsva,
-  op_draw_rect_stroke_rgb,
+  op_draw_rect_fill_rgba,
+  op_draw_rect_fill_hsva,
+  op_draw_rect_no_fill,
   op_draw_rect_stroke_rgba,
-  op_draw_rect_stroke_hsv,
   op_draw_rect_stroke_hsva,
   op_draw_rect_stroke_weight,
   op_draw_translate,
@@ -97,43 +91,44 @@ class Ellipse {
     return this;
   }
 
-  rgb(r, g, b) {
-    op_draw_ellipse_rgb(this.#id, r, g, b);
+  fill(color) {
+    switch (color.type) {
+      case "rgba": {
+        const { r, g, b, a } = color;
+        op_draw_ellipse_fill_rgba(this.#id, r, g, b, a);
+        break;
+      }
+
+      case "hsva": {
+        const { h, s, v, a } = color;
+        op_draw_ellipse_fill_hsva(this.#id, h, s, v, a);
+        break;
+      }
+    }
+
     return this;
   }
 
-  rgba(r, g, b, a) {
-    op_draw_ellipse_rgba(this.#id, r, g, b, a);
+  noFill() {
+    op_draw_ellipse_no_fill(this.#id);
     return this;
   }
 
-  hsv(h, s, v) {
-    op_draw_ellipse_hsv(this.#id, h, s, v);
-    return this;
-  }
+  stroke(color) {
+    switch (color.type) {
+      case "rgba": {
+        const { r, g, b, a } = color;
+        op_draw_ellipse_stroke_rgba(this.#id, r, g, b, a);
+        break;
+      }
 
-  hsva(h, s, v, a) {
-    op_draw_ellipse_hsva(this.#id, h, s, v, a);
-    return this;
-  }
+      case "hsva": {
+        const { h, s, v, a } = color;
+        op_draw_ellipse_stroke_hsva(this.#id, h, s, v, a);
+        break;
+      }
+    }
 
-  strokeRgb(r, g, b) {
-    op_draw_ellipse_stroke_rgb(this.#id, r, g, b);
-    return this;
-  }
-
-  strokeRgba(r, g, b, a) {
-    op_draw_ellipse_stroke_rgba(this.#id, r, g, b, a);
-    return this;
-  }
-
-  strokeHsv(h, s, v) {
-    op_draw_ellipse_stroke_hsv(this.#id, h, s, v);
-    return this;
-  }
-
-  strokeHsva(h, s, v, a) {
-    op_draw_ellipse_stroke_hsva(this.#id, h, s, v, a);
     return this;
   }
 
@@ -165,43 +160,44 @@ class Rect {
     return this;
   }
 
-  rgb(r, g, b) {
-    op_draw_rect_rgb(this.#id, r, g, b);
+  fill(color) {
+    switch (color.type) {
+      case "rgba": {
+        const { r, g, b, a } = color;
+        op_draw_rect_fill_rgba(this.#id, r, g, b, a);
+        break;
+      }
+
+      case "hsva": {
+        const { h, s, v, a } = color;
+        op_draw_rect_fill_hsva(this.#id, h, s, v, a);
+        break;
+      }
+    }
+
     return this;
   }
 
-  rgba(r, g, b, a) {
-    op_draw_rect_rgba(this.#id, r, g, b, a);
+  noFill() {
+    op_draw_rect_no_fill(this.#id);
     return this;
   }
 
-  hsv(h, s, v) {
-    op_draw_rect_hsv(this.#id, h, s, v);
-    return this;
-  }
+  stroke(color) {
+    switch (color.type) {
+      case "rgba": {
+        const { r, g, b, a } = color;
+        op_draw_rect_stroke_rgba(this.#id, r, g, b, a);
+        break;
+      }
 
-  hsva(h, s, v, a) {
-    op_draw_rect_hsva(this.#id, h, s, v, a);
-    return this;
-  }
+      case "hsva": {
+        const { h, s, v, a } = color;
+        op_draw_rect_stroke_hsva(this.#id, h, s, v, a);
+        break;
+      }
+    }
 
-  strokeRgb(r, g, b) {
-    op_draw_rect_stroke_rgb(this.#id, r, g, b);
-    return this;
-  }
-
-  strokeRgba(r, g, b, a) {
-    op_draw_rect_stroke_rgba(this.#id, r, g, b, a);
-    return this;
-  }
-
-  strokeHsv(h, s, v) {
-    op_draw_rect_stroke_hsv(this.#id, h, s, v);
-    return this;
-  }
-
-  strokeHsva(h, s, v, a) {
-    op_draw_rect_stroke_hsva(this.#id, h, s, v, a);
     return this;
   }
 
@@ -211,8 +207,28 @@ class Rect {
   }
 }
 
+function rgb(r, g, b) {
+  return { type: "rgba", r, g, b, a: 1.0 };
+}
+
+function rgba(r, g, b, a) {
+  return { type: "rgba", r, g, b, a };
+}
+
+function hsv(h, s, v) {
+  return { type: "hsva", h, s, v, a: 1.0 };
+}
+
+function hsva(h, s, v, a) {
+  return { type: "hsva", h, s, v, a };
+}
+
 function createDraw() {
   return new Draw(0);
 }
 
 globalThis.createDraw = createDraw;
+globalThis.rgb = rgb;
+globalThis.rgba = rgba;
+globalThis.hsv = hsv;
+globalThis.hsva = hsva;
