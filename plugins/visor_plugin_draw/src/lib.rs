@@ -156,7 +156,8 @@ pub(crate) trait ShapeCommand<T> {
 extension!(
     extension,
     ops = [
-        op_draw_background,
+        op_draw_background_rgb,
+        op_draw_background_hsv,
         op_draw_ellipse,
         op_draw_ellipse_xy,
         op_draw_ellipse_xyz,
@@ -238,12 +239,21 @@ impl Plugin for DrawPlugin {
 }
 
 #[op2(fast)]
-fn op_draw_background(state: &OpState, id: u32, r: f32, g: f32, b: f32) {
+fn op_draw_background_rgb(state: &OpState, id: u32, r: f32, g: f32, b: f32) {
     let sketch_state = state.sketch_store().get::<SketchState>();
 
     let draw = sketch_state.get_draw(DrawId(id));
 
     draw.inner.background().rgb(r, g, b);
+}
+
+#[op2(fast)]
+fn op_draw_background_hsv(state: &OpState, id: u32, h: f32, s: f32, v: f32) {
+    let sketch_state = state.sketch_store().get::<SketchState>();
+
+    let draw = sketch_state.get_draw(DrawId(id));
+
+    draw.inner.background().hsv(h, s, v);
 }
 
 #[op2(fast)]

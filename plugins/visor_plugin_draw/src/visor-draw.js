@@ -1,5 +1,6 @@
 const {
-  op_draw_background,
+  op_draw_background_rgb,
+  op_draw_background_hsv,
   op_draw_ellipse,
   op_draw_ellipse_xy,
   op_draw_ellipse_xyz,
@@ -38,10 +39,22 @@ class Draw {
 
   // Background
   clear() {
-    op_draw_background(this.#id, 0, 0, 0);
+    op_draw_background_rgb(this.#id, 0, 0, 0);
   }
-  background(r, g, b) {
-    op_draw_background(this.#id, r, g, b);
+  background(color) {
+    switch (color.type) {
+      case "rgba": {
+        const { r, g, b } = color;
+        op_draw_background_rgb(this.#id, r, g, b);
+        break;
+      }
+
+      case "hsva": {
+        const { h, s, v } = color;
+        op_draw_background_hsv(this.#id, h, s, v);
+        break;
+      }
+    }
   }
 
   // Shapes
