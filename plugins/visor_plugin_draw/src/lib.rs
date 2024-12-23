@@ -7,6 +7,11 @@ use ellipse::{
     op_draw_ellipse_wh, op_draw_ellipse_xy, op_draw_ellipse_xyz, EllipseCommand, EllipseCommandMap,
 };
 use nannou::draw::Drawing;
+use polyline::{
+    op_draw_polyline, op_draw_polyline_point, op_draw_polyline_stroke_hsva,
+    op_draw_polyline_stroke_rgba, op_draw_polyline_stroke_weight, op_draw_polyline_xyz,
+    PolylineCommand, PolylineCommandMap,
+};
 use rect::{
     op_draw_rect, op_draw_rect_fill_hsva, op_draw_rect_fill_rgba, op_draw_rect_no_fill,
     op_draw_rect_stroke_hsva, op_draw_rect_stroke_rgba, op_draw_rect_stroke_weight,
@@ -22,6 +27,7 @@ use visor_engine::{
 };
 
 mod ellipse;
+mod polyline;
 mod rect;
 
 pub struct DrawPlugin;
@@ -40,6 +46,7 @@ struct SketchState {
     next_shape_id: ShapeId,
     ellipse_command_map: EllipseCommandMap,
     rect_command_map: RectCommandMap,
+    polyline_command_map: PolylineCommandMap,
 }
 
 impl SketchState {
@@ -102,6 +109,25 @@ impl SketchState {
             .push(command);
     }
 
+    fn start_drawing_polyline(&mut self, draw_id: DrawId) -> ShapeId {
+        self.next_shape_id.0 += 1;
+
+        let draw_id = self.clamp_draw_id(draw_id);
+
+        self.polyline_command_map
+            .insert(self.next_shape_id, (draw_id, Vec::new()));
+
+        self.next_shape_id
+    }
+
+    fn store_polyline_command(&mut self, id: ShapeId, command: PolylineCommand) {
+        self.polyline_command_map
+            .get_mut(&id)
+            .expect("Unexpected: could not find shape commands for given id")
+            .1
+            .push(command);
+    }
+
     fn clamp_draw_id(&self, id: DrawId) -> DrawId {
         if id.0 == 0 {
             return id;
@@ -135,8 +161,26 @@ impl SketchState {
             }
         }
 
+        for (draw_id, commands) in self.polyline_command_map.values() {
+            let draw = self.get_draw(*draw_id);
+
+            let mut polyline = draw.inner.polyline();
+
+            let mut points: Vec<_> = vec![];
+
+            for command in commands {
+                match command {
+                    PolylineCommand::Point { x, y } => points.push((*x, *y)),
+                    _ => polyline = command.apply(polyline),
+                }
+            }
+
+            let _polyline = polyline.points(points);
+        }
+
         self.ellipse_command_map.clear();
         self.rect_command_map.clear();
+        self.polyline_command_map.clear();
     }
 
     fn reset(&mut self) {
@@ -178,6 +222,12 @@ extension!(
         op_draw_rect_stroke_rgba,
         op_draw_rect_stroke_hsva,
         op_draw_rect_stroke_weight,
+        op_draw_polyline,
+        op_draw_polyline_xyz,
+        op_draw_polyline_point,
+        op_draw_polyline_stroke_rgba,
+        op_draw_polyline_stroke_hsva,
+        op_draw_polyline_stroke_weight,
         op_draw_translate,
         op_draw_rotate,
         op_draw_scale,
@@ -214,6 +264,7 @@ impl Plugin for DrawPlugin {
             next_shape_id: ShapeId(0),
             ellipse_command_map: Default::default(),
             rect_command_map: Default::default(),
+            polyline_command_map: Default::default(),
         });
     }
 
