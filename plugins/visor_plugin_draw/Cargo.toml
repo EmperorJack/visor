@@ -6,6 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+bevy_math = "0.14.2"
 deno_core = "0.319.0"
 nannou = { path = "../../../nannou/nannou" }
 visor_engine = { path = "../../crates/visor_engine" }

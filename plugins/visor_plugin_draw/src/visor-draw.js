@@ -27,6 +27,15 @@ const {
   op_draw_polyline_stroke_rgba,
   op_draw_polyline_stroke_hsva,
   op_draw_polyline_stroke_weight,
+  op_draw_polyline_tension,
+  op_draw_spline,
+  op_draw_spline_xyz,
+  op_draw_spline_point,
+  op_draw_spline_stroke_rgba,
+  op_draw_spline_stroke_hsva,
+  op_draw_spline_stroke_weight,
+  op_draw_spline_tension,
+  op_draw_spline_resolution,
   op_draw_translate,
   op_draw_rotate,
   op_draw_scale,
@@ -75,6 +84,10 @@ class Draw {
   polyline() {
     const shapeId = op_draw_polyline(this.#id);
     return new Polyline(shapeId);
+  }
+  spline() {
+    const shapeId = op_draw_spline(this.#id);
+    return new Spline(shapeId);
   }
 
   // Transforms
@@ -272,6 +285,62 @@ class Polyline {
 
   strokeWeight(w) {
     op_draw_polyline_stroke_weight(this.#id, w);
+    return this;
+  }
+}
+
+class Spline {
+  #id;
+
+  constructor(id) {
+    this.#id = id;
+  }
+
+  xy(x, y) {
+    op_draw_spline_xyz(this.#id, x, y, 0);
+    return this;
+  }
+
+  xyz(x, y, z) {
+    op_draw_spline_xyz(this.#id, x, y, z);
+    return this;
+  }
+
+  point(x, y) {
+    op_draw_spline_point(this.#id, x, y);
+    return this;
+  }
+
+  stroke(color) {
+    switch (color.type) {
+      case "rgba": {
+        const { r, g, b, a } = color;
+        op_draw_spline_stroke_rgba(this.#id, r, g, b, a);
+        break;
+      }
+
+      case "hsva": {
+        const { h, s, v, a } = color;
+        op_draw_spline_stroke_hsva(this.#id, h, s, v, a);
+        break;
+      }
+    }
+
+    return this;
+  }
+
+  strokeWeight(w) {
+    op_draw_spline_stroke_weight(this.#id, w);
+    return this;
+  }
+
+  tension(t) {
+    op_draw_spline_tension(this.#id, t);
+    return this;
+  }
+
+  resolution(n) {
+    op_draw_spline_resolution(this.#id, n);
     return this;
   }
 }

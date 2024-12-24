@@ -1,5 +1,9 @@
 use std::collections::HashMap;
 
+use bevy_math::{
+    cubic_splines::{CubicCardinalSpline, CubicGenerator},
+    Vec2,
+};
 use deno_core::{extension, op2, Extension, OpState};
 use ellipse::{
     op_draw_ellipse, op_draw_ellipse_fill_hsva, op_draw_ellipse_fill_rgba, op_draw_ellipse_no_fill,
@@ -17,6 +21,11 @@ use rect::{
     op_draw_rect_stroke_hsva, op_draw_rect_stroke_rgba, op_draw_rect_stroke_weight,
     op_draw_rect_wh, op_draw_rect_xy, op_draw_rect_xyz, RectCommand, RectCommandMap,
 };
+use spline::{
+    op_draw_spline, op_draw_spline_point, op_draw_spline_resolution, op_draw_spline_stroke_hsva,
+    op_draw_spline_stroke_rgba, op_draw_spline_stroke_weight, op_draw_spline_tension,
+    op_draw_spline_xyz, SplineCommand, SplineCommandMap,
+};
 use visor_engine::{
     draw::Draw,
     engine::Engine,
@@ -29,6 +38,7 @@ use visor_engine::{
 mod ellipse;
 mod polyline;
 mod rect;
+mod spline;
 
 pub struct DrawPlugin;
 
@@ -47,6 +57,7 @@ struct SketchState {
     ellipse_command_map: EllipseCommandMap,
     rect_command_map: RectCommandMap,
     polyline_command_map: PolylineCommandMap,
+    spline_command_map: SplineCommandMap,
 }
 
 impl SketchState {
@@ -128,6 +139,25 @@ impl SketchState {
             .push(command);
     }
 
+    fn start_drawing_spline(&mut self, draw_id: DrawId) -> ShapeId {
+        self.next_shape_id.0 += 1;
+
+        let draw_id = self.clamp_draw_id(draw_id);
+
+        self.spline_command_map
+            .insert(self.next_shape_id, (draw_id, Vec::new()));
+
+        self.next_shape_id
+    }
+
+    fn store_spline_command(&mut self, id: ShapeId, command: SplineCommand) {
+        self.spline_command_map
+            .get_mut(&id)
+            .expect("Unexpected: could not find shape commands for given id")
+            .1
+            .push(command);
+    }
+
     fn clamp_draw_id(&self, id: DrawId) -> DrawId {
         if id.0 == 0 {
             return id;
@@ -166,11 +196,11 @@ impl SketchState {
 
             let mut polyline = draw.inner.polyline();
 
-            let mut points: Vec<_> = vec![];
+            let mut points: Vec<(f32, f32)> = vec![];
 
             for command in commands {
                 match command {
-                    PolylineCommand::Point { x, y } => points.push((*x, *y)),
+                    PolylineCommand::Point { x, y } => points.push((*x, *y).into()),
                     _ => polyline = command.apply(polyline),
                 }
             }
@@ -178,9 +208,39 @@ impl SketchState {
             let _polyline = polyline.points(points);
         }
 
+        for (draw_id, commands) in self.spline_command_map.values() {
+            let draw = self.get_draw(*draw_id);
+
+            let mut spline = draw.inner.polyline();
+
+            let mut points: Vec<Vec2> = vec![];
+            let mut tension: f32 = 0.5;
+            let mut resolution: Option<usize> = None;
+
+            for command in commands {
+                match command {
+                    SplineCommand::Point { x, y } => points.push((*x, *y).into()),
+                    SplineCommand::Tension { t } => tension = *t,
+                    SplineCommand::Resolution { n } => resolution = Some(*n as usize),
+                    _ => spline = command.apply(spline),
+                }
+            }
+
+            let resolution = resolution.unwrap_or_else(|| points.len() * 20);
+
+            let curve = CubicCardinalSpline::new(tension, points).to_curve();
+
+            let points = curve
+                .iter_positions(resolution)
+                .map(|point| (point.x, point.y));
+
+            let _polyline = spline.points(points);
+        }
+
         self.ellipse_command_map.clear();
         self.rect_command_map.clear();
         self.polyline_command_map.clear();
+        self.spline_command_map.clear();
     }
 
     fn reset(&mut self) {
@@ -228,6 +288,14 @@ extension!(
         op_draw_polyline_stroke_rgba,
         op_draw_polyline_stroke_hsva,
         op_draw_polyline_stroke_weight,
+        op_draw_spline,
+        op_draw_spline_xyz,
+        op_draw_spline_point,
+        op_draw_spline_stroke_rgba,
+        op_draw_spline_stroke_hsva,
+        op_draw_spline_stroke_weight,
+        op_draw_spline_tension,
+        op_draw_spline_resolution,
         op_draw_translate,
         op_draw_rotate,
         op_draw_scale,
@@ -265,6 +333,7 @@ impl Plugin for DrawPlugin {
             ellipse_command_map: Default::default(),
             rect_command_map: Default::default(),
             polyline_command_map: Default::default(),
+            spline_command_map: Default::default(),
         });
     }
 
