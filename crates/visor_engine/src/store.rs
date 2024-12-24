@@ -14,9 +14,10 @@ impl Store {
     }
 
     pub fn get<T: Send + Sync + 'static>(&self) -> &T {
-        self.type_map
-            .try_get::<T>()
-            .expect("Store error: get() called before set() for given type")
+        self.type_map.try_get::<T>().expect(&format!(
+            "Store error: get() called before set() for type {:?}",
+            std::any::type_name::<T>(),
+        ))
     }
 
     pub fn set<T: Send + Sync + 'static>(&self, state: T) -> bool {

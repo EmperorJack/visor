@@ -21,6 +21,7 @@ pub struct Sketch {
     id: SketchId,
     file_path: PathBuf,
     draw: Draw,
+    is_built: bool,
     is_enabled: bool,
     target_render_texture_id: Option<RenderTextureId>,
     worker_task_sender: mpsc::Sender<SketchWorkerTask>,
@@ -50,6 +51,7 @@ impl Sketch {
             id,
             file_path,
             draw,
+            is_built: false,
             is_enabled: true,
             target_render_texture_id: None,
             worker_task_sender,
@@ -68,6 +70,14 @@ impl Sketch {
 
     pub fn draw(&self) -> &Draw {
         &self.draw
+    }
+
+    pub(crate) fn is_built(&self) -> bool {
+        self.is_built
+    }
+
+    pub(crate) fn mark_built(&mut self) {
+        self.is_built = true
     }
 
     pub fn is_enabled(&self) -> bool {

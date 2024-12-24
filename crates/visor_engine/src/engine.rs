@@ -157,6 +157,28 @@ impl Engine {
             .take()
             .expect("Unexpected: sketch stores should be defined!");
 
+        let unbuilt_sketch_ids: Vec<SketchId> = self
+            .sketches
+            .values()
+            .filter(|sketch| !sketch.is_built())
+            .map(|sketch| *sketch.id())
+            .collect();
+
+        for sketch_id in unbuilt_sketch_ids {
+            let store = sketch_stores
+                .get_mut(&sketch_id)
+                .expect("Unexpected: could not find sketch store");
+
+            for plugin in Self::plugins() {
+                plugin.build_sketch(&sketch_id, self, &ENGINE_STORE, store);
+            }
+
+            self.sketches
+                .get_mut(&sketch_id)
+                .expect("Unexpected: could not find sketch")
+                .mark_built();
+        }
+
         self.runtime_handle.block_on(async {
             let mut join_set = JoinSet::new();
 
@@ -164,6 +186,7 @@ impl Engine {
                 let store = sketch_stores
                     .remove(sketch.id())
                     .expect("Unexpected: could not find sketch store");
+
                 let result_receiver = sketch.request_update(store).await;
 
                 join_set.spawn(async move {
@@ -231,10 +254,6 @@ impl Engine {
 
         self.sketches.insert(id, sketch);
 
-        for plugin in Self::plugins() {
-            plugin.build_sketch(&id, self, &ENGINE_STORE, &mut store);
-        }
-
         self.sketch_stores
             .as_mut()
             .expect("Unexpected: sketch stores should be defined!")
@@ -255,10 +274,6 @@ impl Engine {
         store.set(draw);
 
         self.sketches.insert(id, sketch);
-
-        for plugin in Self::plugins() {
-            plugin.build_sketch(&id, self, &ENGINE_STORE, &mut store);
-        }
 
         self.sketch_stores
             .as_mut()
