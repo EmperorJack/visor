@@ -20,17 +20,22 @@ pub struct State {
     pub seconds_elapsed: f32,
     time_started: Instant,
     time_last_updated: Instant,
-    pub since_last_update: Duration,
+    since_last_update: Duration,
+    target_frame_duration: Duration,
+    delta: f32,
 }
 
 struct SketchState {
     time: f32,
     frame_count: u32,
+    delta: f32,
 }
+
+const TARGET_FRAME_RATE: u32 = 60;
 
 extension!(
     extension,
-    ops = [op_time_frame_count, op_time_time],
+    ops = [op_time_frame_count, op_time_time, op_time_delta],
     esm_entry_point = "visor:time",
     esm = [
         dir "src",
@@ -59,6 +64,8 @@ impl Plugin for TimePlugin {
             time_started,
             time_last_updated: time_started,
             since_last_update: Duration::default(),
+            target_frame_duration: Duration::from_secs_f64(1.0 / TARGET_FRAME_RATE as f64),
+            delta: 0.0,
         };
 
         store.set(RwLock::new(state));
@@ -78,6 +85,9 @@ impl Plugin for TimePlugin {
         state.seconds_elapsed = calculate_seconds_elapsed(state.time_started, time_now);
 
         state.frame_rate = calculate_frame_rate(state.since_last_update);
+
+        state.delta =
+            state.since_last_update.as_secs_f32() / state.target_frame_duration.as_secs_f32();
     }
 
     fn before_sketch_update(
@@ -94,6 +104,7 @@ impl Plugin for TimePlugin {
         let sketch_state = SketchState {
             time: state.seconds_elapsed,
             frame_count: state.frame_count,
+            delta: state.delta,
         };
 
         sketch_store.set(sketch_state);
@@ -140,4 +151,11 @@ fn op_time_time(state: &mut OpState) -> f32 {
     let sketch_state = state.sketch_store().get::<SketchState>();
 
     sketch_state.time
+}
+
+#[op2(fast)]
+fn op_time_delta(state: &mut OpState) -> f32 {
+    let sketch_state = state.sketch_store().get::<SketchState>();
+
+    sketch_state.delta
 }

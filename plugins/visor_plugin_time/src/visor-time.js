@@ -1,14 +1,17 @@
-export function frameCount() {
-  const { op_time_frame_count } = Deno.core.ops;
+const { op_time_frame_count, op_time_time, op_time_delta } = Deno.core.ops;
 
+function frameCount() {
   return op_time_frame_count();
 }
 
-export function time() {
-  const { op_time_time } = Deno.core.ops;
-
+function time() {
   return op_time_time();
+}
+
+function delta() {
+  return op_time_delta();
 }
 
 globalThis.frameCount = frameCount;
 globalThis.time = time;
+globalThis.delta = delta;
