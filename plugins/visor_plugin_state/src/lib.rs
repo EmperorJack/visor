@@ -15,7 +15,7 @@ type SketchState = HashMap<String, String>;
 
 extension!(
     extension,
-    ops = [op_state_create, op_state_get, op_state_set, op_state_remove_unused],
+    ops = [op_state_create, op_state_set, op_state_remove_unused],
     esm_entry_point = "visor:state",
     esm = [
         dir "src",
@@ -39,27 +39,12 @@ impl Plugin for StatePlugin {
     }
 }
 
-#[op2(fast)]
-fn op_state_create(state: &mut OpState, #[string] id: String, #[string] value: String) {
-    let sketch_state = state.sketch_store_mut().get_mut::<SketchState>();
-
-    if !sketch_state.contains_key(&id) {
-        sketch_state.insert(id, value);
-    }
-}
-
 #[op2]
 #[string]
-fn op_state_get<'a>(state: &OpState, #[string] id: String) -> String {
-    let sketch_state = state.sketch_store().get::<SketchState>();
+fn op_state_create(state: &mut OpState, #[string] id: String, #[string] value: String) -> String {
+    let sketch_state = state.sketch_store_mut().get_mut::<SketchState>();
 
-    sketch_state
-        .get(&id)
-        .expect(&format!(
-            "Unexpected: could not find sketch state variable with id {:?}",
-            id
-        ))
-        .to_string()
+    sketch_state.entry(id).or_insert(value).to_string()
 }
 
 #[op2(fast)]

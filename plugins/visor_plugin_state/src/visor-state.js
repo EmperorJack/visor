@@ -3,20 +3,22 @@ const { op_state_create, op_state_get, op_state_set, op_state_remove_unused } =
 
 class _StateVariable {
   id;
+  value;
 
   constructor(id, defaultValue) {
     this.id = id;
 
-    op_state_create(id, JSON.stringify(defaultValue));
+    this.value = JSON.parse(op_state_create(id, JSON.stringify(defaultValue)));
   }
 
-  // TODO: better way to store state than JSON strings
-  // e.g: cache in JS and export/import into new runtime on compile?
   get() {
-    return JSON.parse(op_state_get(this.id));
+    return this.value;
   }
 
   set(value) {
+    this.value = value;
+
+    // TODO: can we persist state between runtime compiles without saving a JSON string every set()?
     op_state_set(this.id, JSON.stringify(value));
   }
 }
