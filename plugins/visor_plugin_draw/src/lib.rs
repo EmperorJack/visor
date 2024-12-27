@@ -5,27 +5,11 @@ use bevy_math::{
     Vec2,
 };
 use deno_core::{extension, op2, Extension, OpState};
-use ellipse::{
-    op_draw_ellipse, op_draw_ellipse_fill_hsva, op_draw_ellipse_fill_rgba, op_draw_ellipse_no_fill,
-    op_draw_ellipse_stroke_hsva, op_draw_ellipse_stroke_rgba, op_draw_ellipse_stroke_weight,
-    op_draw_ellipse_wh, op_draw_ellipse_xy, op_draw_ellipse_xyz, EllipseCommand, EllipseCommandMap,
-};
+use ellipse::*;
 use nannou::draw::Drawing;
-use polyline::{
-    op_draw_polyline, op_draw_polyline_point, op_draw_polyline_stroke_hsva,
-    op_draw_polyline_stroke_rgba, op_draw_polyline_stroke_weight, op_draw_polyline_xyz,
-    PolylineCommand, PolylineCommandMap,
-};
-use rect::{
-    op_draw_rect, op_draw_rect_fill_hsva, op_draw_rect_fill_rgba, op_draw_rect_no_fill,
-    op_draw_rect_stroke_hsva, op_draw_rect_stroke_rgba, op_draw_rect_stroke_weight,
-    op_draw_rect_wh, op_draw_rect_xy, op_draw_rect_xyz, RectCommand, RectCommandMap,
-};
-use spline::{
-    op_draw_spline, op_draw_spline_point, op_draw_spline_resolution, op_draw_spline_stroke_hsva,
-    op_draw_spline_stroke_rgba, op_draw_spline_stroke_weight, op_draw_spline_tension,
-    op_draw_spline_xyz, SplineCommand, SplineCommandMap,
-};
+use polyline::*;
+use rect::*;
+use spline::*;
 use visor_engine::{
     draw::Draw,
     engine::Engine,
