@@ -51,6 +51,7 @@ impl Plugin for CounterPlugin {
             .write()
             .expect("Unexpected: could not acquire read lock for state");
 
+        // TODO: this is not a global counter as intended, need to fix
         sketch_store.set(state.clone());
     }
 }

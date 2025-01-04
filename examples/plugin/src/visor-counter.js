@@ -1,11 +1,9 @@
-export function count() {
-  const { op_counter_count } = Deno.core.ops;
+const { op_counter_count, op_counter_increment } = Deno.core.ops;
 
+export function count() {
   return op_counter_count();
 }
 
 export function increment() {
-  const { op_counter_increment } = Deno.core.ops;
-
   op_counter_increment();
 }

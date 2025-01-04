@@ -4,6 +4,7 @@ use tokio::runtime::Handle;
 use visor_engine::{engine::Engine, plugin::Plugin};
 use visor_plugin_draw::DrawPlugin;
 use visor_plugin_log::LogPlugin;
+use visor_plugin_midi::MidiPlugin;
 use visor_plugin_state::StatePlugin;
 use visor_plugin_time::TimePlugin;
 
@@ -34,6 +35,7 @@ impl EngineBuilder {
             Box::new(LogPlugin),
             Box::new(DrawPlugin),
             Box::new(StatePlugin),
+            Box::new(MidiPlugin),
         ]
     }
 

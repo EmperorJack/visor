@@ -10,5 +10,6 @@ tokio = { version = "1.26.0", features = ["full"] }
 visor_engine = { path = "../visor_engine" }
 visor_plugin_draw = { path = "../../plugins/visor_plugin_draw" }
 visor_plugin_log = { path = "../../plugins/visor_plugin_log" }
+visor_plugin_midi = { path = "../../plugins/visor_plugin_midi" }
 visor_plugin_state = { path = "../../plugins/visor_plugin_state" }
 visor_plugin_time = { path = "../../plugins/visor_plugin_time" }
