@@ -1,4 +1,8 @@
-const { op_midi_input_devices, op_midi_connect_input_device } = Deno.core.ops;
+const {
+  op_midi_input_devices,
+  op_midi_connect_input_device,
+  op_midi_disconnect_input_device,
+} = Deno.core.ops;
 
 const midi = {
   listInputDevices() {
@@ -7,6 +11,10 @@ const midi = {
 
   connectInputDevice(name) {
     op_midi_connect_input_device(name);
+  },
+
+  disconnectInputDevice(name) {
+    op_midi_disconnect_input_device(name);
   },
 };
 

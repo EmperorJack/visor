@@ -22,7 +22,7 @@ struct SketchState {
 
 extension!(
     extension,
-    ops = [op_midi_input_devices, op_midi_connect_input_device],
+    ops = [op_midi_input_devices, op_midi_connect_input_device, op_midi_disconnect_input_device],
     esm_entry_point = "visor:midi",
     esm = [
         dir "src",
@@ -104,6 +104,19 @@ fn op_midi_connect_input_device(state: &mut OpState, #[string] name: String) -> 
     )?;
 
     state.input_connections.insert(name, input_connection);
+
+    Ok(())
+}
+
+#[op2(fast)]
+fn op_midi_disconnect_input_device(state: &mut OpState, #[string] name: String) -> Result<()> {
+    let state = state.sketch_store_mut().get_mut::<SketchState>();
+
+    let Some(input_connection) = state.input_connections.remove(&name) else {
+        return Err(anyhow!("MIDI input device {} is not connected", name));
+    };
+
+    input_connection.close();
 
     Ok(())
 }
