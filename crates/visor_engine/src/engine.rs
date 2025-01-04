@@ -148,6 +148,37 @@ impl Engine {
     }
 
     pub fn update(&mut self) {
+        let unbuilt_sketch_ids: Vec<SketchId> = self
+            .sketches
+            .values()
+            .filter(|sketch| !sketch.is_built())
+            .map(|sketch| *sketch.id())
+            .collect();
+
+        if !unbuilt_sketch_ids.is_empty() {
+            let mut sketch_stores = self
+                .sketch_stores
+                .take()
+                .expect("Unexpected: sketch stores should be defined!");
+
+            for sketch_id in unbuilt_sketch_ids {
+                let store = sketch_stores
+                    .get_mut(&sketch_id)
+                    .expect("Unexpected: could not find sketch store");
+
+                for plugin in Self::plugins() {
+                    plugin.build_sketch(&sketch_id, self, &ENGINE_STORE, store);
+                }
+
+                self.sketches
+                    .get_mut(&sketch_id)
+                    .expect("Unexpected: could not find sketch")
+                    .mark_built();
+            }
+
+            self.sketch_stores = Some(sketch_stores);
+        }
+
         for plugin in Self::plugins() {
             plugin.before_engine_update(self, &ENGINE_STORE);
         }
@@ -156,28 +187,6 @@ impl Engine {
             .sketch_stores
             .take()
             .expect("Unexpected: sketch stores should be defined!");
-
-        let unbuilt_sketch_ids: Vec<SketchId> = self
-            .sketches
-            .values()
-            .filter(|sketch| !sketch.is_built())
-            .map(|sketch| *sketch.id())
-            .collect();
-
-        for sketch_id in unbuilt_sketch_ids {
-            let store = sketch_stores
-                .get_mut(&sketch_id)
-                .expect("Unexpected: could not find sketch store");
-
-            for plugin in Self::plugins() {
-                plugin.build_sketch(&sketch_id, self, &ENGINE_STORE, store);
-            }
-
-            self.sketches
-                .get_mut(&sketch_id)
-                .expect("Unexpected: could not find sketch")
-                .mark_built();
-        }
 
         self.runtime_handle.block_on(async {
             let mut join_set = JoinSet::new();

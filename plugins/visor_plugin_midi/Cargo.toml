@@ -8,4 +8,5 @@ edition = "2021"
 [dependencies]
 deno_core = "0.319.0"
 midir = "0.10.1"
+midly = "0.5"
 visor_engine = { path = "../../crates/visor_engine" }
