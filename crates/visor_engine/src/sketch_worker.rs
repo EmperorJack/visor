@@ -16,6 +16,7 @@ pub(crate) struct SketchUpdateResult {
 
 pub(crate) enum SketchWorkerTask {
     RequestCompile(oneshot::Sender<()>),
+    RequestSetup(oneshot::Sender<()>),
     Update(SketchStore, oneshot::Sender<SketchUpdateResult>),
 }
 
@@ -64,6 +65,14 @@ impl SketchWorker {
                     result_sender
                         .send(())
                         .expect("Unexpected: could not send request compile result back to sketch");
+                }
+
+                SketchWorkerTask::RequestSetup(result_sender) => {
+                    self.request_setup = true;
+
+                    result_sender
+                        .send(())
+                        .expect("Unexpected: could not send request setup result back to sketch");
                 }
 
                 SketchWorkerTask::Update(store, result_sender) => {
@@ -136,11 +145,14 @@ impl SketchWorker {
     // TODO: should this return a Result?
     fn execute_sketch_lifecycle(request_setup: bool, runtime: &mut Runtime) -> Option<Error> {
         if request_setup {
+            // TODO: setup errors are being overridden by next successful update, setup should be fallible like compile
+            // Might mean we need a teardown function too? E.g: connect/disconnect midi input device
             if let RuntimeExecuteFunctionResult::Error(error) = runtime.execute_function("setup") {
                 return Some(error);
             }
         }
 
+        // TODO: combine update and render into one method?
         if let RuntimeExecuteFunctionResult::Error(error) = runtime.execute_function("update") {
             return Some(error);
         }

@@ -103,11 +103,26 @@ impl Sketch {
             self.worker_task_sender
                 .send(SketchWorkerTask::RequestCompile(result_sender))
                 .await
-                .expect("Unexpected: could not send update task to sketch worker");
+                .expect("Unexpected: could not send request compile task to sketch worker");
 
             result_receiver
                 .await
-                .expect("Unexpected: error occurred during sketch compile");
+                .expect("Unexpected: error occurred during request sketch compile");
+        });
+    }
+
+    pub fn request_setup(&self) {
+        self.runtime_handle.block_on(async {
+            let (result_sender, result_receiver) = oneshot::channel();
+
+            self.worker_task_sender
+                .send(SketchWorkerTask::RequestSetup(result_sender))
+                .await
+                .expect("Unexpected: could not send request setup task to sketch worker");
+
+            result_receiver
+                .await
+                .expect("Unexpected: error occurred during request sketch setup");
         });
     }
 
