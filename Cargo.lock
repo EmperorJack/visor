@@ -4881,6 +4881,9 @@ dependencies = [
  "deno_core",
  "midir",
  "midly",
+ "serde",
+ "serde_json",
+ "tokio",
  "visor_engine",
 ]
 

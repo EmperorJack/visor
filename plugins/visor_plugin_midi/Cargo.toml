@@ -9,4 +9,7 @@ edition = "2021"
 deno_core = "0.319.0"
 midir = "0.10.1"
 midly = "0.5"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1.26.0", features = ["sync"] }
 visor_engine = { path = "../../crates/visor_engine" }

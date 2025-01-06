@@ -1,11 +1,14 @@
 use std::collections::HashMap;
 
+use config::MidiMappingConfig;
 use deno_core::{
     anyhow::{anyhow, Result},
     extension, op2, Extension, OpState,
 };
+use mapping::MidiMapping;
 use midir::{MidiInput, MidiInputConnection};
-use midly::live::LiveEvent;
+use midly::{live::LiveEvent, MidiMessage};
+use tokio::sync::mpsc;
 use visor_engine::{
     engine::Engine,
     plugin::{AccessSketchStore, Plugin},
@@ -14,15 +17,40 @@ use visor_engine::{
     store::Store,
 };
 
+mod config;
+mod control;
+mod encoder;
+mod mapping;
+mod note;
+
 pub struct MidiPlugin;
 
 struct SketchState {
-    input_connections: HashMap<String, MidiInputConnection<()>>,
+    input_connections: HashMap<String, InputConnection>,
+    // TODO: allow multiple labelled mappings e.g: per input device
+    midi_mapping: Option<MidiMapping>,
+}
+
+struct InputConnection {
+    connection: MidiInputConnection<mpsc::Sender<(u8, MidiMessage)>>,
+    message_receiver: mpsc::Receiver<(u8, MidiMessage)>,
 }
 
 extension!(
     extension,
-    ops = [op_midi_input_devices, op_midi_connect_input_device, op_midi_disconnect_input_device],
+    ops = [
+        op_midi_input_devices,
+        op_midi_connect_input_device,
+        op_midi_disconnect_input_device,
+        op_midi_load_mapping,
+        op_midi_control_value,
+        op_midi_encoder_increment,
+        op_midi_encoder_decrement,
+        op_midi_note_on,
+        op_midi_note_off,
+        op_midi_note_down,
+        op_midi_note_velocity,
+    ],
     esm_entry_point = "visor:midi",
     esm = [
         dir "src",
@@ -42,9 +70,56 @@ impl Plugin for MidiPlugin {
         _store: &Store,
         sketch_store: &mut SketchStore,
     ) {
+        // TODO: move this state to engine store
         sketch_store.set(SketchState {
             input_connections: Default::default(),
+            midi_mapping: None,
         });
+    }
+
+    fn before_sketch_update(
+        &self,
+        _sketch_id: &SketchId,
+        _store: &Store,
+        sketch_store: &mut SketchStore,
+    ) {
+        let state = sketch_store.get_mut::<SketchState>();
+
+        for input_connection in state.input_connections.values_mut() {
+            while let Ok((channel, message)) = input_connection.message_receiver.try_recv() {
+                if let Some(ref mut midi_mapping) = state.midi_mapping {
+                    match message {
+                        MidiMessage::NoteOff { key, vel } => {
+                            midi_mapping.note_off(channel, key.into(), vel.into());
+                        }
+                        MidiMessage::NoteOn { key, vel } => {
+                            midi_mapping.note_on(channel, key.into(), vel.into());
+                        }
+                        MidiMessage::Controller { controller, value } => {
+                            midi_mapping.controller_changed(
+                                channel,
+                                controller.into(),
+                                value.into(),
+                            );
+                        }
+                        _ => {}
+                    };
+                }
+            }
+        }
+    }
+
+    fn after_sketch_update(
+        &self,
+        _sketch_id: &SketchId,
+        _store: &Store,
+        sketch_store: &mut SketchStore,
+    ) {
+        let state = sketch_store.get_mut::<SketchState>();
+
+        if let Some(ref mut midi_mapping) = state.midi_mapping {
+            midi_mapping.after_sketch_update();
+        }
     }
 }
 
@@ -90,20 +165,35 @@ fn op_midi_connect_input_device(state: &mut OpState, #[string] name: String) -> 
         return Err(anyhow!("MIDI input device {} already connected", name));
     }
 
-    let input_connection = midi_input.connect(
+    let (message_sender, message_receiver) = mpsc::channel::<(u8, MidiMessage)>(1024);
+
+    let connection = midi_input.connect(
         port,
         &format!("Visor plugin MIDI input connection to {}", name),
-        |_timestamp, event, _| {
+        |_timestamp, event, message_sender| {
             let event = LiveEvent::parse(event).ok();
 
             if let Some(event) = event {
-                println!("{:?}", event);
+                match event {
+                    LiveEvent::Midi { channel, message } => {
+                        message_sender
+                            .try_send((channel.into(), message))
+                            .expect("Unexpected: could not send to midi message channel");
+                    }
+                    _ => {}
+                };
             }
         },
-        (),
+        message_sender,
     )?;
 
-    state.input_connections.insert(name, input_connection);
+    state.input_connections.insert(
+        name,
+        InputConnection {
+            connection,
+            message_receiver,
+        },
+    );
 
     Ok(())
 }
@@ -116,7 +206,99 @@ fn op_midi_disconnect_input_device(state: &mut OpState, #[string] name: String) 
         return Err(anyhow!("MIDI input device {} is not connected", name));
     };
 
-    input_connection.close();
+    input_connection.connection.close();
 
     Ok(())
+}
+
+#[op2(fast)]
+fn op_midi_load_mapping(state: &mut OpState, #[string] path: String) -> Result<()> {
+    let state = state.sketch_store_mut().get_mut::<SketchState>();
+
+    let contents = std::fs::read_to_string(path)?;
+
+    let mapping_config: MidiMappingConfig = serde_json::from_str(&contents)?;
+
+    let mapping: MidiMapping = mapping_config.into();
+
+    state.midi_mapping = Some(mapping);
+
+    Ok(())
+}
+
+#[op2(fast)]
+fn op_midi_control_value(state: &mut OpState, #[string] name: String) -> Result<f32> {
+    let state = state.sketch_store().get::<SketchState>();
+
+    let Some(ref midi_mapping) = state.midi_mapping else {
+        return Err(anyhow!("No MIDI mapping loaded"));
+    };
+
+    Ok(midi_mapping.control_value(&name)?)
+}
+
+#[op2(fast)]
+fn op_midi_encoder_increment(state: &mut OpState, #[string] name: String) -> Result<bool> {
+    let state = state.sketch_store().get::<SketchState>();
+
+    let Some(ref midi_mapping) = state.midi_mapping else {
+        return Err(anyhow!("No MIDI mapping loaded"));
+    };
+
+    Ok(midi_mapping.is_encoder_increment(&name)?)
+}
+
+#[op2(fast)]
+fn op_midi_encoder_decrement(state: &mut OpState, #[string] name: String) -> Result<bool> {
+    let state = state.sketch_store().get::<SketchState>();
+
+    let Some(ref midi_mapping) = state.midi_mapping else {
+        return Err(anyhow!("No MIDI mapping loaded"));
+    };
+
+    Ok(midi_mapping.is_encoder_decrement(&name)?)
+}
+
+#[op2(fast)]
+fn op_midi_note_on(state: &mut OpState, #[string] name: String) -> Result<bool> {
+    let state = state.sketch_store().get::<SketchState>();
+
+    let Some(ref midi_mapping) = state.midi_mapping else {
+        return Err(anyhow!("No MIDI mapping loaded"));
+    };
+
+    Ok(midi_mapping.is_note_on(&name)?)
+}
+
+#[op2(fast)]
+fn op_midi_note_off(state: &mut OpState, #[string] name: String) -> Result<bool> {
+    let state = state.sketch_store().get::<SketchState>();
+
+    let Some(ref midi_mapping) = state.midi_mapping else {
+        return Err(anyhow!("No MIDI mapping loaded"));
+    };
+
+    Ok(midi_mapping.is_note_off(&name)?)
+}
+
+#[op2(fast)]
+fn op_midi_note_down(state: &mut OpState, #[string] name: String) -> Result<bool> {
+    let state = state.sketch_store().get::<SketchState>();
+
+    let Some(ref midi_mapping) = state.midi_mapping else {
+        return Err(anyhow!("No MIDI mapping loaded"));
+    };
+
+    Ok(midi_mapping.is_note_down(&name)?)
+}
+
+#[op2(fast)]
+fn op_midi_note_velocity(state: &mut OpState, #[string] name: String) -> Result<f32> {
+    let state = state.sketch_store().get::<SketchState>();
+
+    let Some(ref midi_mapping) = state.midi_mapping else {
+        return Err(anyhow!("No MIDI mapping loaded"));
+    };
+
+    Ok(midi_mapping.note_velocity(&name)?)
 }
