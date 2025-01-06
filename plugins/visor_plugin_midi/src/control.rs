@@ -1,3 +1,4 @@
+#[derive(Clone)]
 pub(crate) struct MidiControl {
     value: f32,
 }

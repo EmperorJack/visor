@@ -1,5 +1,6 @@
 use crate::config::MidiEncoderMode;
 
+#[derive(Clone)]
 pub(crate) struct MidiEncoder {
     mode: MidiEncoderMode,
     is_increment: bool,

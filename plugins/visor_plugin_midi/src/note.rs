@@ -1,3 +1,4 @@
+#[derive(Clone)]
 pub(crate) struct MidiNote {
     is_on: bool,
     is_off: bool,
