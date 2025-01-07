@@ -98,6 +98,55 @@ extension!(
     ]
 );
 
+impl MidiPlugin {
+    pub fn list_input_devices() -> Result<Vec<String>> {
+        list_input_devices()
+    }
+
+    pub fn connect_input_device(store: &Store, name: String) -> Result<()> {
+        let mut state = store
+            .get::<RwLock<State>>()
+            .write()
+            .expect("Unexpected: could not acquire write lock for state");
+
+        if state.input_connections.contains_key(&name) {
+            return Err(anyhow!("MIDI input device {} already connected", name));
+        }
+
+        let input_connection = create_input_connection(name.clone())?;
+
+        state.input_connections.insert(name, input_connection);
+
+        Ok(())
+    }
+
+    pub fn disconnect_input_device(store: &Store, name: String) -> Result<()> {
+        let mut state = store
+            .get::<RwLock<State>>()
+            .write()
+            .expect("Unexpected: could not acquire write lock for state");
+
+        if let Some(input_connection) = state.input_connections.remove(&name) {
+            input_connection.connection.close();
+        }
+
+        Ok(())
+    }
+
+    pub fn load_midi_mapping(store: &Store, path: String) -> Result<()> {
+        let mut state = store
+            .get::<RwLock<State>>()
+            .write()
+            .expect("Unexpected: could not acquire write lock for state");
+
+        let midi_mapping = load_midi_mapping(path)?;
+
+        state.midi_mapping = Some(midi_mapping);
+
+        Ok(())
+    }
+}
+
 impl Plugin for MidiPlugin {
     fn extension(&self) -> Extension {
         extension::init_ops_and_esm()
@@ -190,9 +239,7 @@ fn create_midi_input() -> Result<MidiInput> {
     Ok(MidiInput::new("Visor plugin MIDI input")?)
 }
 
-#[op2]
-#[serde]
-fn op_midi_input_devices() -> Result<Vec<String>> {
+fn list_input_devices() -> Result<Vec<String>> {
     let midi_input = create_midi_input()?;
 
     let input_devices = midi_input
@@ -204,10 +251,7 @@ fn op_midi_input_devices() -> Result<Vec<String>> {
     Ok(input_devices)
 }
 
-#[op2(fast)]
-fn op_midi_connect_input_device(state: &mut OpState, #[string] name: String) -> Result<()> {
-    let sketch_state = state.sketch_store_mut().get_mut::<SketchState>();
-
+fn create_input_connection(name: String) -> Result<InputConnection> {
     let midi_input = create_midi_input()?;
 
     let input_ports = midi_input.ports();
@@ -223,10 +267,6 @@ fn op_midi_connect_input_device(state: &mut OpState, #[string] name: String) -> 
     let Some(port) = port else {
         return Err(anyhow!("MIDI input port for {} could not be found", name));
     };
-
-    if sketch_state.input_connections.contains(&name) {
-        return Err(anyhow!("MIDI input device {} already connected", name));
-    }
 
     let (message_sender, message_receiver) = mpsc::channel::<(u8, MidiMessage)>(1024);
 
@@ -250,15 +290,39 @@ fn op_midi_connect_input_device(state: &mut OpState, #[string] name: String) -> 
         message_sender,
     )?;
 
+    Ok(InputConnection {
+        connection,
+        message_receiver,
+    })
+}
+
+fn load_midi_mapping(path: String) -> Result<MidiMapping> {
+    let contents = std::fs::read_to_string(path)?;
+
+    let mapping_config: MidiMappingConfig = serde_json::from_str(&contents)?;
+
+    Ok(mapping_config.into())
+}
+
+#[op2]
+#[serde]
+fn op_midi_input_devices() -> Result<Vec<String>> {
+    list_input_devices()
+}
+
+#[op2(fast)]
+fn op_midi_connect_input_device(state: &mut OpState, #[string] name: String) -> Result<()> {
+    let sketch_state = state.sketch_store_mut().get_mut::<SketchState>();
+
+    if sketch_state.input_connections.contains(&name) {
+        return Err(anyhow!("MIDI input device {} already connected", name));
+    }
+
+    let input_connection = create_input_connection(name.clone())?;
+
     let event_sender = state.sketch_store().get::<mpsc::Sender<Event>>();
     event_sender
-        .try_send(Event::AddInputConnection(
-            name,
-            InputConnection {
-                connection,
-                message_receiver,
-            },
-        ))
+        .try_send(Event::AddInputConnection(name, input_connection))
         .expect("Unexpected: could not send midi plugin event");
 
     Ok(())
@@ -284,17 +348,13 @@ fn op_midi_disconnect_input_device(state: &mut OpState, #[string] name: String) 
 fn op_midi_load_mapping(state: &mut OpState, #[string] path: String) -> Result<()> {
     let sketch_state = state.sketch_store_mut().get_mut::<SketchState>();
 
-    let contents = std::fs::read_to_string(path)?;
+    let midi_mapping = load_midi_mapping(path)?;
 
-    let mapping_config: MidiMappingConfig = serde_json::from_str(&contents)?;
-
-    let mapping: MidiMapping = mapping_config.into();
-
-    sketch_state.variables = Some(mapping.variables().clone());
+    sketch_state.variables = Some(midi_mapping.variables().clone());
 
     let event_sender = state.sketch_store().get::<mpsc::Sender<Event>>();
     event_sender
-        .try_send(Event::LoadMapping(mapping))
+        .try_send(Event::LoadMapping(midi_mapping))
         .expect("Unexpected: could not send midi plugin event");
 
     Ok(())
