@@ -292,6 +292,15 @@ impl Engine {
         id
     }
 
+    pub fn remove_sketch(&mut self, id: &SketchId) {
+        self.sketches.remove(id);
+
+        self.sketch_stores
+            .as_mut()
+            .expect("Unexpected: sketch stores should be defined!")
+            .remove(id);
+    }
+
     pub fn sketches(&self) -> &HashMap<SketchId, Sketch> {
         &self.sketches
     }
