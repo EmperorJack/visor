@@ -191,7 +191,11 @@ impl Engine {
         self.runtime_handle.block_on(async {
             let mut join_set = JoinSet::new();
 
-            for sketch in self.sketches.values().filter(|sketch| sketch.is_enabled()) {
+            for sketch in self
+                .sketches
+                .values()
+                .filter(|sketch| sketch.is_enabled() && sketch.is_built())
+            {
                 let store = sketch_stores
                     .remove(sketch.id())
                     .expect("Unexpected: could not find sketch store");
