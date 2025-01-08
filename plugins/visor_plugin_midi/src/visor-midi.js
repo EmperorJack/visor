@@ -3,6 +3,7 @@ const {
   op_midi_connect_input_device,
   op_midi_disconnect_input_device,
   op_midi_load_mapping,
+  op_midi_clear_mapping,
   op_midi_control_value,
   op_midi_encoder_increment,
   op_midi_encoder_decrement,
@@ -27,6 +28,10 @@ const midi = {
 
   loadMapping(path) {
     op_midi_load_mapping(path);
+  },
+
+  clearMapping() {
+    op_midi_clear_mapping();
   },
 
   note(id) {

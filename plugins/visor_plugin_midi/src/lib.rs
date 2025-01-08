@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::RwLock};
+use std::{collections::HashMap, path::PathBuf, sync::RwLock};
 
 use config::MidiMappingConfig;
 use deno_core::{
@@ -74,6 +74,7 @@ enum Event {
     AddInputConnection(String, InputConnection),
     RemoveInputConnection(String),
     LoadMapping(MidiMapping),
+    ClearMapping,
 }
 
 extension!(
@@ -83,6 +84,7 @@ extension!(
         op_midi_connect_input_device,
         op_midi_disconnect_input_device,
         op_midi_load_mapping,
+        op_midi_clear_mapping,
         op_midi_control_value,
         op_midi_encoder_increment,
         op_midi_encoder_decrement,
@@ -133,7 +135,7 @@ impl MidiPlugin {
         Ok(())
     }
 
-    pub fn load_midi_mapping(store: &Store, path: String) -> Result<()> {
+    pub fn load_midi_mapping(store: &Store, path: PathBuf) -> Result<()> {
         let mut state = store
             .get::<RwLock<State>>()
             .write()
@@ -142,6 +144,17 @@ impl MidiPlugin {
         let midi_mapping = load_midi_mapping(path)?;
 
         state.midi_mapping = Some(midi_mapping);
+
+        Ok(())
+    }
+
+    pub fn clear_midi_mapping(store: &Store) -> Result<()> {
+        let mut state = store
+            .get::<RwLock<State>>()
+            .write()
+            .expect("Unexpected: could not acquire write lock for state");
+
+        state.midi_mapping = None;
 
         Ok(())
     }
@@ -197,6 +210,7 @@ impl Plugin for MidiPlugin {
                     }
                 }
                 Event::LoadMapping(midi_mapping) => state.midi_mapping = Some(midi_mapping),
+                Event::ClearMapping => state.midi_mapping = None,
             }
         }
     }
@@ -296,7 +310,7 @@ fn create_input_connection(name: String) -> Result<InputConnection> {
     })
 }
 
-fn load_midi_mapping(path: String) -> Result<MidiMapping> {
+fn load_midi_mapping(path: PathBuf) -> Result<MidiMapping> {
     let contents = std::fs::read_to_string(path)?;
 
     let mapping_config: MidiMappingConfig = serde_json::from_str(&contents)?;
@@ -348,6 +362,8 @@ fn op_midi_disconnect_input_device(state: &mut OpState, #[string] name: String) 
 fn op_midi_load_mapping(state: &mut OpState, #[string] path: String) -> Result<()> {
     let sketch_state = state.sketch_store_mut().get_mut::<SketchState>();
 
+    let path = path.parse()?;
+
     let midi_mapping = load_midi_mapping(path)?;
 
     sketch_state.variables = Some(midi_mapping.variables().clone());
@@ -355,6 +371,16 @@ fn op_midi_load_mapping(state: &mut OpState, #[string] path: String) -> Result<(
     let event_sender = state.sketch_store().get::<mpsc::Sender<Event>>();
     event_sender
         .try_send(Event::LoadMapping(midi_mapping))
+        .expect("Unexpected: could not send midi plugin event");
+
+    Ok(())
+}
+
+#[op2(fast)]
+fn op_midi_clear_mapping(state: &mut OpState) -> Result<()> {
+    let event_sender = state.sketch_store().get::<mpsc::Sender<Event>>();
+    event_sender
+        .try_send(Event::ClearMapping)
         .expect("Unexpected: could not send midi plugin event");
 
     Ok(())
