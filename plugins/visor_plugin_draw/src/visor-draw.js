@@ -370,3 +370,16 @@ globalThis.rgb = rgb;
 globalThis.rgba = rgba;
 globalThis.hsv = hsv;
 globalThis.hsva = hsva;
+
+// TODO: move these to a math crate?
+
+function radians(degrees) {
+  return degrees * (Math.PI / 180);
+}
+
+function degrees(radians) {
+  return radians * (180 / Math.PI);
+}
+
+globalThis.radians = radians;
+globalThis.degrees = degrees;
