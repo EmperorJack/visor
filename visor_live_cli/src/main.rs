@@ -59,10 +59,10 @@ fn main() {
 
     let mut engine = engine_builder.build();
 
-    let sketch_id = engine.create_sketch(args.sketch_file_path).id().clone();
+    let sketch_id = *engine.create_sketch(args.sketch_file_path).id();
 
     let render_texture = engine.create_render_texture(600, 400);
-    let render_texture_id = render_texture.id().clone();
+    let render_texture_id = *render_texture.id();
     let render_texture_view = render_texture.texture_view();
 
     engine
@@ -77,7 +77,7 @@ fn main() {
         .build(&event_loop)
         .expect("Unexpected: could not build display window");
 
-    let display_id = engine.create_display(Arc::new(window)).id().clone();
+    let display_id = *engine.create_display(Arc::new(window)).id();
     engine
         .displays_mut()
         .get_mut(&display_id)
@@ -125,7 +125,7 @@ fn main() {
                 window_id, event, ..
             } => match event {
                 WindowEvent::CloseRequested => {
-                    let display_id = engine.display_id_for_window_id(&window_id).clone();
+                    let display_id = *engine.display_id_for_window_id(&window_id);
 
                     engine.remove_display(&display_id);
                 }
@@ -137,7 +137,7 @@ fn main() {
                 }
 
                 WindowEvent::Resized(size) => {
-                    let display_id = engine.display_id_for_window_id(&window_id).clone();
+                    let display_id = *engine.display_id_for_window_id(&window_id);
 
                     let display = engine
                         .displays_mut()

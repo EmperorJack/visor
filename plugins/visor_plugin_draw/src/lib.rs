@@ -55,7 +55,7 @@ impl SketchState {
         }
 
         // Return base draw if the given draw ID is invalid
-        return &self.draw;
+        &self.draw
     }
 
     fn store_draw(&mut self, draw: Draw) -> DrawId {
@@ -151,7 +151,7 @@ impl SketchState {
             return id;
         }
 
-        return DrawId(0);
+        DrawId(0)
     }
 
     fn apply_shape_commands(&mut self) {
@@ -184,7 +184,7 @@ impl SketchState {
 
             for command in commands {
                 match command {
-                    PolylineCommand::Point { x, y } => points.push((*x, *y).into()),
+                    PolylineCommand::Point { x, y } => points.push((*x, *y)),
                     _ => polyline = command.apply(polyline),
                 }
             }

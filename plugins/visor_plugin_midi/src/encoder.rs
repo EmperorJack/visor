@@ -29,13 +29,13 @@ impl MidiEncoder {
             MidiEncoderMode::Mode7fh01h => {
                 if value <= 64 {
                     self.is_increment = true;
-                } else if 65 <= value && value <= 127 {
+                } else if (65..=127).contains(&value) {
                     self.is_decrement = true;
                 }
             }
 
             MidiEncoderMode::Mode3fh41h => {
-                if 65 <= value && value <= 127 {
+                if (65..=127).contains(&value) {
                     self.is_increment = true;
                 } else if value <= 63 {
                     self.is_decrement = true

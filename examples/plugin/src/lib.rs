@@ -82,7 +82,7 @@ mod tests {
         let sketch_path =
             PathBuf::from(format!("{}/example-sketch.js", env!("CARGO_MANIFEST_DIR")));
 
-        let sketch_id = engine.create_sketch(sketch_path).id().clone();
+        let sketch_id = *engine.create_sketch(sketch_path).id();
 
         engine.update();
 

@@ -73,7 +73,7 @@ struct SketchState {
 enum Event {
     AddInputConnection(String, InputConnection),
     RemoveInputConnection(String),
-    LoadMapping(MidiMapping),
+    LoadMapping(Box<MidiMapping>),
     ClearMapping,
 }
 
@@ -209,7 +209,7 @@ impl Plugin for MidiPlugin {
                         input_connection.connection.close();
                     }
                 }
-                Event::LoadMapping(midi_mapping) => state.midi_mapping = Some(midi_mapping),
+                Event::LoadMapping(midi_mapping) => state.midi_mapping = Some(*midi_mapping),
                 Event::ClearMapping => state.midi_mapping = None,
             }
         }
@@ -290,15 +290,10 @@ fn create_input_connection(name: String) -> Result<InputConnection> {
         |_timestamp, event, message_sender| {
             let event = LiveEvent::parse(event).ok();
 
-            if let Some(event) = event {
-                match event {
-                    LiveEvent::Midi { channel, message } => {
-                        message_sender
-                            .try_send((channel.into(), message))
-                            .expect("Unexpected: could not send to midi message channel");
-                    }
-                    _ => {}
-                };
+            if let Some(LiveEvent::Midi { channel, message }) = event {
+                message_sender
+                    .try_send((channel.into(), message))
+                    .expect("Unexpected: could not send to midi message channel");
             }
         },
         message_sender,
@@ -370,7 +365,7 @@ fn op_midi_load_mapping(state: &mut OpState, #[string] path: String) -> Result<(
 
     let event_sender = state.sketch_store().get::<mpsc::Sender<Event>>();
     event_sender
-        .try_send(Event::LoadMapping(midi_mapping))
+        .try_send(Event::LoadMapping(Box::new(midi_mapping)))
         .expect("Unexpected: could not send midi plugin event");
 
     Ok(())
@@ -394,7 +389,7 @@ fn op_midi_control_value(state: &mut OpState, #[string] name: String) -> Result<
         return Err(anyhow!("No MIDI variable mapping loaded"));
     };
 
-    Ok(variables.control_value(&name)?)
+    variables.control_value(&name)
 }
 
 #[op2(fast)]
@@ -405,7 +400,7 @@ fn op_midi_encoder_increment(state: &mut OpState, #[string] name: String) -> Res
         return Err(anyhow!("No MIDI variable mapping loaded"));
     };
 
-    Ok(variables.is_encoder_increment(&name)?)
+    variables.is_encoder_increment(&name)
 }
 
 #[op2(fast)]
@@ -416,7 +411,7 @@ fn op_midi_encoder_decrement(state: &mut OpState, #[string] name: String) -> Res
         return Err(anyhow!("No MIDI variable mapping loaded"));
     };
 
-    Ok(variables.is_encoder_decrement(&name)?)
+    variables.is_encoder_decrement(&name)
 }
 
 #[op2(fast)]
@@ -427,7 +422,7 @@ fn op_midi_note_on(state: &mut OpState, #[string] name: String) -> Result<bool> 
         return Err(anyhow!("No MIDI variable mapping loaded"));
     };
 
-    Ok(variables.is_note_on(&name)?)
+    variables.is_note_on(&name)
 }
 
 #[op2(fast)]
@@ -438,7 +433,7 @@ fn op_midi_note_off(state: &mut OpState, #[string] name: String) -> Result<bool>
         return Err(anyhow!("No MIDI variable mapping loaded"));
     };
 
-    Ok(variables.is_note_off(&name)?)
+    variables.is_note_off(&name)
 }
 
 #[op2(fast)]
@@ -449,7 +444,7 @@ fn op_midi_note_down(state: &mut OpState, #[string] name: String) -> Result<bool
         return Err(anyhow!("No MIDI variable mapping loaded"));
     };
 
-    Ok(variables.is_note_down(&name)?)
+    variables.is_note_down(&name)
 }
 
 #[op2(fast)]
@@ -460,5 +455,5 @@ fn op_midi_note_velocity(state: &mut OpState, #[string] name: String) -> Result<
         return Err(anyhow!("No MIDI variable mapping loaded"));
     };
 
-    Ok(variables.note_velocity(&name)?)
+    variables.note_velocity(&name)
 }

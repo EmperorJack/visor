@@ -59,8 +59,7 @@ impl Engine {
                 let runtime_handle = runtime.handle().clone();
 
                 (Some(runtime), runtime_handle)
-            })
-            .into();
+            });
 
         let compiled_plugins: Vec<LoadedPlugin> =
             plugins.into_iter().map(LoadedPlugin::Compiled).collect();
@@ -351,7 +350,7 @@ impl Engine {
     }
 
     pub fn displays(&self) -> &HashMap<DisplayId, Display> {
-        &self.display_manager.displays()
+        self.display_manager.displays()
     }
 
     pub fn displays_mut(&mut self) -> &mut HashMap<DisplayId, Display> {
@@ -373,8 +372,7 @@ impl Engine {
     }
 
     pub fn sketch_stores(&self) -> &HashMap<SketchId, SketchStore> {
-        &self
-            .sketch_stores
+        self.sketch_stores
             .as_ref()
             .expect("Unexpected: sketch stores should be defined!")
     }

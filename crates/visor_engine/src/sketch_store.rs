@@ -15,10 +15,12 @@ impl SketchStore {
         self.data
             .get(&type_id)
             .and_then(|value| value.downcast_ref())
-            .expect(&format!(
-                "Store error: get() called before set() for type {:?}",
-                std::any::type_name::<T>(),
-            ))
+            .unwrap_or_else(|| {
+                panic!(
+                    "Store error: get() called before set() for type {:?}",
+                    std::any::type_name::<T>()
+                )
+            })
     }
 
     pub fn get_mut<T: Send + Sync + 'static>(&mut self) -> &mut T {
@@ -26,10 +28,12 @@ impl SketchStore {
         self.data
             .get_mut(&type_id)
             .and_then(|value| value.downcast_mut())
-            .expect(&format!(
-                "Store error: get_mut() called before set() for type {:?}",
-                std::any::type_name::<T>(),
-            ))
+            .unwrap_or_else(|| {
+                panic!(
+                    "Store error: get_mut() called before set() for type {:?}",
+                    std::any::type_name::<T>()
+                )
+            })
     }
 
     pub fn set<T: Send + Sync + 'static>(&mut self, value: T) {
@@ -42,10 +46,12 @@ impl SketchStore {
         *self
             .data
             .remove(&type_id)
-            .expect(&format!(
-                "Store error: take() called before set() for type {:?}",
-                std::any::type_name::<T>()
-            ))
+            .unwrap_or_else(|| {
+                panic!(
+                    "Store error: take() called before set() for type {:?}",
+                    std::any::type_name::<T>()
+                )
+            })
             .downcast()
             .expect("Unexpected: could not downcast item from sketch store")
     }
