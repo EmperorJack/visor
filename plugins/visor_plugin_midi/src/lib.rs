@@ -122,7 +122,7 @@ impl MidiPlugin {
         Ok(())
     }
 
-    pub fn disconnect_input_device(store: &Store, name: String) -> Result<()> {
+    pub fn disconnect_input_device(store: &Store, name: String) {
         let mut state = store
             .get::<RwLock<State>>()
             .write()
@@ -131,8 +131,6 @@ impl MidiPlugin {
         if let Some(input_connection) = state.input_connections.remove(&name) {
             input_connection.connection.close();
         }
-
-        Ok(())
     }
 
     pub fn load_midi_mapping(store: &Store, path: PathBuf) -> Result<()> {
@@ -148,15 +146,104 @@ impl MidiPlugin {
         Ok(())
     }
 
-    pub fn clear_midi_mapping(store: &Store) -> Result<()> {
+    pub fn clear_midi_mapping(store: &Store) {
         let mut state = store
             .get::<RwLock<State>>()
             .write()
             .expect("Unexpected: could not acquire write lock for state");
 
         state.midi_mapping = None;
+    }
 
-        Ok(())
+    pub fn control_value(store: &Store, name: &str) -> Result<f32> {
+        let state = store
+            .get::<RwLock<State>>()
+            .read()
+            .expect("Unexpected: could not acquire read lock for state");
+
+        let Some(ref midi_mapping) = state.midi_mapping else {
+            return Err(anyhow!("No MIDI variable mapping loaded"));
+        };
+
+        midi_mapping.variables().control_value(name)
+    }
+
+    pub fn is_encoder_increment(store: &Store, name: &str) -> Result<bool> {
+        let state = store
+            .get::<RwLock<State>>()
+            .read()
+            .expect("Unexpected: could not acquire read lock for state");
+
+        let Some(ref midi_mapping) = state.midi_mapping else {
+            return Err(anyhow!("No MIDI variable mapping loaded"));
+        };
+
+        midi_mapping.variables().is_encoder_increment(name)
+    }
+
+    pub fn is_encoder_decrement(store: &Store, name: &str) -> Result<bool> {
+        let state = store
+            .get::<RwLock<State>>()
+            .read()
+            .expect("Unexpected: could not acquire read lock for state");
+
+        let Some(ref midi_mapping) = state.midi_mapping else {
+            return Err(anyhow!("No MIDI variable mapping loaded"));
+        };
+
+        midi_mapping.variables().is_encoder_decrement(name)
+    }
+
+    pub fn is_note_on(store: &Store, name: &str) -> Result<bool> {
+        let state = store
+            .get::<RwLock<State>>()
+            .read()
+            .expect("Unexpected: could not acquire read lock for state");
+
+        let Some(ref midi_mapping) = state.midi_mapping else {
+            return Err(anyhow!("No MIDI variable mapping loaded"));
+        };
+
+        midi_mapping.variables().is_note_on(name)
+    }
+
+    pub fn is_note_off(store: &Store, name: &str) -> Result<bool> {
+        let state = store
+            .get::<RwLock<State>>()
+            .read()
+            .expect("Unexpected: could not acquire read lock for state");
+
+        let Some(ref midi_mapping) = state.midi_mapping else {
+            return Err(anyhow!("No MIDI variable mapping loaded"));
+        };
+
+        midi_mapping.variables().is_note_off(name)
+    }
+
+    pub fn is_note_down(store: &Store, name: &str) -> Result<bool> {
+        let state = store
+            .get::<RwLock<State>>()
+            .read()
+            .expect("Unexpected: could not acquire read lock for state");
+
+        let Some(ref midi_mapping) = state.midi_mapping else {
+            return Err(anyhow!("No MIDI variable mapping loaded"));
+        };
+
+        midi_mapping.variables().is_note_down(name)
+    }
+
+    pub fn note_velocity(store: &Store, name: &str) -> Result<f32> {
+        let state = store
+            .get::<RwLock<State>>()
+            .read()
+            .expect("Unexpected: could not acquire read lock for state");
+
+        let Some(ref midi_mapping) = state.midi_mapping else {
+            return Err(anyhow!("No MIDI variable mapping loaded"));
+        };
+
+        midi_mapping.variables().note_velocity(name)
     }
 }
 
