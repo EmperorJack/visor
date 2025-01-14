@@ -39,6 +39,7 @@ const {
   op_draw_translate,
   op_draw_rotate,
   op_draw_scale,
+  op_draw_noise,
 } = Deno.core.ops;
 
 class Draw {
@@ -381,5 +382,15 @@ function degrees(radians) {
   return radians * (180 / Math.PI);
 }
 
+function lerp(start, stop, amount) {
+  return start + (stop - start) * amount;
+}
+
+function noise(x, y = 0, z = 0) {
+  return op_draw_noise(x, y, z);
+}
+
 globalThis.radians = radians;
 globalThis.degrees = degrees;
+globalThis.lerp = lerp;
+globalThis.noise = noise;
