@@ -374,6 +374,10 @@ globalThis.hsva = hsva;
 
 // TODO: move these to a math crate?
 
+function random(amount) {
+  return Math.random() * amount;
+}
+
 function radians(degrees) {
   return degrees * (Math.PI / 180);
 }
@@ -386,11 +390,17 @@ function lerp(start, stop, amount) {
   return start + (stop - start) * amount;
 }
 
+function norm(value, start, stop) {
+  return (value - start) / (stop - start);
+}
+
 function noise(x, y = 0, z = 0) {
   return op_draw_noise(x, y, z);
 }
 
+globalThis.random = random;
 globalThis.radians = radians;
 globalThis.degrees = degrees;
 globalThis.lerp = lerp;
+globalThis.norm = norm;
 globalThis.noise = noise;
