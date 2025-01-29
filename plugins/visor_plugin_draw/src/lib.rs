@@ -11,6 +11,7 @@ use nannou::{
     noise::{NoiseFn, Perlin},
 };
 use polyline::*;
+use quad::*;
 use rect::*;
 use spline::*;
 use visor_engine::{
@@ -24,6 +25,7 @@ use visor_engine::{
 
 mod ellipse;
 mod polyline;
+mod quad;
 mod rect;
 mod spline;
 
@@ -43,6 +45,7 @@ struct SketchState {
     next_shape_id: ShapeId,
     ellipse_command_map: EllipseCommandMap,
     rect_command_map: RectCommandMap,
+    quad_command_map: QuadCommandMap,
     polyline_command_map: PolylineCommandMap,
     spline_command_map: SplineCommandMap,
     noise: Perlin,
@@ -102,6 +105,25 @@ impl SketchState {
 
     fn store_rect_command(&mut self, id: ShapeId, command: RectCommand) {
         self.rect_command_map
+            .get_mut(&id)
+            .expect("Unexpected: could not find shape commands for given id")
+            .1
+            .push(command);
+    }
+
+    fn start_drawing_quad(&mut self, draw_id: DrawId) -> ShapeId {
+        self.next_shape_id.0 += 1;
+
+        let draw_id = self.clamp_draw_id(draw_id);
+
+        self.quad_command_map
+            .insert(self.next_shape_id, (draw_id, Vec::new()));
+
+        self.next_shape_id
+    }
+
+    fn store_quad_command(&mut self, id: ShapeId, command: QuadCommand) {
+        self.quad_command_map
             .get_mut(&id)
             .expect("Unexpected: could not find shape commands for given id")
             .1
@@ -179,6 +201,16 @@ impl SketchState {
             }
         }
 
+        for (draw_id, commands) in self.quad_command_map.values() {
+            let draw = self.get_draw(*draw_id);
+
+            let mut quad = draw.inner.quad();
+
+            for command in commands {
+                quad = command.apply(quad);
+            }
+        }
+
         for (draw_id, commands) in self.polyline_command_map.values() {
             let draw = self.get_draw(*draw_id);
 
@@ -227,6 +259,7 @@ impl SketchState {
 
         self.ellipse_command_map.clear();
         self.rect_command_map.clear();
+        self.quad_command_map.clear();
         self.polyline_command_map.clear();
         self.spline_command_map.clear();
     }
@@ -270,6 +303,16 @@ extension!(
         op_draw_rect_stroke_rgba,
         op_draw_rect_stroke_hsva,
         op_draw_rect_stroke_weight,
+        op_draw_quad,
+        op_draw_quad_xy,
+        op_draw_quad_xyz,
+        op_draw_quad_points,
+        op_draw_quad_fill_rgba,
+        op_draw_quad_fill_hsva,
+        op_draw_quad_no_fill,
+        op_draw_quad_stroke_rgba,
+        op_draw_quad_stroke_hsva,
+        op_draw_quad_stroke_weight,
         op_draw_polyline,
         op_draw_polyline_xyz,
         op_draw_polyline_point,
@@ -321,6 +364,7 @@ impl Plugin for DrawPlugin {
             next_shape_id: ShapeId(0),
             ellipse_command_map: Default::default(),
             rect_command_map: Default::default(),
+            quad_command_map: Default::default(),
             polyline_command_map: Default::default(),
             spline_command_map: Default::default(),
             noise: Default::default(),

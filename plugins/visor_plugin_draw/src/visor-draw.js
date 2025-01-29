@@ -21,6 +21,16 @@ const {
   op_draw_rect_stroke_rgba,
   op_draw_rect_stroke_hsva,
   op_draw_rect_stroke_weight,
+  op_draw_quad,
+  op_draw_quad_xy,
+  op_draw_quad_xyz,
+  op_draw_quad_points,
+  op_draw_quad_fill_rgba,
+  op_draw_quad_fill_hsva,
+  op_draw_quad_no_fill,
+  op_draw_quad_stroke_rgba,
+  op_draw_quad_stroke_hsva,
+  op_draw_quad_stroke_weight,
   op_draw_polyline,
   op_draw_polyline_xyz,
   op_draw_polyline_point,
@@ -81,6 +91,10 @@ class Draw {
   rect() {
     const shapeId = op_draw_rect(this.#id);
     return new Rect(shapeId);
+  }
+  quad() {
+    const shapeId = op_draw_quad(this.#id);
+    return new Quad(shapeId);
   }
   polyline() {
     const shapeId = op_draw_polyline(this.#id);
@@ -240,6 +254,75 @@ class Rect {
 
   strokeWeight(w) {
     op_draw_rect_stroke_weight(this.#id, w);
+    return this;
+  }
+}
+
+class Quad {
+  #id;
+
+  constructor(id) {
+    this.#id = id;
+  }
+
+  xy(x, y) {
+    op_draw_quad_xy(this.#id, x, y);
+    return this;
+  }
+
+  xyz(x, y, z) {
+    op_draw_quad_xyz(this.#id, x, y, z);
+    return this;
+  }
+
+  points(x1, y1, x2, y2, x3, y3, x4, y4) {
+    op_draw_quad_points(this.#id, x1, y1, x2, y2, x3, y3, x4, y4);
+    return this;
+  }
+
+  fill(color) {
+    switch (color.type) {
+      case "rgba": {
+        const { r, g, b, a } = color;
+        op_draw_quad_fill_rgba(this.#id, r, g, b, a);
+        break;
+      }
+
+      case "hsva": {
+        const { h, s, v, a } = color;
+        op_draw_quad_fill_hsva(this.#id, h, s, v, a);
+        break;
+      }
+    }
+
+    return this;
+  }
+
+  noFill() {
+    op_draw_quad_no_fill(this.#id);
+    return this;
+  }
+
+  stroke(color) {
+    switch (color.type) {
+      case "rgba": {
+        const { r, g, b, a } = color;
+        op_draw_quad_stroke_rgba(this.#id, r, g, b, a);
+        break;
+      }
+
+      case "hsva": {
+        const { h, s, v, a } = color;
+        op_draw_quad_stroke_hsva(this.#id, h, s, v, a);
+        break;
+      }
+    }
+
+    return this;
+  }
+
+  strokeWeight(w) {
+    op_draw_quad_stroke_weight(this.#id, w);
     return this;
   }
 }
