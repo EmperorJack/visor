@@ -477,6 +477,22 @@ function norm(value, start, stop) {
   return (value - start) / (stop - start);
 }
 
+function map(value, start1, stop1, start2, stop2) {
+  return start2 + (stop2 - start2) * ((value - start1) / (stop1 - start1));
+}
+
+function constrain(value, min, max) {
+  if (value < min) {
+    return min;
+  }
+
+  if (value > max) {
+    return max;
+  }
+
+  return value;
+}
+
 function noise(x, y = 0, z = 0) {
   return op_draw_noise(x, y, z);
 }
@@ -486,4 +502,6 @@ globalThis.radians = radians;
 globalThis.degrees = degrees;
 globalThis.lerp = lerp;
 globalThis.norm = norm;
+globalThis.map = map;
+globalThis.constrain = constrain;
 globalThis.noise = noise;
