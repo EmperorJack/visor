@@ -101,8 +101,7 @@ impl Sketch {
             let (result_sender, result_receiver) = oneshot::channel();
 
             self.worker_task_sender
-                .send(SketchWorkerTask::RequestCompile(result_sender))
-                .await
+                .try_send(SketchWorkerTask::RequestCompile(result_sender))
                 .expect("Unexpected: could not send request compile task to sketch worker");
 
             result_receiver
@@ -116,8 +115,7 @@ impl Sketch {
             let (result_sender, result_receiver) = oneshot::channel();
 
             self.worker_task_sender
-                .send(SketchWorkerTask::RequestSetup(result_sender))
-                .await
+                .try_send(SketchWorkerTask::RequestSetup(result_sender))
                 .expect("Unexpected: could not send request setup task to sketch worker");
 
             result_receiver
@@ -126,15 +124,14 @@ impl Sketch {
         });
     }
 
-    pub(crate) async fn request_update(
+    pub(crate) fn request_update(
         &self,
         store: SketchStore,
     ) -> oneshot::Receiver<SketchUpdateResult> {
         let (result_sender, result_receiver) = oneshot::channel();
 
         self.worker_task_sender
-            .send(SketchWorkerTask::Update(store, result_sender))
-            .await
+            .try_send(SketchWorkerTask::Update(store, result_sender))
             .expect("Unexpected: could not send update task to sketch worker");
 
         result_receiver

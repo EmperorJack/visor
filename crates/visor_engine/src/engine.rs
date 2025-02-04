@@ -199,7 +199,7 @@ impl Engine {
                     .remove(sketch.id())
                     .expect("Unexpected: could not find sketch store");
 
-                let result_receiver = sketch.request_update(store).await;
+                let result_receiver = sketch.request_update(store);
 
                 join_set.spawn(async move {
                     result_receiver
