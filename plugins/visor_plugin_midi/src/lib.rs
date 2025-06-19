@@ -5,10 +5,11 @@ use deno_core::{
     anyhow::{anyhow, Result},
     extension, op2, Extension, OpState,
 };
+pub use mapping::MidiMappingEvent;
 use mapping::{MidiMapping, MidiVariables};
 use midir::{MidiInput, MidiInputConnection};
 use midly::{live::LiveEvent, MidiMessage};
-use tokio::sync::mpsc;
+use tokio::sync::{broadcast, mpsc};
 use visor_engine::{
     engine::Engine,
     plugin::{AccessSketchStore, Plugin},
@@ -245,6 +246,21 @@ impl MidiPlugin {
 
         midi_mapping.variables().note_velocity(name)
     }
+
+    pub fn subscribe_mapping_event(
+        store: &Store,
+    ) -> Result<broadcast::Receiver<(String, MidiMappingEvent)>> {
+        let mut state = store
+            .get::<RwLock<State>>()
+            .write()
+            .expect("Unexpected: could not acquire write lock for state");
+
+        let Some(ref mut midi_mapping) = state.midi_mapping else {
+            return Err(anyhow!("No MIDI variable mapping loaded"));
+        };
+
+        Ok(midi_mapping.subscribe())
+    }
 }
 
 impl Plugin for MidiPlugin {
@@ -272,7 +288,7 @@ impl Plugin for MidiPlugin {
     ) {
         let state = store
             .get::<RwLock<State>>()
-            .write()
+            .read()
             .expect("Unexpected: could not acquire read lock for state");
 
         sketch_store.set(state.event_sender.clone());
@@ -310,7 +326,7 @@ impl Plugin for MidiPlugin {
     ) {
         let state = store
             .get::<RwLock<State>>()
-            .write()
+            .read()
             .expect("Unexpected: could not acquire read lock for state");
 
         let sketch_state = SketchState {

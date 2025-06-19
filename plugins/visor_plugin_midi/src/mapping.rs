@@ -1,5 +1,6 @@
 use deno_core::anyhow::{anyhow, Result};
 use std::collections::HashMap;
+use tokio::sync::broadcast;
 
 use crate::{
     config::{MidiMappingConfig, MidiVariableConfig},
@@ -9,6 +10,7 @@ use crate::{
 };
 
 pub(crate) struct MidiMapping {
+    event_sender: Option<broadcast::Sender<(String, MidiMappingEvent)>>,
     variable_name_mapping: MidiVariableNameMapping,
     variables: MidiVariables,
 }
@@ -21,11 +23,22 @@ impl MidiMapping {
             .get(&(channel, number))
         {
             for name in names {
-                self.variables
+                let variable = self
+                    .variables
                     .controls
                     .get_mut(name)
-                    .expect("Unexpected: could not find midi variable")
-                    .changed(value);
+                    .expect("Unexpected: could not find midi variable");
+
+                variable.changed(value);
+
+                if let Some(event_sender) = self.event_sender.as_ref() {
+                    event_sender
+                        .send((
+                            name.into(),
+                            MidiMappingEvent::ControllerChanged(variable.value()),
+                        ))
+                        .ok();
+                }
             }
         }
 
@@ -35,11 +48,25 @@ impl MidiMapping {
             .get(&(channel, number))
         {
             for name in names {
-                self.variables
+                let variable = self
+                    .variables
                     .encoders
                     .get_mut(name)
-                    .expect("Unexpected: could not find midi variable")
-                    .changed(value);
+                    .expect("Unexpected: could not find midi variable");
+
+                variable.changed(value);
+
+                if let Some(event_sender) = self.event_sender.as_ref() {
+                    if variable.is_increment() {
+                        event_sender
+                            .send((name.into(), MidiMappingEvent::EncoderIncrement))
+                            .ok();
+                    } else if variable.is_decrement() {
+                        event_sender
+                            .send((name.into(), MidiMappingEvent::EncoderDecrement))
+                            .ok();
+                    }
+                }
             }
         }
     }
@@ -51,11 +78,19 @@ impl MidiMapping {
             .get(&(channel, number))
         {
             for name in names {
-                self.variables
+                let variable = self
+                    .variables
                     .notes
                     .get_mut(name)
-                    .expect("Unexpected: could not find midi variable")
-                    .on(velocity);
+                    .expect("Unexpected: could not find midi variable");
+
+                variable.on(velocity);
+
+                if let Some(event_sender) = self.event_sender.as_ref() {
+                    event_sender
+                        .send((name.into(), MidiMappingEvent::NoteOn(variable.velocity())))
+                        .ok();
+                }
             }
         }
     }
@@ -67,11 +102,19 @@ impl MidiMapping {
             .get(&(channel, number))
         {
             for name in names {
-                self.variables
+                let variable = self
+                    .variables
                     .notes
                     .get_mut(name)
-                    .expect("Unexpected: could not find midi variable")
-                    .off(velocity);
+                    .expect("Unexpected: could not find midi variable");
+
+                variable.off(velocity);
+
+                if let Some(event_sender) = self.event_sender.as_ref() {
+                    event_sender
+                        .send((name.into(), MidiMappingEvent::NoteOff(variable.velocity())))
+                        .ok();
+                }
             }
         }
     }
@@ -89,6 +132,18 @@ impl MidiMapping {
             note.after_sketch_update();
         }
     }
+
+    pub fn subscribe(&mut self) -> broadcast::Receiver<(String, MidiMappingEvent)> {
+        if let Some(event_sender) = &self.event_sender {
+            return event_sender.subscribe();
+        }
+
+        let (event_sender, event_receiver) = broadcast::channel(1024);
+
+        self.event_sender = Some(event_sender);
+
+        event_receiver
+    }
 }
 
 pub(crate) struct MidiVariableNameMapping {
@@ -102,6 +157,15 @@ pub(crate) struct MidiVariables {
     controls: HashMap<String, MidiControl>,
     encoders: HashMap<String, MidiEncoder>,
     notes: HashMap<String, MidiNote>,
+}
+
+#[derive(Clone)]
+pub enum MidiMappingEvent {
+    ControllerChanged(f32),
+    EncoderIncrement,
+    EncoderDecrement,
+    NoteOn(f32),
+    NoteOff(f32),
 }
 
 impl MidiVariables {
@@ -211,6 +275,7 @@ impl From<MidiMappingConfig> for MidiMapping {
         }
 
         Self {
+            event_sender: None,
             variable_name_mapping,
             variables,
         }
