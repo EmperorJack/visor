@@ -332,8 +332,8 @@ extension!(
         op_draw_scale,
         op_draw_noise,
     ],
-    esm_entry_point = "ext:visor_plugin_draw/src/visor-plugin-draw.js",
-    esm = ["src/visor-plugin-draw.js"]
+    esm_entry_point = "ext:visor_plugin_draw/src/visor-plugin-draw.ts",
+    esm = ["src/visor-plugin-draw.ts"]
 );
 
 impl Plugin for DrawPlugin {

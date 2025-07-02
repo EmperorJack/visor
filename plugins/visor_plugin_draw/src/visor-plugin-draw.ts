@@ -1,3 +1,103 @@
+type ShapeCommand = (id: number) => number;
+type ShapeXYCommand = (id: number, x: number, y: number) => void;
+type ShapeXYZCommand = (id: number, x: number, y: number, z: number) => void;
+type ShapeWHCommand = (id: number, w: number, h: number) => void;
+type ShapeRGBACommand = (
+  id: number,
+  r: number,
+  g: number,
+  b: number,
+  a: number
+) => void;
+type ShapeHSVACommand = (
+  id: number,
+  h: number,
+  s: number,
+  v: number,
+  a: number
+) => void;
+type ShapeNoFillCommand = (id: number) => void;
+type ShapeStrokeWeightCommand = (id: number, w: number) => void;
+type ShapeTensionCommand = (id: number, t: number) => void;
+type ShapePointCommand = (id: number, x: number, y: number) => void;
+
+declare namespace Deno {
+  export const core: {
+    ops: {
+      op_draw_background_rgb: (
+        id: number,
+        r: number,
+        g: number,
+        b: number
+      ) => void;
+      op_draw_background_hsv: (
+        id: number,
+        h: number,
+        s: number,
+        v: number
+      ) => void;
+      op_draw_ellipse: ShapeCommand;
+      op_draw_ellipse_xy: ShapeXYCommand;
+      op_draw_ellipse_xyz: ShapeXYZCommand;
+      op_draw_ellipse_wh: ShapeWHCommand;
+      op_draw_ellipse_fill_rgba: ShapeRGBACommand;
+      op_draw_ellipse_fill_hsva: ShapeHSVACommand;
+      op_draw_ellipse_no_fill: ShapeNoFillCommand;
+      op_draw_ellipse_stroke_rgba: ShapeRGBACommand;
+      op_draw_ellipse_stroke_hsva: ShapeHSVACommand;
+      op_draw_ellipse_stroke_weight: ShapeStrokeWeightCommand;
+      op_draw_rect: ShapeCommand;
+      op_draw_rect_xy: ShapeXYCommand;
+      op_draw_rect_xyz: ShapeXYZCommand;
+      op_draw_rect_wh: ShapeWHCommand;
+      op_draw_rect_fill_rgba: ShapeRGBACommand;
+      op_draw_rect_fill_hsva: ShapeHSVACommand;
+      op_draw_rect_no_fill: ShapeNoFillCommand;
+      op_draw_rect_stroke_rgba: ShapeRGBACommand;
+      op_draw_rect_stroke_hsva: ShapeHSVACommand;
+      op_draw_rect_stroke_weight: ShapeStrokeWeightCommand;
+      op_draw_quad: ShapeCommand;
+      op_draw_quad_xy: ShapeXYCommand;
+      op_draw_quad_xyz: ShapeXYZCommand;
+      op_draw_quad_points: (
+        id: number,
+        x1: number,
+        y1: number,
+        x2: number,
+        y2: number,
+        x3: number,
+        y3: number,
+        x4: number,
+        y4: number
+      ) => void;
+      op_draw_quad_fill_rgba: ShapeRGBACommand;
+      op_draw_quad_fill_hsva: ShapeHSVACommand;
+      op_draw_quad_no_fill: ShapeNoFillCommand;
+      op_draw_quad_stroke_rgba: ShapeRGBACommand;
+      op_draw_quad_stroke_hsva: ShapeHSVACommand;
+      op_draw_quad_stroke_weight: ShapeStrokeWeightCommand;
+      op_draw_polyline: ShapeCommand;
+      op_draw_polyline_xyz: ShapeXYZCommand;
+      op_draw_polyline_point: ShapePointCommand;
+      op_draw_polyline_stroke_rgba: ShapeRGBACommand;
+      op_draw_polyline_stroke_hsva: ShapeHSVACommand;
+      op_draw_polyline_stroke_weight: ShapeStrokeWeightCommand;
+      op_draw_spline: ShapeCommand;
+      op_draw_spline_xyz: ShapeXYZCommand;
+      op_draw_spline_point: ShapePointCommand;
+      op_draw_spline_stroke_rgba: ShapeRGBACommand;
+      op_draw_spline_stroke_hsva: ShapeHSVACommand;
+      op_draw_spline_stroke_weight: ShapeStrokeWeightCommand;
+      op_draw_spline_tension: ShapeTensionCommand;
+      op_draw_spline_resolution: (id: number, n: number) => void;
+      op_draw_translate: (id: number, x: number, y: number) => number;
+      op_draw_rotate: (id: number, radians: number) => number;
+      op_draw_scale: (id: number, s: number) => number;
+      op_draw_noise: (x: number, y: number, z: number) => number;
+    };
+  };
+}
+
 const {
   op_draw_background_rgb,
   op_draw_background_hsv,
@@ -37,7 +137,6 @@ const {
   op_draw_polyline_stroke_rgba,
   op_draw_polyline_stroke_hsva,
   op_draw_polyline_stroke_weight,
-  op_draw_polyline_tension,
   op_draw_spline,
   op_draw_spline_xyz,
   op_draw_spline_point,
@@ -52,10 +151,26 @@ const {
   op_draw_noise,
 } = Deno.core.ops;
 
-class Draw {
-  #id;
+type Color =
+  | {
+      type: "rgba";
+      r: number;
+      g: number;
+      b: number;
+      a: number;
+    }
+  | {
+      type: "hsva";
+      h: number;
+      s: number;
+      v: number;
+      a: number;
+    };
 
-  constructor(id) {
+class Draw {
+  #id: number;
+
+  constructor(id: number) {
     this.#id = id;
   }
 
@@ -67,7 +182,7 @@ class Draw {
   clear() {
     op_draw_background_rgb(this.#id, 0, 0, 0);
   }
-  background(color) {
+  background(color: Color) {
     switch (color.type) {
       case "rgba": {
         const { r, g, b } = color;
@@ -106,43 +221,43 @@ class Draw {
   }
 
   // Transforms
-  translate(x, y) {
+  translate(x: number, y: number) {
     const nextId = op_draw_translate(this.#id, x, y);
     return new Draw(nextId);
   }
-  rotate(radians) {
+  rotate(radians: number) {
     const nextId = op_draw_rotate(this.#id, radians);
     return new Draw(nextId);
   }
-  scale(s) {
+  scale(s: number) {
     const nextId = op_draw_scale(this.#id, s);
     return new Draw(nextId);
   }
 }
 
 class Ellipse {
-  #id;
+  #id: number;
 
-  constructor(id) {
+  constructor(id: number) {
     this.#id = id;
   }
 
-  xy(x, y) {
+  xy(x: number, y: number) {
     op_draw_ellipse_xy(this.#id, x, y);
     return this;
   }
 
-  xyz(x, y, z) {
+  xyz(x: number, y: number, z: number) {
     op_draw_ellipse_xyz(this.#id, x, y, z);
     return this;
   }
 
-  wh(w, h) {
+  wh(w: number, h: number) {
     op_draw_ellipse_wh(this.#id, w, h);
     return this;
   }
 
-  fill(color) {
+  fill(color: Color) {
     switch (color.type) {
       case "rgba": {
         const { r, g, b, a } = color;
@@ -165,7 +280,7 @@ class Ellipse {
     return this;
   }
 
-  stroke(color) {
+  stroke(color: Color) {
     switch (color.type) {
       case "rgba": {
         const { r, g, b, a } = color;
@@ -183,35 +298,35 @@ class Ellipse {
     return this;
   }
 
-  strokeWeight(w) {
+  strokeWeight(w: number) {
     op_draw_ellipse_stroke_weight(this.#id, w);
     return this;
   }
 }
 
 class Rect {
-  #id;
+  #id: number;
 
-  constructor(id) {
+  constructor(id: number) {
     this.#id = id;
   }
 
-  xy(x, y) {
+  xy(x: number, y: number) {
     op_draw_rect_xy(this.#id, x, y);
     return this;
   }
 
-  xyz(x, y, z) {
+  xyz(x: number, y: number, z: number) {
     op_draw_rect_xyz(this.#id, x, y, z);
     return this;
   }
 
-  wh(w, h) {
+  wh(w: number, h: number) {
     op_draw_rect_wh(this.#id, w, h);
     return this;
   }
 
-  fill(color) {
+  fill(color: Color) {
     switch (color.type) {
       case "rgba": {
         const { r, g, b, a } = color;
@@ -234,7 +349,7 @@ class Rect {
     return this;
   }
 
-  stroke(color) {
+  stroke(color: Color) {
     switch (color.type) {
       case "rgba": {
         const { r, g, b, a } = color;
@@ -252,35 +367,44 @@ class Rect {
     return this;
   }
 
-  strokeWeight(w) {
+  strokeWeight(w: number) {
     op_draw_rect_stroke_weight(this.#id, w);
     return this;
   }
 }
 
 class Quad {
-  #id;
+  #id: number;
 
-  constructor(id) {
+  constructor(id: number) {
     this.#id = id;
   }
 
-  xy(x, y) {
+  xy(x: number, y: number) {
     op_draw_quad_xy(this.#id, x, y);
     return this;
   }
 
-  xyz(x, y, z) {
+  xyz(x: number, y: number, z: number) {
     op_draw_quad_xyz(this.#id, x, y, z);
     return this;
   }
 
-  points(x1, y1, x2, y2, x3, y3, x4, y4) {
+  points(
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    x3: number,
+    y3: number,
+    x4: number,
+    y4: number
+  ) {
     op_draw_quad_points(this.#id, x1, y1, x2, y2, x3, y3, x4, y4);
     return this;
   }
 
-  fill(color) {
+  fill(color: Color) {
     switch (color.type) {
       case "rgba": {
         const { r, g, b, a } = color;
@@ -303,7 +427,7 @@ class Quad {
     return this;
   }
 
-  stroke(color) {
+  stroke(color: Color) {
     switch (color.type) {
       case "rgba": {
         const { r, g, b, a } = color;
@@ -321,35 +445,35 @@ class Quad {
     return this;
   }
 
-  strokeWeight(w) {
+  strokeWeight(w: number) {
     op_draw_quad_stroke_weight(this.#id, w);
     return this;
   }
 }
 
 class Polyline {
-  #id;
+  #id: number;
 
-  constructor(id) {
+  constructor(id: number) {
     this.#id = id;
   }
 
-  xy(x, y) {
+  xy(x: number, y: number) {
     op_draw_polyline_xyz(this.#id, x, y, 0);
     return this;
   }
 
-  xyz(x, y, z) {
+  xyz(x: number, y: number, z: number) {
     op_draw_polyline_xyz(this.#id, x, y, z);
     return this;
   }
 
-  point(x, y) {
+  point(x: number, y: number) {
     op_draw_polyline_point(this.#id, x, y);
     return this;
   }
 
-  stroke(color) {
+  stroke(color: Color) {
     switch (color.type) {
       case "rgba": {
         const { r, g, b, a } = color;
@@ -367,35 +491,35 @@ class Polyline {
     return this;
   }
 
-  strokeWeight(w) {
+  strokeWeight(w: number) {
     op_draw_polyline_stroke_weight(this.#id, w);
     return this;
   }
 }
 
 class Spline {
-  #id;
+  #id: number;
 
-  constructor(id) {
+  constructor(id: number) {
     this.#id = id;
   }
 
-  xy(x, y) {
+  xy(x: number, y: number) {
     op_draw_spline_xyz(this.#id, x, y, 0);
     return this;
   }
 
-  xyz(x, y, z) {
+  xyz(x: number, y: number, z: number) {
     op_draw_spline_xyz(this.#id, x, y, z);
     return this;
   }
 
-  point(x, y) {
+  point(x: number, y: number) {
     op_draw_spline_point(this.#id, x, y);
     return this;
   }
 
-  stroke(color) {
+  stroke(color: Color) {
     switch (color.type) {
       case "rgba": {
         const { r, g, b, a } = color;
@@ -413,35 +537,35 @@ class Spline {
     return this;
   }
 
-  strokeWeight(w) {
+  strokeWeight(w: number) {
     op_draw_spline_stroke_weight(this.#id, w);
     return this;
   }
 
-  tension(t) {
+  tension(t: number) {
     op_draw_spline_tension(this.#id, t);
     return this;
   }
 
-  resolution(n) {
+  resolution(n: number) {
     op_draw_spline_resolution(this.#id, n);
     return this;
   }
 }
 
-function rgb(r, g, b) {
+function rgb(r: number, g: number, b: number) {
   return { type: "rgba", r, g, b, a: 1.0 };
 }
 
-function rgba(r, g, b, a) {
+function rgba(r: number, g: number, b: number, a: number) {
   return { type: "rgba", r, g, b, a };
 }
 
-function hsv(h, s, v) {
+function hsv(h: number, s: number, v: number) {
   return { type: "hsva", h, s, v, a: 1.0 };
 }
 
-function hsva(h, s, v, a) {
+function hsva(h: number, s: number, v: number, a: number) {
   return { type: "hsva", h, s, v, a };
 }
 
@@ -449,39 +573,37 @@ function createDraw() {
   return new Draw(0);
 }
 
-globalThis.createDraw = createDraw;
-globalThis.rgb = rgb;
-globalThis.rgba = rgba;
-globalThis.hsv = hsv;
-globalThis.hsva = hsva;
-
-// TODO: move these to a math crate?
-
-function random(amount) {
+function random(amount: number) {
   return Math.random() * amount;
 }
 
-function radians(degrees) {
+function radians(degrees: number) {
   return degrees * (Math.PI / 180);
 }
 
-function degrees(radians) {
+function degrees(radians: number) {
   return radians * (180 / Math.PI);
 }
 
-function lerp(start, stop, amount) {
+function lerp(start: number, stop: number, amount: number) {
   return start + (stop - start) * amount;
 }
 
-function norm(value, start, stop) {
+function norm(value: number, start: number, stop: number) {
   return (value - start) / (stop - start);
 }
 
-function map(value, start1, stop1, start2, stop2) {
+function map(
+  value: number,
+  start1: number,
+  stop1: number,
+  start2: number,
+  stop2: number
+) {
   return start2 + (stop2 - start2) * ((value - start1) / (stop1 - start1));
 }
 
-function constrain(value, min, max) {
+function constrain(value: number, min: number, max: number) {
   if (value < min) {
     return min;
   }
@@ -493,10 +615,33 @@ function constrain(value, min, max) {
   return value;
 }
 
-function noise(x, y = 0, z = 0) {
+function noise(x: number, y = 0, z = 0) {
   return op_draw_noise(x, y, z);
 }
 
+declare const globalThis: {
+  createDraw: typeof createDraw;
+  rgb: typeof rgb;
+  rgba: typeof rgba;
+  hsv: typeof hsv;
+  hsva: typeof hsva;
+
+  random: typeof random;
+  radians: typeof radians;
+  degrees: typeof degrees;
+  lerp: typeof lerp;
+  norm: typeof norm;
+  map: typeof map;
+  constrain: typeof constrain;
+  noise: typeof noise;
+};
+
+globalThis.createDraw = createDraw;
+globalThis.rgb = rgb;
+globalThis.rgba = rgba;
+globalThis.hsv = hsv;
+globalThis.hsva = hsva;
+// TODO: move the following to a math plugin?
 globalThis.random = random;
 globalThis.radians = radians;
 globalThis.degrees = degrees;

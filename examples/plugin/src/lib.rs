@@ -20,18 +20,15 @@ struct State {
 }
 
 extension!(
-    extension,
+    visor_plugin_counter,
     ops = [op_counter_count, op_counter_increment],
-    esm_entry_point = "visor:counter",
-    esm = [
-        dir "src",
-        "visor:counter" = "visor-counter.js",
-    ]
+    esm_entry_point = "ext:visor_plugin_counter/src/visor-plugin-counter.js",
+    esm = ["src/visor-plugin-counter.js"]
 );
 
 impl Plugin for CounterPlugin {
     fn extension(&self) -> Extension {
-        extension::init()
+        visor_plugin_counter::init()
     }
 
     fn build(&self, _engine: &mut Engine, store: &Store) {
@@ -85,6 +82,14 @@ mod tests {
         let sketch_id = *engine.create_sketch(sketch_path).id();
 
         engine.update();
+
+        let sketch = engine
+            .sketches()
+            .get(&sketch_id)
+            .expect("Unexpected: could not find sketch");
+
+        assert_eq!(*sketch.compile_error(), None);
+        assert_eq!(*sketch.runtime_error(), None);
 
         let sketch_store = engine
             .sketch_stores()

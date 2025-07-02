@@ -1,3 +1,22 @@
+declare namespace Deno {
+  export const core: {
+    ops: {
+      op_midi_input_devices: () => Array<string>;
+      op_midi_connect_input_device: (name: string) => void;
+      op_midi_disconnect_input_device: (name: string) => void;
+      op_midi_load_mapping: (path: string) => void;
+      op_midi_clear_mapping: () => void;
+      op_midi_control_value: (id: string) => number;
+      op_midi_encoder_increment: (id: string) => boolean;
+      op_midi_encoder_decrement: (id: string) => boolean;
+      op_midi_note_on: (id: string) => boolean;
+      op_midi_note_off: (id: string) => boolean;
+      op_midi_note_down: (id: string) => boolean;
+      op_midi_note_velocity: (id: string) => number;
+    };
+  };
+}
+
 const {
   op_midi_input_devices,
   op_midi_connect_input_device,
@@ -18,15 +37,15 @@ const midi = {
     return op_midi_input_devices();
   },
 
-  connectInputDevice(name) {
+  connectInputDevice(name: string) {
     op_midi_connect_input_device(name);
   },
 
-  disconnectInputDevice(name) {
+  disconnectInputDevice(name: string) {
     op_midi_disconnect_input_device(name);
   },
 
-  loadMapping(path) {
+  loadMapping(path: string) {
     op_midi_load_mapping(path);
   },
 
@@ -34,23 +53,23 @@ const midi = {
     op_midi_clear_mapping();
   },
 
-  note(id) {
+  note(id: string) {
     return new Note(id);
   },
 
-  encoder(id) {
+  encoder(id: string) {
     return new Encoder(id);
   },
 
-  control(id) {
+  control(id: string) {
     return op_midi_control_value(id);
   },
 };
 
 class Encoder {
-  #id;
+  #id: string;
 
-  constructor(id) {
+  constructor(id: string) {
     this.#id = id;
   }
 
@@ -64,9 +83,9 @@ class Encoder {
 }
 
 class Note {
-  #id;
+  #id: string;
 
-  constructor(id) {
+  constructor(id: string) {
     this.#id = id;
   }
 
@@ -86,5 +105,9 @@ class Note {
     return op_midi_note_velocity(this.#id);
   }
 }
+
+declare const globalThis: {
+  midi: typeof midi;
+};
 
 globalThis.midi = midi;

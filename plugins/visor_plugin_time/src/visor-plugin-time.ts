@@ -1,3 +1,13 @@
+declare namespace Deno {
+  export const core: {
+    ops: {
+      op_time_frame_count: () => number;
+      op_time_time: () => number;
+      op_time_delta: () => number;
+    };
+  };
+}
+
 const { op_time_frame_count, op_time_time, op_time_delta } = Deno.core.ops;
 
 function frameCount() {
@@ -11,6 +21,12 @@ function time() {
 function delta() {
   return op_time_delta();
 }
+
+declare const globalThis: {
+  frameCount: typeof frameCount;
+  time: typeof time;
+  delta: typeof delta;
+};
 
 globalThis.frameCount = frameCount;
 globalThis.time = time;

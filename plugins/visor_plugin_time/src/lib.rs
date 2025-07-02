@@ -36,8 +36,8 @@ const TARGET_FRAME_RATE: u32 = 60;
 extension!(
     visor_plugin_time,
     ops = [op_time_frame_count, op_time_time, op_time_delta],
-    esm_entry_point = "ext:visor_plugin_time/src/visor-plugin-time.js",
-    esm = ["src/visor-plugin-time.js"]
+    esm_entry_point = "ext:visor_plugin_time/src/visor-plugin-time.ts",
+    esm = ["src/visor-plugin-time.ts"]
 );
 
 impl TimePlugin {

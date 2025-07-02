@@ -16,8 +16,8 @@ type SketchState = HashMap<String, String>;
 extension!(
     visor_plugin_state,
     ops = [op_state_create, op_state_set, op_state_remove_unused],
-    esm_entry_point = "ext:visor_plugin_state/src/visor-plugin-state.js",
-    esm = ["src/visor-plugin-state.js"]
+    esm_entry_point = "ext:visor_plugin_state/src/visor-plugin-state.ts",
+    esm = ["src/visor-plugin-state.ts"]
 );
 
 impl Plugin for StatePlugin {
