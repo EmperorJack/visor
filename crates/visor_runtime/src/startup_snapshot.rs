@@ -1,6 +1,8 @@
-use std::sync::OnceLock;
+use std::{rc::Rc, sync::OnceLock};
 
 use deno_core::Extension;
+
+use crate::ts_module_loader::maybe_transpile_source;
 
 pub static STARTUP_SNAPSHOT_CELL: OnceLock<StartupSnapshot> = OnceLock::new();
 
@@ -21,8 +23,7 @@ impl StartupSnapshot {
                 startup_snapshot: None,
                 skip_op_registration: false,
                 extensions,
-                // TODO: try use TsModuleLoader for transpiling extensions?
-                extension_transpiler: None,
+                extension_transpiler: Some(Rc::new(maybe_transpile_source)),
                 with_runtime_cb: None,
             },
             None,

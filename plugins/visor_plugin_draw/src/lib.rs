@@ -279,7 +279,7 @@ pub(crate) trait ShapeCommand<T> {
 }
 
 extension!(
-    extension,
+    visor_plugin_draw,
     ops = [
         op_draw_background_rgb,
         op_draw_background_hsv,
@@ -332,16 +332,13 @@ extension!(
         op_draw_scale,
         op_draw_noise,
     ],
-    esm_entry_point = "visor:draw",
-    esm = [
-        dir "src",
-        "visor:draw" = "visor-draw.js",
-    ]
+    esm_entry_point = "ext:visor_plugin_draw/src/visor-plugin-draw.js",
+    esm = ["src/visor-plugin-draw.js"]
 );
 
 impl Plugin for DrawPlugin {
     fn extension(&self) -> Extension {
-        extension::init()
+        visor_plugin_draw::init()
     }
 
     fn build_sketch(

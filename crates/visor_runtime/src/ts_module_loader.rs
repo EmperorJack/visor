@@ -1,7 +1,10 @@
+use std::path::Path;
+
 use deno_ast::{EmitOptions, MediaType, ParseParams};
 use deno_core::{
-    ModuleLoadResponse, ModuleLoader, ModuleSource, ModuleSourceCode, ModuleSpecifier, ModuleType,
-    RequestedModuleType, ResolutionKind, error::ModuleLoaderError, futures::FutureExt, url::Url,
+    ModuleCodeString, ModuleLoadResponse, ModuleLoader, ModuleName, ModuleSource, ModuleSourceCode,
+    ModuleSpecifier, ModuleType, RequestedModuleType, ResolutionKind, SourceMapData,
+    error::ModuleLoaderError, futures::FutureExt, url::Url,
 };
 use deno_error::JsErrorBox;
 
@@ -113,4 +116,47 @@ impl ModuleLoader for TsModuleLoader {
             .boxed_local(),
         )
     }
+}
+
+pub fn maybe_transpile_source(
+    specifier: ModuleName,
+    source: ModuleCodeString,
+) -> Result<(ModuleCodeString, Option<SourceMapData>), JsErrorBox> {
+    let media_type = MediaType::from_path(Path::new(&specifier));
+
+    match media_type {
+        MediaType::TypeScript => {}
+        MediaType::JavaScript => return Ok((source, None)),
+        MediaType::Mjs => return Ok((source, None)),
+        _ => panic!(
+            "Unsupported media type for snapshotting {} for file {}",
+            media_type, specifier
+        ),
+    }
+
+    let parsed = deno_ast::parse_module(ParseParams {
+        specifier: Url::parse(&specifier).unwrap(),
+        text: source.into(),
+        media_type,
+        capture_tokens: false,
+        scope_analysis: false,
+        maybe_syntax: None,
+    })
+    .map_err(JsErrorBox::from_err)?;
+
+    let transpiled_source = parsed
+        .transpile(
+            &Default::default(),
+            &Default::default(),
+            &EmitOptions::default(),
+        )
+        .map_err(JsErrorBox::from_err)?
+        .into_source();
+
+    Ok((
+        transpiled_source.text.into(),
+        transpiled_source
+            .source_map
+            .map(|source_map| source_map.into_bytes().into()),
+    ))
 }

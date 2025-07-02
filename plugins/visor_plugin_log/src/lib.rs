@@ -1,4 +1,4 @@
-use deno_core::{extension, op2, Extension, OpState};
+use deno_core::{Extension, OpState, extension, op2};
 use visor_engine::{
     engine::Engine,
     plugin::{AccessSketchStore, Plugin},
@@ -24,13 +24,10 @@ pub enum LogEntryType {
 }
 
 extension!(
-    extension,
+    visor_plugin_log,
     ops = [op_log_console_log, op_log_console_error],
-    esm_entry_point = "visor:log",
-    esm = [
-        dir "src",
-        "visor:log" = "visor-log.js",
-    ]
+    esm_entry_point = "ext:visor_plugin_log/src/visor-plugin-log.js",
+    esm = ["src/visor-plugin-log.js"]
 );
 
 impl LogPlugin {
@@ -41,7 +38,7 @@ impl LogPlugin {
 
 impl Plugin for LogPlugin {
     fn extension(&self) -> Extension {
-        extension::init()
+        visor_plugin_log::init()
     }
 
     fn build_sketch(

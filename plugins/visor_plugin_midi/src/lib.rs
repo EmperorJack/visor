@@ -81,7 +81,7 @@ enum Event {
 }
 
 extension!(
-    extension,
+    visor_plugin_midi,
     ops = [
         op_midi_input_devices,
         op_midi_connect_input_device,
@@ -96,11 +96,8 @@ extension!(
         op_midi_note_down,
         op_midi_note_velocity,
     ],
-    esm_entry_point = "visor:midi",
-    esm = [
-        dir "src",
-        "visor:midi" = "visor-midi.js",
-    ]
+    esm_entry_point = "ext:visor_plugin_midi/src/visor-plugin-midi.js",
+    esm = ["src/visor-plugin-midi.js"]
 );
 
 impl MidiPlugin {
@@ -267,7 +264,7 @@ impl MidiPlugin {
 
 impl Plugin for MidiPlugin {
     fn extension(&self) -> Extension {
-        extension::init()
+        visor_plugin_midi::init()
     }
 
     fn build(&self, _engine: &mut Engine, store: &Store) {

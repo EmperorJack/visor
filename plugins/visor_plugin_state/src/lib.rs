@@ -14,18 +14,15 @@ pub struct StatePlugin;
 type SketchState = HashMap<String, String>;
 
 extension!(
-    extension,
+    visor_plugin_state,
     ops = [op_state_create, op_state_set, op_state_remove_unused],
-    esm_entry_point = "visor:state",
-    esm = [
-        dir "src",
-        "visor:state" = "visor-state.js",
-    ]
+    esm_entry_point = "ext:visor_plugin_state/src/visor-plugin-state.js",
+    esm = ["src/visor-plugin-state.js"]
 );
 
 impl Plugin for StatePlugin {
     fn extension(&self) -> Extension {
-        extension::init()
+        visor_plugin_state::init()
     }
 
     fn build_sketch(
