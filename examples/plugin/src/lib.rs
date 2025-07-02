@@ -1,9 +1,9 @@
 use std::sync::RwLock;
 
-use deno_core::{extension, op2, Extension, OpState};
+use deno_core::{Extension, OpState, extension, op2};
 use visor_engine::{
     engine::Engine,
-    plugin::{plugin_implementation, AccessSketchStore, Plugin},
+    plugin::{AccessSketchStore, Plugin, plugin_implementation},
     sketch::SketchId,
     sketch_store::SketchStore,
     store::Store,
@@ -31,7 +31,7 @@ extension!(
 
 impl Plugin for CounterPlugin {
     fn extension(&self) -> Extension {
-        extension::init_ops_and_esm()
+        extension::init()
     }
 
     fn build(&self, _engine: &mut Engine, store: &Store) {

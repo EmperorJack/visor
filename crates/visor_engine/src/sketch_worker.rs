@@ -96,7 +96,10 @@ impl SketchWorker {
             // Drop the current runtime if there is one
             self.runtime = None;
 
-            let mut runtime = Runtime::new(self.tokio_runtime.handle().clone());
+            let mut runtime = Runtime::new(
+                self.tokio_runtime.handle().clone(),
+                Engine::plugin_extensions(),
+            );
 
             for plugin in Engine::plugins() {
                 plugin.before_sketch_update(&self.id, &ENGINE_STORE, &mut store);

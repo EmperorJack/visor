@@ -1,13 +1,13 @@
 [package]
 name = "visor_display"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 nannou = { path = "../../../nannou/nannou" }
-tao = { version = "0.30.8" }
+tao = { version = "0.34.0" }
 tokio = { version = "1.26.0", features = ["full"] }
 uuid = { version = "1.10.0", features = ["v4", "fast-rng"] }
 visor_wgpu = { path = "../visor_wgpu" }

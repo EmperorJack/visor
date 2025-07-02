@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use deno_core::{extension, op2, Extension, OpState};
+use deno_core::{Extension, OpState, extension, op2};
 use visor_engine::{
     engine::Engine,
     plugin::{AccessSketchStore, Plugin},
@@ -25,7 +25,7 @@ extension!(
 
 impl Plugin for StatePlugin {
     fn extension(&self) -> Extension {
-        extension::init_ops_and_esm()
+        extension::init()
     }
 
     fn build_sketch(

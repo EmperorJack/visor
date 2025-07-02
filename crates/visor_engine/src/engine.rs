@@ -11,15 +11,18 @@ use tokio::{
 };
 use uuid::Uuid;
 use visor_display::display_manager::DisplayManager;
-use visor_runtime::startup_snapshot::{StartupSnapshot, STARTUP_SNAPSHOT_CELL};
+use visor_runtime::{
+    Extension,
+    startup_snapshot::{STARTUP_SNAPSHOT_CELL, StartupSnapshot},
+};
 use visor_wgpu::{handle::WgpuHandle, render_texture::RenderTexture};
 
 use crate::{
     draw::Draw,
-    plugin::{load_plugin, LoadedPlugin, Plugin},
+    plugin::{LoadedPlugin, Plugin, load_plugin},
     sketch::Sketch,
     sketch_store::SketchStore,
-    store::{Store, ENGINE_STORE},
+    store::{ENGINE_STORE, Store},
 };
 
 pub use crate::sketch::SketchId;
@@ -365,6 +368,13 @@ impl Engine {
         PLUGINS_CELL
             .get()
             .expect("Unexpected: plugins cell not initialised yet")
+    }
+
+    pub(crate) fn plugin_extensions() -> Vec<Extension> {
+        Self::plugins()
+            .iter()
+            .map(|plugin| plugin.extension())
+            .collect()
     }
 
     pub fn store(&self) -> &'static Store {

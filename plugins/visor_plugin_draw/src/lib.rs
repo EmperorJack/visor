@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
 use bevy_math::{
-    cubic_splines::{CubicCardinalSpline, CubicGenerator},
     Vec2,
+    cubic_splines::{CubicCardinalSpline, CubicGenerator},
 };
-use deno_core::{extension, op2, Extension, OpState};
+use deno_core::{Extension, OpState, extension, op2};
 use ellipse::*;
 use nannou::{
     draw::Drawing,
@@ -341,7 +341,7 @@ extension!(
 
 impl Plugin for DrawPlugin {
     fn extension(&self) -> Extension {
-        extension::init_ops_and_esm()
+        extension::init()
     }
 
     fn build_sketch(

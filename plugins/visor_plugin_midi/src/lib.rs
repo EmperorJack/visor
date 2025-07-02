@@ -2,13 +2,15 @@ use std::{collections::HashMap, path::PathBuf, sync::RwLock};
 
 use config::MidiMappingConfig;
 use deno_core::{
-    anyhow::{anyhow, Result},
-    extension, op2, Extension, OpState,
+    Extension, OpState,
+    anyhow::{Result, anyhow},
+    extension, op2,
 };
+use deno_error::JsErrorBox;
 pub use mapping::MidiMappingEvent;
 use mapping::{MidiMapping, MidiVariables};
 use midir::{MidiInput, MidiInputConnection};
-use midly::{live::LiveEvent, MidiMessage};
+use midly::{MidiMessage, live::LiveEvent};
 use tokio::sync::{broadcast, mpsc};
 use visor_engine::{
     engine::Engine,
@@ -265,7 +267,7 @@ impl MidiPlugin {
 
 impl Plugin for MidiPlugin {
     fn extension(&self) -> Extension {
-        extension::init_ops_and_esm()
+        extension::init()
     }
 
     fn build(&self, _engine: &mut Engine, store: &Store) {
@@ -418,19 +420,26 @@ fn load_midi_mapping(path: PathBuf) -> Result<MidiMapping> {
 
 #[op2]
 #[serde]
-fn op_midi_input_devices() -> Result<Vec<String>> {
-    list_input_devices()
+fn op_midi_input_devices() -> Result<Vec<String>, JsErrorBox> {
+    list_input_devices().map_err(|error| JsErrorBox::generic(error.to_string()))
 }
 
 #[op2(fast)]
-fn op_midi_connect_input_device(state: &mut OpState, #[string] name: String) -> Result<()> {
+fn op_midi_connect_input_device(
+    state: &mut OpState,
+    #[string] name: String,
+) -> Result<(), JsErrorBox> {
     let sketch_state = state.sketch_store_mut().get_mut::<SketchState>();
 
     if sketch_state.input_connections.contains(&name) {
-        return Err(anyhow!("MIDI input device {} already connected", name));
+        return Err(JsErrorBox::generic(format!(
+            "MIDI input device {} already connected",
+            name
+        )));
     }
 
-    let input_connection = create_input_connection(name.clone())?;
+    let input_connection = create_input_connection(name.clone())
+        .map_err(|error| JsErrorBox::generic(error.to_string()))?;
 
     let event_sender = state.sketch_store().get::<mpsc::Sender<Event>>();
     event_sender
@@ -441,11 +450,17 @@ fn op_midi_connect_input_device(state: &mut OpState, #[string] name: String) -> 
 }
 
 #[op2(fast)]
-fn op_midi_disconnect_input_device(state: &mut OpState, #[string] name: String) -> Result<()> {
+fn op_midi_disconnect_input_device(
+    state: &mut OpState,
+    #[string] name: String,
+) -> Result<(), JsErrorBox> {
     let sketch_state = state.sketch_store_mut().get_mut::<SketchState>();
 
     if !sketch_state.input_connections.contains(&name) {
-        return Err(anyhow!("MIDI input device {} is not connected", name));
+        return Err(JsErrorBox::generic(format!(
+            "MIDI input device {} is not connected",
+            name
+        )));
     }
 
     let event_sender = state.sketch_store().get::<mpsc::Sender<Event>>();
@@ -457,12 +472,15 @@ fn op_midi_disconnect_input_device(state: &mut OpState, #[string] name: String) 
 }
 
 #[op2(fast)]
-fn op_midi_load_mapping(state: &mut OpState, #[string] path: String) -> Result<()> {
+fn op_midi_load_mapping(state: &mut OpState, #[string] path: String) -> Result<(), JsErrorBox> {
     let sketch_state = state.sketch_store_mut().get_mut::<SketchState>();
 
-    let path = path.parse()?;
+    let path: PathBuf = path
+        .parse()
+        .map_err(|_| JsErrorBox::generic("Could not parse path"))?;
 
-    let midi_mapping = load_midi_mapping(path)?;
+    let midi_mapping =
+        load_midi_mapping(path).map_err(|error| JsErrorBox::generic(error.to_string()))?;
 
     sketch_state.variables = Some(midi_mapping.variables().clone());
 
@@ -475,7 +493,7 @@ fn op_midi_load_mapping(state: &mut OpState, #[string] path: String) -> Result<(
 }
 
 #[op2(fast)]
-fn op_midi_clear_mapping(state: &mut OpState) -> Result<()> {
+fn op_midi_clear_mapping(state: &mut OpState) -> Result<(), JsErrorBox> {
     let event_sender = state.sketch_store().get::<mpsc::Sender<Event>>();
     event_sender
         .try_send(Event::ClearMapping)
@@ -485,78 +503,98 @@ fn op_midi_clear_mapping(state: &mut OpState) -> Result<()> {
 }
 
 #[op2(fast)]
-fn op_midi_control_value(state: &mut OpState, #[string] name: String) -> Result<f32> {
+fn op_midi_control_value(state: &mut OpState, #[string] name: String) -> Result<f32, JsErrorBox> {
     let sketch_state = state.sketch_store().get::<SketchState>();
 
     let Some(ref variables) = sketch_state.variables else {
-        return Err(anyhow!("No MIDI variable mapping loaded"));
+        return Err(JsErrorBox::generic("No MIDI variable mapping loaded"));
     };
 
-    variables.control_value(&name)
+    variables
+        .control_value(&name)
+        .map_err(|error| JsErrorBox::generic(error.to_string()))
 }
 
 #[op2(fast)]
-fn op_midi_encoder_increment(state: &mut OpState, #[string] name: String) -> Result<bool> {
+fn op_midi_encoder_increment(
+    state: &mut OpState,
+    #[string] name: String,
+) -> Result<bool, JsErrorBox> {
     let sketch_state = state.sketch_store().get::<SketchState>();
 
     let Some(ref variables) = sketch_state.variables else {
-        return Err(anyhow!("No MIDI variable mapping loaded"));
+        return Err(JsErrorBox::generic("No MIDI variable mapping loaded"));
     };
 
-    variables.is_encoder_increment(&name)
+    variables
+        .is_encoder_increment(&name)
+        .map_err(|error| JsErrorBox::generic(error.to_string()))
 }
 
 #[op2(fast)]
-fn op_midi_encoder_decrement(state: &mut OpState, #[string] name: String) -> Result<bool> {
+fn op_midi_encoder_decrement(
+    state: &mut OpState,
+    #[string] name: String,
+) -> Result<bool, JsErrorBox> {
     let sketch_state = state.sketch_store().get::<SketchState>();
 
     let Some(ref variables) = sketch_state.variables else {
-        return Err(anyhow!("No MIDI variable mapping loaded"));
+        return Err(JsErrorBox::generic("No MIDI variable mapping loaded"));
     };
 
-    variables.is_encoder_decrement(&name)
+    variables
+        .is_encoder_decrement(&name)
+        .map_err(|error| JsErrorBox::generic(error.to_string()))
 }
 
 #[op2(fast)]
-fn op_midi_note_on(state: &mut OpState, #[string] name: String) -> Result<bool> {
+fn op_midi_note_on(state: &mut OpState, #[string] name: String) -> Result<bool, JsErrorBox> {
     let sketch_state = state.sketch_store().get::<SketchState>();
 
     let Some(ref variables) = sketch_state.variables else {
-        return Err(anyhow!("No MIDI variable mapping loaded"));
+        return Err(JsErrorBox::generic("No MIDI variable mapping loaded"));
     };
 
-    variables.is_note_on(&name)
+    variables
+        .is_note_on(&name)
+        .map_err(|error| JsErrorBox::generic(error.to_string()))
 }
 
 #[op2(fast)]
-fn op_midi_note_off(state: &mut OpState, #[string] name: String) -> Result<bool> {
+fn op_midi_note_off(state: &mut OpState, #[string] name: String) -> Result<bool, JsErrorBox> {
     let sketch_state = state.sketch_store().get::<SketchState>();
 
     let Some(ref variables) = sketch_state.variables else {
-        return Err(anyhow!("No MIDI variable mapping loaded"));
+        return Err(JsErrorBox::generic("No MIDI variable mapping loaded"));
     };
 
-    variables.is_note_off(&name)
+    variables
+        .is_note_off(&name)
+        .map_err(|error| JsErrorBox::generic(error.to_string()))
 }
 
 #[op2(fast)]
-fn op_midi_note_down(state: &mut OpState, #[string] name: String) -> Result<bool> {
+fn op_midi_note_down(state: &mut OpState, #[string] name: String) -> Result<bool, JsErrorBox> {
     let sketch_state = state.sketch_store().get::<SketchState>();
 
     let Some(ref variables) = sketch_state.variables else {
-        return Err(anyhow!("No MIDI variable mapping loaded"));
+        return Err(JsErrorBox::generic("No MIDI variable mapping loaded"));
     };
 
-    variables.is_note_down(&name)
+    variables
+        .is_note_down(&name)
+        .map_err(|error| JsErrorBox::generic(error.to_string()))
 }
 
 #[op2(fast)]
-fn op_midi_note_velocity(state: &mut OpState, #[string] name: String) -> Result<f32> {
+fn op_midi_note_velocity(state: &mut OpState, #[string] name: String) -> Result<f32, JsErrorBox> {
     let sketch_state = state.sketch_store().get::<SketchState>();
 
     let Some(ref variables) = sketch_state.variables else {
-        return Err(anyhow!("No MIDI variable mapping loaded"));
+        return Err(JsErrorBox::generic("No MIDI variable mapping loaded"));
     };
 
-    variables.note_velocity(&name)
+    variables
+        .note_velocity(&name)
+        .map_err(|error| JsErrorBox::generic(error.to_string()))
 }

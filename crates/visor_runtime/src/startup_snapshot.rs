@@ -1,11 +1,10 @@
 use std::sync::OnceLock;
 
-use deno_core::{Extension, OpDecl};
+use deno_core::Extension;
 
 pub static STARTUP_SNAPSHOT_CELL: OnceLock<StartupSnapshot> = OnceLock::new();
 
 pub struct StartupSnapshot {
-    pub(crate) ops: Vec<OpDecl>,
     pub(crate) snapshot: Vec<u8>,
 }
 
@@ -16,11 +15,6 @@ unsafe impl Sync for StartupSnapshot {}
 
 impl StartupSnapshot {
     pub fn new(extensions: Vec<Extension>) -> Self {
-        let ops: Vec<_> = extensions
-            .iter()
-            .flat_map(|extension| extension.ops.to_vec())
-            .collect();
-
         let snapshot = deno_core::snapshot::create_snapshot(
             deno_core::snapshot::CreateSnapshotOptions {
                 cargo_manifest_dir: env!("CARGO_MANIFEST_DIR"),
@@ -36,7 +30,6 @@ impl StartupSnapshot {
         .expect("Unexpected: could not create snapshot");
 
         Self {
-            ops,
             snapshot: snapshot.output.to_vec(),
         }
     }

@@ -1,7 +1,7 @@
 use std::{path::Path, rc::Rc};
 
-use anyhow::Error;
-use deno_core::{error::AnyError, v8, Extension, JsRuntime, ModuleId};
+use anyhow::{Error, Result};
+use deno_core::{Extension, JsRuntime, ModuleId, error::AnyError, v8};
 
 use crate::{startup_snapshot::STARTUP_SNAPSHOT_CELL, ts_module_loader::TsModuleLoader};
 
@@ -18,22 +18,15 @@ pub struct Runtime {
 }
 
 impl Runtime {
-    pub fn new(tokio_runtime_handle: tokio::runtime::Handle) -> Self {
+    pub fn new(tokio_runtime_handle: tokio::runtime::Handle, extensions: Vec<Extension>) -> Self {
         let startup_snapshot = STARTUP_SNAPSHOT_CELL
             .get()
             .expect("Unexpected: startup snapshot should be created by now");
 
-        let ops_extension = Extension {
-            name: "ops",
-            ops: std::borrow::Cow::Borrowed(&startup_snapshot.ops),
-            ..Default::default()
-        };
-
         let js_runtime = deno_core::JsRuntime::new(deno_core::RuntimeOptions {
             module_loader: Some(Rc::new(TsModuleLoader)),
             startup_snapshot: Some(&startup_snapshot.snapshot),
-            skip_op_registration: true,
-            extensions: vec![ops_extension],
+            extensions,
             ..Default::default()
         });
 
@@ -56,7 +49,7 @@ impl Runtime {
 
             let main_module_id = match self.js_runtime.load_main_es_module(&main_module).await {
                 Ok(main_module_id) => main_module_id,
-                Err(error) => return Ok(Some(error)),
+                Err(error) => return Ok(Some(error.into())),
             };
 
             let result_receiver = self.js_runtime.mod_evaluate(main_module_id);
@@ -67,11 +60,11 @@ impl Runtime {
                 .await;
 
             if let Err(error) = run_event_loop_result {
-                return Ok(Some(error));
+                return Ok(Some(error.into()));
             }
 
             if let Err(error) = result_receiver.await {
-                return Ok(Some(error));
+                return Ok(Some(error.into()));
             }
 
             self.main_module_id = Some(main_module_id);
@@ -142,11 +135,11 @@ impl Runtime {
                 .await;
 
             if let Err(error) = run_event_loop_result {
-                return Ok(RuntimeExecuteFunctionResult::Error(error));
+                return Ok(RuntimeExecuteFunctionResult::Error(error.into()));
             }
 
             if let Err(error) = result_receiver.await {
-                return Ok(RuntimeExecuteFunctionResult::Error(error));
+                return Ok(RuntimeExecuteFunctionResult::Error(error.into()));
             }
 
             Ok(RuntimeExecuteFunctionResult::Success)

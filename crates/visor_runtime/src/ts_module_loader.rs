@@ -1,9 +1,9 @@
-use anyhow::{anyhow, Error};
-use deno_ast::{MediaType, ParseParams};
+use deno_ast::{EmitOptions, MediaType, ParseParams};
 use deno_core::{
-    futures::FutureExt, ModuleLoadResponse, ModuleLoader, ModuleSource, ModuleSourceCode,
-    ModuleSpecifier, ModuleType, RequestedModuleType, ResolutionKind,
+    ModuleLoadResponse, ModuleLoader, ModuleSource, ModuleSourceCode, ModuleSpecifier, ModuleType,
+    RequestedModuleType, ResolutionKind, error::ModuleLoaderError, futures::FutureExt, url::Url,
 };
+use deno_error::JsErrorBox;
 
 pub struct TsModuleLoader;
 
@@ -13,7 +13,7 @@ impl ModuleLoader for TsModuleLoader {
         specifier: &str,
         referrer: &str,
         _kind: ResolutionKind,
-    ) -> Result<ModuleSpecifier, Error> {
+    ) -> Result<Url, ModuleLoaderError> {
         deno_core::resolve_import(specifier, referrer).map_err(|error| error.into())
     }
 
@@ -29,10 +29,10 @@ impl ModuleLoader for TsModuleLoader {
         ModuleLoadResponse::Async(
             async move {
                 let path = module_specifier.to_file_path().map_err(|_| {
-                    anyhow!(
+                    JsErrorBox::generic(format!(
                         "Could not resolve file path for import \"{}\"",
                         module_specifier
-                    )
+                    ))
                 })?;
 
                 let media_type = MediaType::from_path(&path);
@@ -54,24 +54,29 @@ impl ModuleLoader for TsModuleLoader {
                         let extension = path.extension().and_then(|extension| extension.to_str());
 
                         return Err(match extension {
-                            Some(extension) => {
-                                anyhow!(
-                                    "Unknown file extension \".{}\" for import \"{}\"",
-                                    extension,
-                                    path.display(),
-                                )
-                            }
-                            None => {
-                                anyhow!("Missing file extension for import \"{}\"", path.display())
-                            }
+                            Some(extension) => JsErrorBox::generic(format!(
+                                "Unknown file extension \".{}\" for import \"{}\"",
+                                extension,
+                                path.display(),
+                            ))
+                            .into(),
+                            None => JsErrorBox::generic(format!(
+                                "Missing file extension for import \"{}\"",
+                                path.display()
+                            ))
+                            .into(),
                         });
                     }
                 };
 
-                let code = std::fs::read_to_string(&path)
-                    .map_err(|_| anyhow!("No such file found for import \"{}\"", path.display()))?;
+                let code = std::fs::read_to_string(&path).map_err(|_| {
+                    JsErrorBox::generic(format!(
+                        "No such file found for import \"{}\"",
+                        path.display()
+                    ))
+                })?;
 
-                let module_source_code = if should_transpile {
+                let code = if should_transpile {
                     let parsed = deno_ast::parse_module(ParseParams {
                         specifier: module_specifier.clone(),
                         text: code.into(),
@@ -79,20 +84,29 @@ impl ModuleLoader for TsModuleLoader {
                         capture_tokens: false,
                         scope_analysis: false,
                         maybe_syntax: None,
-                    })?;
+                    })
+                    .map_err(JsErrorBox::from_err)?;
 
                     let source = parsed
-                        .transpile(&Default::default(), &Default::default())?
-                        .into_source()
-                        .source;
+                        .transpile(
+                            &Default::default(),
+                            &Default::default(),
+                            &EmitOptions::default(),
+                        )
+                        .map_err(JsErrorBox::from_err)?
+                        .into_source();
 
-                    ModuleSourceCode::Bytes(source.into_boxed_slice().into())
+                    source.text
                 } else {
-                    ModuleSourceCode::String(code.into())
+                    code
                 };
 
-                let module =
-                    ModuleSource::new(module_type, module_source_code, &module_specifier, None);
+                let module = ModuleSource::new(
+                    module_type,
+                    ModuleSourceCode::String(code.into()),
+                    &module_specifier,
+                    None,
+                );
 
                 Ok(module)
             }

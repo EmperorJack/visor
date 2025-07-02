@@ -41,7 +41,7 @@ impl LogPlugin {
 
 impl Plugin for LogPlugin {
     fn extension(&self) -> Extension {
-        extension::init_ops_and_esm()
+        extension::init()
     }
 
     fn build_sketch(
