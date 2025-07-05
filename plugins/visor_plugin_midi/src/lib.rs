@@ -267,6 +267,10 @@ impl Plugin for MidiPlugin {
         visor_plugin_midi::init()
     }
 
+    fn typescript_declaration(&self) -> Option<String> {
+        Some(include_str!("visor-plugin-midi.d.ts").into())
+    }
+
     fn build(&self, _engine: &mut Engine, store: &Store) {
         let (event_sender, event_receiver) = mpsc::channel::<Event>(64);
 

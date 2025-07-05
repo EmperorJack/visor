@@ -7,6 +7,10 @@ use crate::{engine::Engine, sketch::SketchId, sketch_store::SketchStore, store::
 pub trait Plugin: Send + Sync {
     fn extension(&self) -> Extension;
 
+    fn typescript_declaration(&self) -> Option<String> {
+        None
+    }
+
     fn build(&self, _engine: &mut Engine, _store: &Store) {}
 
     fn build_sketch(

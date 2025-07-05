@@ -41,6 +41,10 @@ impl Plugin for LogPlugin {
         visor_plugin_log::init()
     }
 
+    fn typescript_declaration(&self) -> Option<String> {
+        Some(include_str!("visor-plugin-log.d.ts").into())
+    }
+
     fn build_sketch(
         &self,
         _sketch_id: &SketchId,

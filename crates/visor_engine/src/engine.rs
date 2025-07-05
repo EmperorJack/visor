@@ -396,4 +396,17 @@ impl Engine {
     pub fn wgpu_handle(&self) -> &Arc<WgpuHandle> {
         &self.wgpu_handle
     }
+
+    pub fn typescript_declarations(&self) -> Option<String> {
+        let declarations: Vec<String> = Self::plugins()
+            .iter()
+            .filter_map(|plugin| plugin.typescript_declaration())
+            .collect();
+
+        if declarations.is_empty() {
+            return None;
+        }
+
+        Some(declarations.join("\n"))
+    }
 }

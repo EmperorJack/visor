@@ -1,6 +1,6 @@
 use std::{
     path::PathBuf,
-    sync::{mpsc, Arc},
+    sync::{Arc, mpsc},
 };
 
 use clap::Parser;

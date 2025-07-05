@@ -341,6 +341,10 @@ impl Plugin for DrawPlugin {
         visor_plugin_draw::init()
     }
 
+    fn typescript_declaration(&self) -> Option<String> {
+        Some(include_str!("visor-plugin-draw.d.ts").into())
+    }
+
     fn build_sketch(
         &self,
         sketch_id: &SketchId,

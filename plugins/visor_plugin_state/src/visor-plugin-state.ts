@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 
 declare namespace Deno {
-  export const core: {
+  const core: {
     ops: {
       op_state_create: (id: string, value: string) => string;
       op_state_set: (id: string, value: string) => void;
@@ -34,8 +34,6 @@ class _StateVariable {
   }
 }
 
-type State = Record<string | number | symbol, any>;
-
 function createState<S extends State>(variables: S) {
   const stateVariables = Object.entries(variables).reduce<
     Record<string, _StateVariable>
@@ -67,9 +65,5 @@ function createState<S extends State>(variables: S) {
 
   return new Proxy(stateVariables, handler) as S;
 }
-
-declare const globalThis: {
-  createState: typeof createState;
-};
 
 globalThis.createState = createState;

@@ -1,5 +1,5 @@
 declare namespace Deno {
-  export const core: {
+  const core: {
     ops: {
       op_midi_input_devices: () => Array<string>;
       op_midi_connect_input_device: (name: string) => void;
@@ -105,9 +105,5 @@ class Note {
     return op_midi_note_velocity(this.#id);
   }
 }
-
-declare const globalThis: {
-  midi: typeof midi;
-};
 
 globalThis.midi = midi;

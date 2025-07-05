@@ -51,6 +51,10 @@ impl Plugin for TimePlugin {
         visor_plugin_time::init()
     }
 
+    fn typescript_declaration(&self) -> Option<String> {
+        Some(include_str!("visor-plugin-time.d.ts").into())
+    }
+
     fn build(&self, _engine: &mut Engine, store: &Store) {
         let time_started = Instant::now();
 

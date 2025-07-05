@@ -22,7 +22,7 @@ type ShapeTensionCommand = (id: number, t: number) => void;
 type ShapePointCommand = (id: number, x: number, y: number) => void;
 
 declare namespace Deno {
-  export const core: {
+  const core: {
     ops: {
       op_draw_background_rgb: (
         id: number,
@@ -151,31 +151,11 @@ const {
   op_draw_noise,
 } = Deno.core.ops;
 
-type Color =
-  | {
-      type: "rgba";
-      r: number;
-      g: number;
-      b: number;
-      a: number;
-    }
-  | {
-      type: "hsva";
-      h: number;
-      s: number;
-      v: number;
-      a: number;
-    };
-
 class Draw {
   #id: number;
 
   constructor(id: number) {
     this.#id = id;
-  }
-
-  copy() {
-    return new Draw(this.#id);
   }
 
   // Background
@@ -232,6 +212,10 @@ class Draw {
   scale(s: number) {
     const nextId = op_draw_scale(this.#id, s);
     return new Draw(nextId);
+  }
+
+  copy() {
+    return new Draw(this.#id);
   }
 }
 
@@ -553,19 +537,19 @@ class Spline {
   }
 }
 
-function rgb(r: number, g: number, b: number) {
+function rgb(r: number, g: number, b: number): Color {
   return { type: "rgba", r, g, b, a: 1.0 };
 }
 
-function rgba(r: number, g: number, b: number, a: number) {
+function rgba(r: number, g: number, b: number, a: number): Color {
   return { type: "rgba", r, g, b, a };
 }
 
-function hsv(h: number, s: number, v: number) {
+function hsv(h: number, s: number, v: number): Color {
   return { type: "hsva", h, s, v, a: 1.0 };
 }
 
-function hsva(h: number, s: number, v: number, a: number) {
+function hsva(h: number, s: number, v: number, a: number): Color {
   return { type: "hsva", h, s, v, a };
 }
 
@@ -618,23 +602,6 @@ function constrain(value: number, min: number, max: number) {
 function noise(x: number, y = 0, z = 0) {
   return op_draw_noise(x, y, z);
 }
-
-declare const globalThis: {
-  createDraw: typeof createDraw;
-  rgb: typeof rgb;
-  rgba: typeof rgba;
-  hsv: typeof hsv;
-  hsva: typeof hsva;
-
-  random: typeof random;
-  radians: typeof radians;
-  degrees: typeof degrees;
-  lerp: typeof lerp;
-  norm: typeof norm;
-  map: typeof map;
-  constrain: typeof constrain;
-  noise: typeof noise;
-};
 
 globalThis.createDraw = createDraw;
 globalThis.rgb = rgb;

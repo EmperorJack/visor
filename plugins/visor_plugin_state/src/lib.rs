@@ -25,6 +25,10 @@ impl Plugin for StatePlugin {
         visor_plugin_state::init()
     }
 
+    fn typescript_declaration(&self) -> Option<String> {
+        Some(include_str!("visor-plugin-state.d.ts").into())
+    }
+
     fn build_sketch(
         &self,
         _sketch_id: &SketchId,

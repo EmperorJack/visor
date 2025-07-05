@@ -1,5 +1,5 @@
 declare namespace Deno {
-  export const core: {
+  const core: {
     ops: {
       op_log_console_log: (message: string) => void;
       op_log_console_error: (message: string) => void;
@@ -25,13 +25,6 @@ function error(...args: Args) {
   const message = argsToMessage(...args);
   return op_log_console_error(message);
 }
-
-declare const globalThis: {
-  console: {
-    log: typeof log;
-    error: typeof error;
-  };
-};
 
 globalThis.console = {
   log,

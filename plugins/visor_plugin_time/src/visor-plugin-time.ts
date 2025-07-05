@@ -1,5 +1,5 @@
 declare namespace Deno {
-  export const core: {
+  const core: {
     ops: {
       op_time_frame_count: () => number;
       op_time_time: () => number;
@@ -21,12 +21,6 @@ function time() {
 function delta() {
   return op_time_delta();
 }
-
-declare const globalThis: {
-  frameCount: typeof frameCount;
-  time: typeof time;
-  delta: typeof delta;
-};
 
 globalThis.frameCount = frameCount;
 globalThis.time = time;
