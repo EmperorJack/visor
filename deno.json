@@ -1,5 +1,9 @@
 {
-  "compilerOptions": {
-    "lib": ["deno.ns"]
-  }
+  "workspace": [
+    "./plugins/visor_plugin_draw",
+    "./plugins/visor_plugin_log",
+    "./plugins/visor_plugin_midi",
+    "./plugins/visor_plugin_state",
+    "./plugins/visor_plugin_time"
+  ]
 }

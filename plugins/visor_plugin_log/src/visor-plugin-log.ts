@@ -1,20 +1,11 @@
-declare namespace Deno {
-  const core: {
-    ops: {
-      op_log_console_log: (message: string) => void;
-      op_log_console_error: (message: string) => void;
-    };
-  };
-}
+import ops from "./ops.ts";
 
-const { op_log_console_log, op_log_console_error } = Deno.core.ops;
+const { op_log_console_log, op_log_console_error } = ops;
 
-// deno-lint-ignore no-explicit-any
-type Args = Array<any>;
-
-function argsToMessage(...args: Args): string {
-  return args.map((arg) => JSON.stringify(arg)).join(" ");
-}
+const console: Console = {
+  log,
+  error,
+};
 
 function log(...args: Args) {
   const message = argsToMessage(...args);
@@ -26,7 +17,11 @@ function error(...args: Args) {
   return op_log_console_error(message);
 }
 
-globalThis.console = {
-  log,
-  error,
-};
+// deno-lint-ignore no-explicit-any
+type Args = Array<any>;
+
+function argsToMessage(...args: Args): string {
+  return args.map((arg) => JSON.stringify(arg)).join(" ");
+}
+
+globalThis.console = console;

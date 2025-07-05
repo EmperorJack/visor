@@ -1,7 +1,9 @@
 // deno-lint-ignore no-var
-declare var console: {
+declare var console: Console;
+
+interface Console {
   // deno-lint-ignore no-explicit-any
   log(...args: Array<any>): void;
   // deno-lint-ignore no-explicit-any
   error(...args: Array<any>): void;
-};
+}

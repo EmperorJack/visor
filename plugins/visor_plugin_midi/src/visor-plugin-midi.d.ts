@@ -1,5 +1,7 @@
 // deno-lint-ignore no-var
-declare var midi: {
+declare var midi: Midi;
+
+interface Midi {
   listInputDevices(): Array<string>;
   connectInputDevice(name: string): void;
   disconnectInputDevice(name: string): void;
@@ -8,7 +10,7 @@ declare var midi: {
   note(id: string): Note;
   encoder(id: string): Encoder;
   control(id: string): number;
-};
+}
 
 interface Encoder {
   increment(): boolean;

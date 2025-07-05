@@ -27,7 +27,7 @@ extension!(
     visor_plugin_log,
     ops = [op_log_console_log, op_log_console_error],
     esm_entry_point = "ext:visor_plugin_log/src/visor-plugin-log.ts",
-    esm = ["src/visor-plugin-log.ts"]
+    esm = ["src/ops.ts", "src/visor-plugin-log.ts"]
 );
 
 impl LogPlugin {

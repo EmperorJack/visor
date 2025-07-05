@@ -333,7 +333,18 @@ extension!(
         op_draw_noise,
     ],
     esm_entry_point = "ext:visor_plugin_draw/src/visor-plugin-draw.ts",
-    esm = ["src/visor-plugin-draw.ts"]
+    esm = [
+        "src/color.ts",
+        "src/draw.ts",
+        "src/ellipse.ts",
+        "src/math.ts",
+        "src/ops.ts",
+        "src/polyline.ts",
+        "src/quad.ts",
+        "src/rect.ts",
+        "src/spline.ts",
+        "src/visor-plugin-draw.ts"
+    ]
 );
 
 impl Plugin for DrawPlugin {

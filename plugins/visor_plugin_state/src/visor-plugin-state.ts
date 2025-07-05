@@ -1,44 +1,14 @@
 // deno-lint-ignore-file no-explicit-any
 
-declare namespace Deno {
-  const core: {
-    ops: {
-      op_state_create: (id: string, value: string) => string;
-      op_state_set: (id: string, value: string) => void;
-      op_state_remove_unused: (ids: Array<string>) => void;
-    };
-  };
-}
+import ops from "./ops.ts";
 
-const { op_state_create, op_state_set, op_state_remove_unused } = Deno.core.ops;
-
-class _StateVariable {
-  id: string;
-  value: any;
-
-  constructor(id: string, defaultValue: any) {
-    this.id = id;
-
-    this.value = JSON.parse(op_state_create(id, JSON.stringify(defaultValue)));
-  }
-
-  get() {
-    return this.value;
-  }
-
-  set(value: any) {
-    this.value = value;
-
-    // TODO: can we persist state between runtime compiles without saving a JSON string every set()?
-    op_state_set(this.id, JSON.stringify(value));
-  }
-}
+const { op_state_create, op_state_set, op_state_remove_unused } = ops;
 
 function createState<S extends State>(variables: S) {
   const stateVariables = Object.entries(variables).reduce<
-    Record<string, _StateVariable>
+    Record<string, StateVariable>
   >((sofar, [key, value]) => {
-    sofar[key] = new _StateVariable(key, value);
+    sofar[key] = new StateVariable(key, value);
     return sofar;
   }, {});
 
@@ -64,6 +34,28 @@ function createState<S extends State>(variables: S) {
   };
 
   return new Proxy(stateVariables, handler) as S;
+}
+
+class StateVariable {
+  id: string;
+  value: any;
+
+  constructor(id: string, defaultValue: any) {
+    this.id = id;
+
+    this.value = JSON.parse(op_state_create(id, JSON.stringify(defaultValue)));
+  }
+
+  get() {
+    return this.value;
+  }
+
+  set(value: any) {
+    this.value = value;
+
+    // TODO: can we persist state between runtime compiles without saving a JSON string every set()?
+    op_state_set(this.id, JSON.stringify(value));
+  }
 }
 
 globalThis.createState = createState;

@@ -97,7 +97,12 @@ extension!(
         op_midi_note_velocity,
     ],
     esm_entry_point = "ext:visor_plugin_midi/src/visor-plugin-midi.ts",
-    esm = ["src/visor-plugin-midi.ts"]
+    esm = [
+        "src/encoder.ts",
+        "src/note.ts",
+        "src/ops.ts",
+        "src/visor-plugin-midi.ts"
+    ]
 );
 
 impl MidiPlugin {

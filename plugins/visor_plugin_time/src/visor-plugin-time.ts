@@ -1,14 +1,6 @@
-declare namespace Deno {
-  const core: {
-    ops: {
-      op_time_frame_count: () => number;
-      op_time_time: () => number;
-      op_time_delta: () => number;
-    };
-  };
-}
+import ops from "./ops.ts";
 
-const { op_time_frame_count, op_time_time, op_time_delta } = Deno.core.ops;
+const { op_time_frame_count, op_time_time, op_time_delta } = ops;
 
 function frameCount() {
   return op_time_frame_count();
