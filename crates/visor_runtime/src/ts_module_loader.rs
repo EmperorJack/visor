@@ -16,8 +16,8 @@ impl ModuleLoader for TsModuleLoader {
         specifier: &str,
         referrer: &str,
         _kind: ResolutionKind,
-    ) -> Result<Url, ModuleLoaderError> {
-        deno_core::resolve_import(specifier, referrer).map_err(|error| error.into())
+    ) -> Result<ModuleSpecifier, ModuleLoaderError> {
+        Ok(deno_core::resolve_import(specifier, referrer)?)
     }
 
     fn load(
@@ -29,6 +29,7 @@ impl ModuleLoader for TsModuleLoader {
     ) -> ModuleLoadResponse {
         let module_specifier = module_specifier.clone();
 
+        // TODO: why async here?
         ModuleLoadResponse::Async(
             async move {
                 let path = module_specifier.to_file_path().map_err(|_| {
