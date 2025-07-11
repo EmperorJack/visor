@@ -1,5 +1,3 @@
-// TODO: move the following to a math plugin?
-
 import ops from "./ops.ts";
 
 const { op_draw_noise } = ops;

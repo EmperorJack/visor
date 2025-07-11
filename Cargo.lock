@@ -5257,6 +5257,7 @@ dependencies = [
  "visor_engine",
  "visor_plugin_draw",
  "visor_plugin_log",
+ "visor_plugin_math",
  "visor_plugin_midi",
  "visor_plugin_state",
  "visor_plugin_time",
@@ -5288,6 +5289,15 @@ name = "visor_plugin_log"
 version = "0.1.0"
 dependencies = [
  "deno_core",
+ "visor_engine",
+]
+
+[[package]]
+name = "visor_plugin_math"
+version = "0.1.0"
+dependencies = [
+ "deno_core",
+ "nannou",
  "visor_engine",
 ]
 

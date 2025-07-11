@@ -6,10 +6,7 @@ use bevy_math::{
 };
 use deno_core::{Extension, OpState, extension, op2};
 use ellipse::*;
-use nannou::{
-    draw::Drawing,
-    noise::{NoiseFn, Perlin},
-};
+use nannou::draw::Drawing;
 use polyline::*;
 use quad::*;
 use rect::*;
@@ -48,7 +45,6 @@ struct SketchState {
     quad_command_map: QuadCommandMap,
     polyline_command_map: PolylineCommandMap,
     spline_command_map: SplineCommandMap,
-    noise: Perlin,
 }
 
 impl SketchState {
@@ -330,14 +326,12 @@ extension!(
         op_draw_translate,
         op_draw_rotate,
         op_draw_scale,
-        op_draw_noise,
     ],
     esm_entry_point = "ext:visor_plugin_draw/src/visor-plugin-draw.ts",
     esm = [
         "src/color.ts",
         "src/draw.ts",
         "src/ellipse.ts",
-        "src/math.ts",
         "src/ops.ts",
         "src/polyline.ts",
         "src/quad.ts",
@@ -379,7 +373,6 @@ impl Plugin for DrawPlugin {
             quad_command_map: Default::default(),
             polyline_command_map: Default::default(),
             spline_command_map: Default::default(),
-            noise: Default::default(),
         });
     }
 
@@ -453,11 +446,4 @@ fn op_draw_scale(state: &mut OpState, id: u32, s: f32) -> u32 {
     let draw = draw.inner.scale(s);
 
     sketch_state.store_draw(draw.into()).0
-}
-
-#[op2(fast)]
-fn op_draw_noise(state: &mut OpState, x: f32, y: f32, z: f32) -> f32 {
-    let sketch_state = state.sketch_store_mut().get_mut::<SketchState>();
-
-    sketch_state.noise.get([x as f64, y as f64, z as f64]) as f32
 }

@@ -1,0 +1,11 @@
+[package]
+name = "visor_plugin_math"
+version = "0.1.0"
+edition = "2024"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+deno_core = "0.352.0"
+nannou = { path = "../../../nannou/nannou" }
+visor_engine = { path = "../../crates/visor_engine" }
