@@ -7,7 +7,7 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0"
-nannou = { path = "../../../nannou/nannou" }
+nannou = { git = "https://github.com/EmperorJack/nannou.git", branch = "upgrade-wgpu" }
 pluginator = "1.0.1"
 state = { version = "0.6.0" }
 tao = { version = "0.34.0" }
