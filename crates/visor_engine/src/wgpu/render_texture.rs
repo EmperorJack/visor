@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use uuid::Uuid;
 
-use crate::handle::WgpuHandle;
+use crate::wgpu::handle::WgpuHandle;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct RenderTextureId(pub Uuid);
@@ -15,7 +15,7 @@ pub struct RenderTexture {
 }
 
 impl RenderTexture {
-    pub async fn new(
+    pub(crate) async fn new(
         wgpu_handle: Arc<WgpuHandle>,
         id: RenderTextureId,
         width: u32,

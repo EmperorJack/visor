@@ -8,7 +8,7 @@ use deno_core::{
 };
 use deno_error::JsErrorBox;
 
-pub struct TsModuleLoader;
+pub(crate) struct TsModuleLoader;
 
 impl ModuleLoader for TsModuleLoader {
     fn resolve(
@@ -119,7 +119,7 @@ impl ModuleLoader for TsModuleLoader {
     }
 }
 
-pub fn maybe_transpile_source(
+pub(crate) fn maybe_transpile_source(
     specifier: ModuleName,
     source: ModuleCodeString,
 ) -> Result<(ModuleCodeString, Option<SourceMapData>), JsErrorBox> {

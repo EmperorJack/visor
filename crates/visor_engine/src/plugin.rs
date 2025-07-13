@@ -1,7 +1,5 @@
 use std::ops::Deref;
 
-use visor_runtime::{Extension, OpState};
-
 use crate::{engine::Engine, sketch::SketchId, sketch_store::SketchStore, store::Store};
 
 pub trait Plugin: Send + Sync {
@@ -53,6 +51,7 @@ pub trait Plugin: Send + Sync {
 
 pluginator::plugin_trait!(Plugin);
 
+use deno_core::{Extension, OpState};
 pub use pluginator::plugin_implementation;
 
 pub(crate) enum LoadedPlugin {

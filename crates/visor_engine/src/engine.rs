@@ -4,31 +4,28 @@ use std::{
     sync::{Arc, OnceLock},
 };
 
+use deno_core::Extension;
 use tao::window::{Window, WindowId};
 use tokio::{
     runtime::{Handle, Runtime},
     task::JoinSet,
 };
 use uuid::Uuid;
-use visor_display::display_manager::DisplayManager;
-use visor_runtime::{
-    Extension,
-    startup_snapshot::{STARTUP_SNAPSHOT_CELL, StartupSnapshot},
-};
-use visor_wgpu::{handle::WgpuHandle, render_texture::RenderTexture};
 
 use crate::{
+    display_manager::DisplayManager,
     draw::Draw,
     plugin::{LoadedPlugin, Plugin, load_plugin},
     sketch::Sketch,
+    sketch_runtime::startup_snapshot::{STARTUP_SNAPSHOT_CELL, StartupSnapshot},
     sketch_store::SketchStore,
     store::{ENGINE_STORE, Store},
+    wgpu::{handle::WgpuHandle, render_texture::RenderTexture},
 };
 
+pub use crate::display::{Display, DisplayId};
 pub use crate::sketch::SketchId;
-
-pub use visor_display::display::{Display, DisplayId};
-pub use visor_wgpu::render_texture::RenderTextureId;
+pub use crate::wgpu::render_texture::RenderTextureId;
 
 static PLUGINS_CELL: OnceLock<Vec<LoadedPlugin>> = OnceLock::new();
 

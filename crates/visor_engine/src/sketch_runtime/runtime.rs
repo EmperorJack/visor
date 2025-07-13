@@ -3,22 +3,27 @@ use std::{path::Path, rc::Rc};
 use anyhow::{Error, Result};
 use deno_core::{Extension, JsRuntime, ModuleId, error::AnyError, v8};
 
-use crate::{startup_snapshot::STARTUP_SNAPSHOT_CELL, ts_module_loader::TsModuleLoader};
+use crate::sketch_runtime::{
+    startup_snapshot::STARTUP_SNAPSHOT_CELL, ts_module_loader::TsModuleLoader,
+};
 
-pub enum RuntimeExecuteFunctionResult {
+pub(crate) enum RuntimeExecuteFunctionResult {
     Success,
     Missing,
     Error(Error),
 }
 
-pub struct Runtime {
+pub(crate) struct SketchRuntime {
     tokio_runtime_handle: tokio::runtime::Handle,
     js_runtime: JsRuntime,
     main_module_id: Option<ModuleId>,
 }
 
-impl Runtime {
-    pub fn new(tokio_runtime_handle: tokio::runtime::Handle, extensions: Vec<Extension>) -> Self {
+impl SketchRuntime {
+    pub(crate) fn new(
+        tokio_runtime_handle: tokio::runtime::Handle,
+        extensions: Vec<Extension>,
+    ) -> Self {
         let startup_snapshot = STARTUP_SNAPSHOT_CELL
             .get()
             .expect("Unexpected: startup snapshot should be created by now");
@@ -37,7 +42,7 @@ impl Runtime {
         }
     }
 
-    pub fn compile(&mut self, path: &Path) -> Result<Option<Error>, AnyError> {
+    pub(crate) fn compile(&mut self, path: &Path) -> Result<Option<Error>, AnyError> {
         self.tokio_runtime_handle.block_on(async {
             let path = path
                 .to_str()
@@ -73,15 +78,18 @@ impl Runtime {
         })
     }
 
-    pub fn put_state<T: 'static>(&mut self, state: T) {
+    pub(crate) fn put_state<T: 'static>(&mut self, state: T) {
         self.js_runtime.op_state().borrow_mut().put(state);
     }
 
-    pub fn take_state<T: 'static>(&mut self) -> T {
+    pub(crate) fn take_state<T: 'static>(&mut self) -> T {
         self.js_runtime.op_state().borrow_mut().take()
     }
 
-    pub fn execute_function(&mut self, function_export_name: &str) -> RuntimeExecuteFunctionResult {
+    pub(crate) fn execute_function(
+        &mut self,
+        function_export_name: &str,
+    ) -> RuntimeExecuteFunctionResult {
         self.execute_sketch_function_inner(function_export_name)
             .unwrap_or_else(|_| {
                 panic!(

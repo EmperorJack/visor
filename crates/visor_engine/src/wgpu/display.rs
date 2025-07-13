@@ -2,10 +2,10 @@ use std::sync::Arc;
 
 use tao::rwh_06;
 
-use crate::handle::WgpuHandle;
+use crate::wgpu::handle::WgpuHandle;
 
 #[derive(Debug)]
-pub struct Display {
+pub struct WgpuDisplay {
     surface: nannou::wgpu::Surface<'static>,
     surface_format: nannou::wgpu::TextureFormat,
     surface_config: nannou::wgpu::SurfaceConfiguration,
@@ -13,7 +13,7 @@ pub struct Display {
     wgpu_handle: Arc<WgpuHandle>,
 }
 
-impl Display {
+impl WgpuDisplay {
     pub async fn new<W>(wgpu: Arc<WgpuHandle>, window: W, width: u32, height: u32) -> Self
     where
         W: rwh_06::HasWindowHandle + rwh_06::HasDisplayHandle + Send + Sync + 'static,

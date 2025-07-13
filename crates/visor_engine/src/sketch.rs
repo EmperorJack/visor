@@ -5,12 +5,12 @@ use tokio::{
     sync::{mpsc, oneshot},
 };
 use uuid::Uuid;
-use visor_wgpu::render_texture::RenderTextureId;
 
 use crate::{
     draw::Draw,
     sketch_store::SketchStore,
     sketch_worker::{SketchUpdateResult, SketchWorker, SketchWorkerTask},
+    wgpu::render_texture::RenderTextureId,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]

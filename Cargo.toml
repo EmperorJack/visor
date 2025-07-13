@@ -15,7 +15,6 @@ deno_error = "0.6.1"
 nannou = { git = "https://github.com/EmperorJack/nannou.git", branch = "upgrade-wgpu" }
 tao = { version = "0.34.0" }
 tokio = { version = "1.26.0" }
-uuid = { version = "1.10.0", features = ["v4", "fast-rng"] }
 visor_core = { path = "./visor_core" }
 visor_engine = { path = "./crates/visor_engine" }
 visor_plugin_draw = { path = "./crates/plugins/visor_plugin_draw" }

@@ -2,11 +2,11 @@ use std::{rc::Rc, sync::OnceLock};
 
 use deno_core::Extension;
 
-use crate::ts_module_loader::maybe_transpile_source;
+use crate::sketch_runtime::ts_module_loader::maybe_transpile_source;
 
-pub static STARTUP_SNAPSHOT_CELL: OnceLock<StartupSnapshot> = OnceLock::new();
+pub(crate) static STARTUP_SNAPSHOT_CELL: OnceLock<StartupSnapshot> = OnceLock::new();
 
-pub struct StartupSnapshot {
+pub(crate) struct StartupSnapshot {
     pub(crate) snapshot: Vec<u8>,
 }
 
@@ -16,7 +16,7 @@ unsafe impl Send for StartupSnapshot {}
 unsafe impl Sync for StartupSnapshot {}
 
 impl StartupSnapshot {
-    pub fn new(extensions: Vec<Extension>) -> Self {
+    pub(crate) fn new(extensions: Vec<Extension>) -> Self {
         let snapshot = deno_core::snapshot::create_snapshot(
             deno_core::snapshot::CreateSnapshotOptions {
                 cargo_manifest_dir: env!("CARGO_MANIFEST_DIR"),

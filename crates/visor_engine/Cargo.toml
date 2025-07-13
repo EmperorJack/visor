@@ -7,12 +7,12 @@ edition = "2024"
 
 [dependencies]
 anyhow.workspace = true
+deno_ast = { version = "0.48.0", features = ["transpiling"] }
+deno_core.workspace = true
+deno_error.workspace = true
 nannou.workspace = true
 pluginator = "1.0.1"
 state = { version = "0.6.0" }
-tao.workspace = true
+tao = { workspace = true, features = ["rwh_06"] }
 tokio = { workspace = true, features = ["full"] }
-uuid.workspace = true
-visor_display = { path = "../visor_display" }
-visor_runtime = { path = "../visor_runtime" }
-visor_wgpu = { path = "../visor_wgpu" }
+uuid = { version = "1.10.0", features = ["v4", "fast-rng"] }

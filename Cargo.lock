@@ -5182,30 +5182,19 @@ dependencies = [
 ]
 
 [[package]]
-name = "visor_display"
-version = "0.1.0"
-dependencies = [
- "nannou",
- "tao",
- "tokio",
- "uuid",
- "visor_wgpu",
-]
-
-[[package]]
 name = "visor_engine"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "deno_ast",
+ "deno_core",
+ "deno_error",
  "nannou",
  "pluginator",
  "state",
  "tao",
  "tokio",
  "uuid",
- "visor_display",
- "visor_runtime",
- "visor_wgpu",
 ]
 
 [[package]]
@@ -5274,26 +5263,6 @@ version = "0.1.0"
 dependencies = [
  "deno_core",
  "visor_engine",
-]
-
-[[package]]
-name = "visor_runtime"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "deno_ast",
- "deno_core",
- "deno_error",
- "tokio",
-]
-
-[[package]]
-name = "visor_wgpu"
-version = "0.1.0"
-dependencies = [
- "nannou",
- "tao",
- "uuid",
 ]
 
 [[package]]

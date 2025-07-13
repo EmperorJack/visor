@@ -2,9 +2,14 @@ use std::path::PathBuf;
 
 use anyhow::Error;
 use tokio::sync::{mpsc, oneshot};
-use visor_runtime::runtime::{Runtime, RuntimeExecuteFunctionResult};
 
-use crate::{engine::Engine, sketch::SketchId, sketch_store::SketchStore, store::ENGINE_STORE};
+use crate::{
+    engine::Engine,
+    sketch::SketchId,
+    sketch_runtime::runtime::{RuntimeExecuteFunctionResult, SketchRuntime},
+    sketch_store::SketchStore,
+    store::ENGINE_STORE,
+};
 
 #[derive(Debug)]
 pub(crate) struct SketchUpdateResult {
@@ -25,7 +30,7 @@ pub(crate) struct SketchWorker {
     file_path: PathBuf,
     task_receiver: mpsc::Receiver<SketchWorkerTask>,
     tokio_runtime: tokio::runtime::Runtime,
-    runtime: Option<Runtime>,
+    runtime: Option<SketchRuntime>,
     request_compile: bool,
     request_setup: bool,
     compile_error: Option<String>,
@@ -33,7 +38,7 @@ pub(crate) struct SketchWorker {
 }
 
 impl SketchWorker {
-    pub fn new(
+    pub(crate) fn new(
         id: SketchId,
         file_path: PathBuf,
         task_receiver: mpsc::Receiver<SketchWorkerTask>,
@@ -56,7 +61,7 @@ impl SketchWorker {
         }
     }
 
-    pub fn run(&mut self) {
+    pub(crate) fn run(&mut self) {
         while let Some(task) = self.task_receiver.blocking_recv() {
             match task {
                 SketchWorkerTask::RequestCompile(result_sender) => {
@@ -96,7 +101,7 @@ impl SketchWorker {
             // Drop the current runtime if there is one
             self.runtime = None;
 
-            let mut runtime = Runtime::new(
+            let mut runtime = SketchRuntime::new(
                 self.tokio_runtime.handle().clone(),
                 Engine::plugin_extensions(),
             );
@@ -146,7 +151,7 @@ impl SketchWorker {
     }
 
     // TODO: should this return a Result?
-    fn execute_sketch_lifecycle(request_setup: bool, runtime: &mut Runtime) -> Option<Error> {
+    fn execute_sketch_lifecycle(request_setup: bool, runtime: &mut SketchRuntime) -> Option<Error> {
         if request_setup {
             // TODO: setup errors are being overridden by next successful update, setup should be fallible like compile
             // Might mean we need a teardown function too? E.g: connect/disconnect midi input device

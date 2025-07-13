@@ -3,7 +3,8 @@ use std::sync::Arc;
 use nannou::wgpu::TextureView;
 use tao::{dpi::PhysicalSize, window::Window};
 use uuid::Uuid;
-use visor_wgpu::{display::Display as WgpuDisplay, handle::WgpuHandle};
+
+use crate::wgpu::{display::WgpuDisplay, handle::WgpuHandle};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct DisplayId(pub Uuid);
