@@ -71,7 +71,7 @@ fn op_counter_increment(state: &mut OpState) {
 mod tests {
     use std::path::PathBuf;
 
-    use visor_core::{engine::Engine, engine_builder::EngineBuilder};
+    use visor_core::{default_plugins, engine::Engine, engine_builder::EngineBuilder};
 
     use crate::CounterPlugin;
 
@@ -105,9 +105,10 @@ mod tests {
 
     #[test]
     fn as_compiled_plugin() {
-        let engine = EngineBuilder::default()
-            .extend_plugins(vec![Box::new(CounterPlugin)])
-            .build();
+        let mut plugins = default_plugins();
+        plugins.push(Box::new(CounterPlugin));
+
+        let engine = EngineBuilder::default().with_plugins(plugins).build();
 
         verify_plugin(engine);
     }
@@ -119,6 +120,7 @@ mod tests {
             .join("target/debug/libplugin.dylib");
 
         let engine = EngineBuilder::default()
+            .with_plugins(default_plugins())
             .with_linked_plugins(vec![plugin_path])
             .build();
 

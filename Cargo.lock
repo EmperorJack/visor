@@ -5243,6 +5243,12 @@ version = "0.1.0"
 dependencies = [
  "visor_engine",
  "visor_engine_builder",
+ "visor_plugin_draw",
+ "visor_plugin_log",
+ "visor_plugin_math",
+ "visor_plugin_midi",
+ "visor_plugin_state",
+ "visor_plugin_time",
 ]
 
 [[package]]
@@ -5278,12 +5284,6 @@ version = "0.1.0"
 dependencies = [
  "tokio",
  "visor_engine",
- "visor_plugin_draw",
- "visor_plugin_log",
- "visor_plugin_math",
- "visor_plugin_midi",
- "visor_plugin_state",
- "visor_plugin_time",
 ]
 
 [[package]]

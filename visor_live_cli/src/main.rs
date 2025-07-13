@@ -9,7 +9,7 @@ use tao::{
     event::{Event, WindowEvent},
     window::WindowBuilder,
 };
-use visor_core::engine_builder::EngineBuilder;
+use visor_core::{default_plugins, engine_builder::EngineBuilder};
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -51,7 +51,7 @@ fn main() {
 
     let event_loop = tao::event_loop::EventLoop::new();
 
-    let mut engine_builder = EngineBuilder::default();
+    let mut engine_builder = EngineBuilder::default().with_plugins(default_plugins());
 
     if let Some(plugins) = args.plugins {
         engine_builder = engine_builder.with_linked_plugins(plugins)
