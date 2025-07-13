@@ -7,7 +7,6 @@ edition = "2024"
 
 [dependencies]
 visor_engine = { path = "../crates/visor_engine" }
-visor_engine_builder = { path = "../crates/visor_engine_builder" }
 visor_plugin_draw = { path = "../crates/plugins/visor_plugin_draw" }
 visor_plugin_log = { path = "../crates/plugins/visor_plugin_log" }
 visor_plugin_math = { path = "../crates/plugins/visor_plugin_math" }

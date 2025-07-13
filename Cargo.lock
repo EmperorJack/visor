@@ -5242,7 +5242,6 @@ name = "visor_core"
 version = "0.1.0"
 dependencies = [
  "visor_engine",
- "visor_engine_builder",
  "visor_plugin_draw",
  "visor_plugin_log",
  "visor_plugin_math",
@@ -5276,14 +5275,6 @@ dependencies = [
  "visor_display",
  "visor_runtime",
  "visor_wgpu",
-]
-
-[[package]]
-name = "visor_engine_builder"
-version = "0.1.0"
-dependencies = [
- "tokio",
- "visor_engine",
 ]
 
 [[package]]

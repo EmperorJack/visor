@@ -1,7 +1,8 @@
 use std::path::PathBuf;
 
 use tokio::runtime::Handle;
-use visor_engine::{engine::Engine, plugin::Plugin};
+
+use crate::{engine::Engine, plugin::Plugin};
 
 #[derive(Default)]
 pub struct EngineBuilder {
