@@ -6,17 +6,15 @@ use crate::sketch_runtime::ts_module_loader::maybe_transpile_source;
 
 pub(crate) static STARTUP_SNAPSHOT_CELL: OnceLock<StartupSnapshot> = OnceLock::new();
 
-pub(crate) struct StartupSnapshot {
-    pub(crate) snapshot: Vec<u8>,
-}
+pub(crate) struct StartupSnapshot(pub(crate) Vec<u8>);
 
 // Note: This is required for shared access across threads
 // Should be safe given the cell value is never mutated
 unsafe impl Send for StartupSnapshot {}
 unsafe impl Sync for StartupSnapshot {}
 
-impl StartupSnapshot {
-    pub(crate) fn new(extensions: Vec<Extension>) -> Self {
+pub(crate) fn init_startup_snapshot(extensions: Vec<Extension>) {
+    STARTUP_SNAPSHOT_CELL.get_or_init(|| {
         let snapshot = deno_core::snapshot::create_snapshot(
             deno_core::snapshot::CreateSnapshotOptions {
                 cargo_manifest_dir: env!("CARGO_MANIFEST_DIR"),
@@ -30,8 +28,6 @@ impl StartupSnapshot {
         )
         .expect("Unexpected: could not create snapshot");
 
-        Self {
-            snapshot: snapshot.output.to_vec(),
-        }
-    }
+        StartupSnapshot(snapshot.output.to_vec())
+    });
 }

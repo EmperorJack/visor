@@ -17,7 +17,7 @@ use crate::{
     draw::Draw,
     plugin::{LoadedPlugin, Plugin, load_plugin},
     sketch::Sketch,
-    sketch_runtime::startup_snapshot::{STARTUP_SNAPSHOT_CELL, StartupSnapshot},
+    sketch_runtime::init_startup_snapshot,
     sketch_store::SketchStore,
     store::{ENGINE_STORE, Store},
     wgpu::{handle::WgpuHandle, render_texture::RenderTexture},
@@ -82,14 +82,12 @@ impl Engine {
         let all_plugins: Vec<LoadedPlugin> =
             compiled_plugins.into_iter().chain(linked_plugins).collect();
 
-        STARTUP_SNAPSHOT_CELL.get_or_init(|| {
-            let plugin_extensions = all_plugins
+        init_startup_snapshot(
+            all_plugins
                 .iter()
                 .map(|plugin| plugin.extension())
-                .collect();
-
-            StartupSnapshot::new(plugin_extensions)
-        });
+                .collect(),
+        );
 
         PLUGINS_CELL.get_or_init(|| all_plugins);
 

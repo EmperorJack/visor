@@ -30,7 +30,7 @@ impl SketchRuntime {
 
         let js_runtime = deno_core::JsRuntime::new(deno_core::RuntimeOptions {
             module_loader: Some(Rc::new(TsModuleLoader)),
-            startup_snapshot: Some(&startup_snapshot.snapshot),
+            startup_snapshot: Some(&startup_snapshot.0),
             extensions,
             ..Default::default()
         });
