@@ -3411,7 +3411,7 @@ name = "plugin"
 version = "0.1.0"
 dependencies = [
  "deno_core",
- "visor",
+ "visor_core",
  "visor_engine",
  "visor_plugin_log",
 ]
@@ -5238,7 +5238,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 
 [[package]]
-name = "visor"
+name = "visor_core"
 version = "0.1.0"
 dependencies = [
  "visor_engine",
@@ -5293,7 +5293,7 @@ dependencies = [
  "clap",
  "notify",
  "tao 0.34.0",
- "visor",
+ "visor_core",
  "visor_plugin_log",
 ]
 

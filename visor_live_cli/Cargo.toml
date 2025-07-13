@@ -9,5 +9,5 @@ edition = "2024"
 clap = { version = "4.5.17", features = ["derive"] }
 notify = "6.1.1"
 tao = { version = "0.34.0" }
-visor = { path = "../visor" }
+visor_core = { path = "../visor_core" }
 visor_plugin_log = { path = "../plugins/visor_plugin_log" }

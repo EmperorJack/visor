@@ -71,7 +71,7 @@ fn op_counter_increment(state: &mut OpState) {
 mod tests {
     use std::path::PathBuf;
 
-    use visor::{engine::Engine, engine_builder::EngineBuilder};
+    use visor_core::{engine::Engine, engine_builder::EngineBuilder};
 
     use crate::CounterPlugin;
 
