@@ -1,5 +1,5 @@
 [package]
-name = "visor_plugin_math"
+name = "visor_plugin_time"
 version = "0.1.0"
 edition = "2024"
 
@@ -7,5 +7,4 @@ edition = "2024"
 
 [dependencies]
 deno_core = "0.352.0"
-nannou = { git = "https://github.com/EmperorJack/nannou.git", branch = "upgrade-wgpu" }
-visor_engine = { path = "../../crates/visor_engine" }
+visor_engine = { path = "../../visor_engine" }

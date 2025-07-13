@@ -11,7 +11,7 @@ visor_engine = { path = "../../crates/visor_engine" }
 
 [dev-dependencies]
 visor_core = { path = "../../visor_core" }
-visor_plugin_log = { path = "../../plugins/visor_plugin_log" }
+visor_plugin_log = { path = "../../crates/plugins/visor_plugin_log" }
 
 [lib]
 crate-type = ["cdylib"]

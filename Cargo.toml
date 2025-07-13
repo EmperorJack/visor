@@ -1,10 +1,10 @@
 [workspace]
 members = [
+  "crates/plugins/*",
+  "crates/visor_*",
+  "examples/*",
   "visor_core",
   "visor_live_cli",
-  "crates/*",
-  "examples/*",
-  "plugins/*",
 ]
 
 resolver = "2"
