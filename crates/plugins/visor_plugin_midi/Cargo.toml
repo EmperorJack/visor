@@ -6,11 +6,11 @@ edition = "2024"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-deno_core = "0.352.0"
-deno_error = "0.6.1"
+deno_core.workspace = true
+deno_error.workspace = true
 midir = "0.10.1"
 midly = "0.5"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-tokio = { version = "1.26.0", features = ["sync"] }
-visor_engine = { path = "../../visor_engine" }
+tokio = { workspace = true, features = ["sync"] }
+visor_engine.workspace = true

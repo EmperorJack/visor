@@ -7,6 +7,6 @@ edition = "2024"
 
 [dependencies]
 bevy_math = "0.14.2"
-deno_core = "0.352.0"
-nannou = { git = "https://github.com/EmperorJack/nannou.git", branch = "upgrade-wgpu" }
-visor_engine = { path = "../../visor_engine" }
+deno_core.workspace = true
+nannou.workspace = true
+visor_engine.workspace = true

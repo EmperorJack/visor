@@ -6,13 +6,13 @@ edition = "2024"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1.0"
-nannou = { git = "https://github.com/EmperorJack/nannou.git", branch = "upgrade-wgpu" }
+anyhow.workspace = true
+nannou.workspace = true
 pluginator = "1.0.1"
 state = { version = "0.6.0" }
-tao = { version = "0.34.0" }
-tokio = { version = "1.26.0", features = ["full"] }
-uuid = { version = "1.10.0", features = ["v4", "fast-rng"] }
+tao.workspace = true
+tokio = { workspace = true, features = ["full"] }
+uuid.workspace = true
 visor_display = { path = "../visor_display" }
 visor_runtime = { path = "../visor_runtime" }
 visor_wgpu = { path = "../visor_wgpu" }

@@ -6,10 +6,10 @@ edition = "2024"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-visor_engine = { path = "../crates/visor_engine" }
-visor_plugin_draw = { path = "../crates/plugins/visor_plugin_draw" }
-visor_plugin_log = { path = "../crates/plugins/visor_plugin_log" }
-visor_plugin_math = { path = "../crates/plugins/visor_plugin_math" }
-visor_plugin_midi = { path = "../crates/plugins/visor_plugin_midi" }
-visor_plugin_state = { path = "../crates/plugins/visor_plugin_state" }
-visor_plugin_time = { path = "../crates/plugins/visor_plugin_time" }
+visor_engine.workspace = true
+visor_plugin_draw.workspace = true
+visor_plugin_log.workspace = true
+visor_plugin_math.workspace = true
+visor_plugin_midi.workspace = true
+visor_plugin_state.workspace = true
+visor_plugin_time.workspace = true

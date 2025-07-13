@@ -6,6 +6,6 @@ edition = "2024"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-nannou = { git = "https://github.com/EmperorJack/nannou.git", branch = "upgrade-wgpu" }
-tao = { version = "0.30.8", features = ["rwh_06"] }
-uuid = { version = "1.10.0", features = ["v4", "fast-rng"] }
+nannou.workspace = true
+tao = { workspace = true, features = ["rwh_06"] }
+uuid.workspace = true
