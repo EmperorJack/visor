@@ -23,6 +23,7 @@ use crate::{
     wgpu::{handle::WgpuHandle, render_texture::RenderTexture},
 };
 
+// TODO: rework crate public exports
 pub use crate::display::{Display, DisplayId};
 pub use crate::sketch::SketchId;
 pub use crate::wgpu::render_texture::RenderTextureId;
