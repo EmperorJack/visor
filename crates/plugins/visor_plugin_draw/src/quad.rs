@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 
-use deno_core::{op2, OpState};
+use deno_core::{OpState, op2};
 use nannou::{
     color,
-    draw::{primitive::Quad, Drawing},
+    draw::{Drawing, primitive::Quad},
 };
-use visor_engine::plugin::AccessSketchStore;
+use visor_engine::AccessSketchStore;
 
 use crate::{DrawId, ShapeCommand, ShapeId, SketchState};
 

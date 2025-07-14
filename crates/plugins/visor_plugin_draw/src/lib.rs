@@ -11,14 +11,7 @@ use polyline::*;
 use quad::*;
 use rect::*;
 use spline::*;
-use visor_engine::{
-    draw::Draw,
-    engine::Engine,
-    plugin::{AccessSketchStore, Plugin},
-    sketch::SketchId,
-    sketch_store::SketchStore,
-    store::Store,
-};
+use visor_engine::{AccessSketchStore, Draw, Engine, Plugin, SketchId, SketchStore, Store};
 
 mod ellipse;
 mod polyline;

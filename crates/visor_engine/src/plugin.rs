@@ -1,6 +1,10 @@
 use std::ops::Deref;
 
+use deno_core::{Extension, OpState};
+
 use crate::{engine::Engine, sketch::SketchId, sketch_store::SketchStore, store::Store};
+
+pub use pluginator::plugin_implementation;
 
 pub trait Plugin: Send + Sync {
     fn extension(&self) -> Extension;
@@ -50,9 +54,6 @@ pub trait Plugin: Send + Sync {
 }
 
 pluginator::plugin_trait!(Plugin);
-
-use deno_core::{Extension, OpState};
-pub use pluginator::plugin_implementation;
 
 pub(crate) enum LoadedPlugin {
     Compiled(Box<dyn Plugin>),

@@ -1,4 +1,4 @@
-use visor_engine::plugin::Plugin;
+use visor_engine::Plugin;
 
 use visor_plugin_draw::DrawPlugin;
 use visor_plugin_log::LogPlugin;

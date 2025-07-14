@@ -2,11 +2,7 @@ use std::sync::RwLock;
 
 use deno_core::{Extension, OpState, extension, op2};
 use visor_engine::{
-    engine::Engine,
-    plugin::{AccessSketchStore, Plugin, plugin_implementation},
-    sketch::SketchId,
-    sketch_store::SketchStore,
-    store::Store,
+    AccessSketchStore, Engine, Plugin, SketchId, SketchStore, Store, plugin_implementation,
 };
 
 pub struct CounterPlugin;
@@ -71,8 +67,7 @@ fn op_counter_increment(state: &mut OpState) {
 mod tests {
     use std::path::PathBuf;
 
-    use visor_core::{default_plugins, engine_builder::EngineBuilder};
-    use visor_engine::engine::Engine;
+    use visor_core::{Engine, EngineBuilder, default_plugins};
 
     use crate::CounterPlugin;
 

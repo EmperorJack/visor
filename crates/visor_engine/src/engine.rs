@@ -13,20 +13,19 @@ use tokio::{
 use uuid::Uuid;
 
 use crate::{
+    display::{Display, DisplayId},
     display_manager::DisplayManager,
     draw::Draw,
     plugin::{LoadedPlugin, Plugin, load_plugin},
-    sketch::Sketch,
+    sketch::{Sketch, SketchId},
     sketch_runtime::init_startup_snapshot,
     sketch_store::SketchStore,
     store::{ENGINE_STORE, Store},
-    wgpu::{handle::WgpuHandle, render_texture::RenderTexture},
+    wgpu::{
+        handle::WgpuHandle,
+        render_texture::{RenderTexture, RenderTextureId},
+    },
 };
-
-// TODO: rework crate public exports
-pub use crate::display::{Display, DisplayId};
-pub use crate::sketch::SketchId;
-pub use crate::wgpu::render_texture::RenderTextureId;
 
 static PLUGINS_CELL: OnceLock<Vec<LoadedPlugin>> = OnceLock::new();
 

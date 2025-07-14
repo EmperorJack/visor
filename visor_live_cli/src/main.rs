@@ -9,7 +9,7 @@ use tao::{
     event::{Event, WindowEvent},
     window::WindowBuilder,
 };
-use visor_core::{default_plugins, engine_builder::EngineBuilder};
+use visor_core::{EngineBuilder, default_plugins};
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]

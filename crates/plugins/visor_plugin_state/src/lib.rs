@@ -1,13 +1,7 @@
 use std::collections::HashMap;
 
 use deno_core::{Extension, OpState, extension, op2};
-use visor_engine::{
-    engine::Engine,
-    plugin::{AccessSketchStore, Plugin},
-    sketch::SketchId,
-    sketch_store::SketchStore,
-    store::Store,
-};
+use visor_engine::{AccessSketchStore, Engine, Plugin, SketchId, SketchStore, Store};
 
 pub struct StatePlugin;
 

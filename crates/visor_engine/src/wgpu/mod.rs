@@ -1,3 +1,3 @@
-pub mod display;
-pub mod handle;
-pub mod render_texture;
+pub(crate) mod display;
+pub(crate) mod handle;
+pub(crate) mod render_texture;
