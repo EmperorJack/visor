@@ -1,12 +1,6 @@
 [workspace]
 resolver = "2"
-members = [
-  "crates/plugins/*",
-  "crates/visor_*",
-  "examples/*",
-  "visor_core",
-  "visor_live_cli",
-]
+members = ["crates/*", "examples/*", "visor_core", "visor_live_cli"]
 
 [workspace.dependencies]
 anyhow = "1.0"
@@ -17,12 +11,12 @@ tao = { version = "0.34.0" }
 tokio = { version = "1.26.0" }
 visor_core = { path = "./visor_core" }
 visor_engine = { path = "./crates/visor_engine" }
-visor_plugin_draw = { path = "./crates/plugins/visor_plugin_draw" }
-visor_plugin_log = { path = "./crates/plugins/visor_plugin_log" }
-visor_plugin_math = { path = "./crates/plugins/visor_plugin_math" }
-visor_plugin_midi = { path = "./crates/plugins/visor_plugin_midi" }
-visor_plugin_state = { path = "./crates/plugins/visor_plugin_state" }
-visor_plugin_time = { path = "./crates/plugins/visor_plugin_time" }
+visor_plugin_draw = { path = "./crates/visor_plugin_draw" }
+visor_plugin_log = { path = "./crates/visor_plugin_log" }
+visor_plugin_math = { path = "./crates/visor_plugin_math" }
+visor_plugin_midi = { path = "./crates/visor_plugin_midi" }
+visor_plugin_state = { path = "./crates/visor_plugin_state" }
+visor_plugin_time = { path = "./crates/visor_plugin_time" }
 
 [profile.dev]
 opt-level = 1

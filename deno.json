@@ -1,10 +1,10 @@
 {
   "workspace": [
-    "./plugins/visor_plugin_draw",
-    "./plugins/visor_plugin_log",
-    "./plugins/visor_plugin_math",
-    "./plugins/visor_plugin_midi",
-    "./plugins/visor_plugin_state",
-    "./plugins/visor_plugin_time"
+    "./crates/visor_plugin_draw",
+    "./crates/visor_plugin_log",
+    "./crates/visor_plugin_math",
+    "./crates/visor_plugin_midi",
+    "./crates/visor_plugin_state",
+    "./crates/visor_plugin_time"
   ]
 }
