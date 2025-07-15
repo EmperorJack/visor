@@ -17,7 +17,11 @@ pub struct Display {
 }
 
 impl Display {
-    pub async fn new(wgpu_handle: Arc<WgpuHandle>, id: DisplayId, window: Arc<Window>) -> Self {
+    pub(crate) async fn new(
+        wgpu_handle: Arc<WgpuHandle>,
+        id: DisplayId,
+        window: Arc<Window>,
+    ) -> Self {
         let size = window.inner_size();
 
         let wgpu_display =

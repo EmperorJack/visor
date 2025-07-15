@@ -5,7 +5,7 @@ use std::{
 };
 
 use deno_core::Extension;
-use tao::window::{Window, WindowId};
+use tao::window::WindowId;
 use tokio::{
     runtime::{Handle, Runtime},
     task::JoinSet,
@@ -31,7 +31,7 @@ static PLUGINS_CELL: OnceLock<Vec<LoadedPlugin>> = OnceLock::new();
 
 pub struct Engine {
     _runtime: Option<Runtime>,
-    runtime_handle: Handle,
+    pub(crate) runtime_handle: Handle,
     sketches: HashMap<SketchId, Sketch>,
     sketch_stores: Option<HashMap<SketchId, SketchStore>>,
     render_textures: HashMap<RenderTextureId, RenderTexture>,
@@ -121,7 +121,7 @@ impl Engine {
             queue: wgpu_queue,
         });
 
-        let display_manager = DisplayManager::new(runtime_handle.clone(), wgpu_handle.clone());
+        let display_manager = DisplayManager::new();
 
         let mut engine = Engine {
             _runtime: runtime,
@@ -326,17 +326,6 @@ impl Engine {
 
     pub fn render_textures_mut(&mut self) -> &mut HashMap<RenderTextureId, RenderTexture> {
         &mut self.render_textures
-    }
-
-    // TODO: refactor display creation to use builder pattern
-    pub fn create_display(&mut self, window: Arc<Window>) -> &Display {
-        let id = DisplayId(Uuid::new_v4());
-
-        self.display_manager.add_display(id, window)
-    }
-
-    pub fn create_display_with_id(&mut self, id: DisplayId, window: Arc<Window>) -> &Display {
-        self.display_manager.add_display(id, window)
     }
 
     pub fn manage_display(&mut self, display: Display) -> &Display {

@@ -1,4 +1,5 @@
 mod display;
+mod display_builder;
 mod display_manager;
 mod draw;
 mod engine;
@@ -12,6 +13,7 @@ mod store;
 mod wgpu;
 
 pub use display::{Display, DisplayId};
+pub use display_builder::DisplayBuilder;
 pub use draw::Draw;
 pub use engine::Engine;
 pub use engine_builder::EngineBuilder;

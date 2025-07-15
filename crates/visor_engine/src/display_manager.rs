@@ -1,28 +1,19 @@
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
 
-use tao::window::{Window, WindowId};
-use tokio::runtime::Handle;
+use tao::window::WindowId;
 
-use crate::{
-    display::{Display, DisplayId},
-    wgpu::handle::WgpuHandle,
-};
+use crate::display::{Display, DisplayId};
 
 pub(crate) struct DisplayManager {
-    runtime_handle: Handle,
     displays: HashMap<DisplayId, Display>,
     display_id_map: HashMap<WindowId, DisplayId>,
-    wgpu_handle: Arc<WgpuHandle>,
 }
 
 impl DisplayManager {
-    pub(crate) fn new(runtime_handle: Handle, wgpu_handle: Arc<WgpuHandle>) -> Self {
+    pub(crate) fn new() -> Self {
         Self {
-            runtime_handle,
-
             displays: HashMap::new(),
             display_id_map: HashMap::new(),
-            wgpu_handle,
         }
     }
 
@@ -43,20 +34,9 @@ impl DisplayManager {
         })
     }
 
-    pub(crate) fn add_display(&mut self, id: DisplayId, window: Arc<Window>) -> &Display {
-        // TODO: should display id just be a window id?
-        let window_id = window.id();
-
-        let display = self
-            .runtime_handle
-            .block_on(async { Display::new(self.wgpu_handle.clone(), id, window).await });
-
-        self.display_id_map.insert(window_id, id);
-        self.displays.entry(id).or_insert(display)
-    }
-
     pub(crate) fn manage_display(&mut self, display: Display) -> &Display {
         let id = display.id();
+        // TODO: should display id just be a window id?
         let window_id = display.window().id();
 
         self.display_id_map.insert(window_id, *id);

@@ -9,7 +9,7 @@ use tao::{
     event::{Event, WindowEvent},
     window::WindowBuilder,
 };
-use visor_core::{EngineBuilder, default_plugins};
+use visor_core::{DisplayBuilder, EngineBuilder, default_plugins};
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -77,7 +77,10 @@ fn main() {
         .build(&event_loop)
         .expect("Unexpected: could not build display window");
 
-    let display_id = *engine.create_display(Arc::new(window)).id();
+    let display_id = *DisplayBuilder::new(Arc::new(window))
+        .build(&mut engine)
+        .id();
+
     engine
         .displays_mut()
         .get_mut(&display_id)
