@@ -9,7 +9,7 @@ use tao::{
     event::{Event, WindowEvent},
     window::WindowBuilder,
 };
-use visor_core::{DisplayBuilder, EngineBuilder, default_plugins};
+use visor_core::{DisplayBuilder, EngineBuilder, SketchBuilder, default_plugins};
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -59,7 +59,9 @@ fn main() {
 
     let mut engine = engine_builder.build();
 
-    let sketch_id = *engine.create_sketch(args.sketch_file_path).id();
+    let sketch_id = *SketchBuilder::new(args.sketch_file_path)
+        .build(&mut engine)
+        .id();
 
     let render_texture = engine.create_render_texture(600, 400);
     let render_texture_id = *render_texture.id();

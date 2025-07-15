@@ -4,7 +4,7 @@ mod counter_plugin;
 mod tests {
     use std::path::PathBuf;
 
-    use visor_core::{Engine, EngineBuilder, default_plugins};
+    use visor_core::{Engine, EngineBuilder, SketchBuilder, default_plugins};
 
     use crate::counter_plugin::CounterPlugin;
 
@@ -12,7 +12,7 @@ mod tests {
         let sketch_path =
             PathBuf::from(format!("{}/example-sketch.js", env!("CARGO_MANIFEST_DIR")));
 
-        let sketch_id = *engine.create_sketch(sketch_path).id();
+        let sketch_id = *SketchBuilder::new(sketch_path).build(&mut engine).id();
 
         engine.update();
 

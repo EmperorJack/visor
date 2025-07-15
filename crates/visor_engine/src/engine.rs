@@ -15,7 +15,6 @@ use uuid::Uuid;
 use crate::{
     display::{Display, DisplayId},
     display_manager::DisplayManager,
-    draw::Draw,
     plugin::{LoadedPlugin, Plugin, load_plugin},
     sketch::{Sketch, SketchId},
     sketch_runtime::init_startup_snapshot,
@@ -252,45 +251,19 @@ impl Engine {
         }
     }
 
-    pub fn create_sketch(&mut self, file_path: PathBuf) -> &Sketch {
-        let id = SketchId(Uuid::new_v4());
-
-        let draw = Draw::default();
-
-        let sketch = Sketch::new(self.runtime_handle.clone(), id, file_path, draw.clone());
-
-        let mut store = SketchStore::default();
-        store.set(draw);
+    pub(crate) fn manage_sketch(&mut self, sketch: Sketch, sketch_store: SketchStore) -> &Sketch {
+        let id = *sketch.id();
 
         self.sketches.insert(id, sketch);
 
         self.sketch_stores
             .as_mut()
             .expect("Unexpected: sketch stores should be defined!")
-            .insert(id, store);
+            .insert(id, sketch_store);
 
         self.sketches
             .get(&id)
             .expect("Unexpected: sketch not found")
-    }
-
-    // TODO: refactor sketch creation to use builder pattern
-    pub fn create_sketch_with_id(&mut self, id: SketchId, file_path: PathBuf) -> SketchId {
-        let draw = Draw::default();
-
-        let sketch = Sketch::new(self.runtime_handle.clone(), id, file_path, draw.clone());
-
-        let mut store = SketchStore::default();
-        store.set(draw);
-
-        self.sketches.insert(id, sketch);
-
-        self.sketch_stores
-            .as_mut()
-            .expect("Unexpected: sketch stores should be defined!")
-            .insert(id, store);
-
-        id
     }
 
     pub fn remove_sketch(&mut self, id: &SketchId) {
