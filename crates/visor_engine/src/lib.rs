@@ -15,7 +15,7 @@ pub use display::{Display, DisplayId};
 pub use draw::Draw;
 pub use engine::Engine;
 pub use engine_builder::EngineBuilder;
-pub use plugin::{AccessSketchStore, Plugin, plugin_implementation};
+pub use plugin::{AccessSketchStore, Plugin};
 pub use sketch::SketchId;
 pub use sketch_store::SketchStore;
 pub use store::Store;

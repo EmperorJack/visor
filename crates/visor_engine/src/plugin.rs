@@ -4,8 +4,6 @@ use deno_core::{Extension, OpState};
 
 use crate::{engine::Engine, sketch::SketchId, sketch_store::SketchStore, store::Store};
 
-pub use pluginator::plugin_implementation;
-
 pub trait Plugin: Send + Sync {
     fn extension(&self) -> Extension;
 
@@ -54,6 +52,17 @@ pub trait Plugin: Send + Sync {
 }
 
 pluginator::plugin_trait!(Plugin);
+
+// Note: this macro is unrolled from pluginator::plugin_implementation
+#[macro_export]
+macro_rules! linked_plugin {
+    ($plugin:expr) => {
+        #[unsafe(no_mangle)]
+        pub extern "C" fn get_interface() -> *mut dyn Plugin {
+            Box::into_raw(Box::new($plugin))
+        }
+    };
+}
 
 pub(crate) enum LoadedPlugin {
     Compiled(Box<dyn Plugin>),

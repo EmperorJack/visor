@@ -2,13 +2,13 @@ use std::sync::RwLock;
 
 use deno_core::{Extension, OpState, extension, op2};
 use visor_engine::{
-    AccessSketchStore, Engine, Plugin, SketchId, SketchStore, Store, plugin_implementation,
+    AccessSketchStore, Engine, Plugin, SketchId, SketchStore, Store, linked_plugin,
 };
 
 pub struct CounterPlugin;
 
 // Note: this line is only required for linked plugins
-plugin_implementation!(Plugin, CounterPlugin);
+linked_plugin!(CounterPlugin);
 
 #[derive(Clone)]
 struct State {
