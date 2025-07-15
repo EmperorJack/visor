@@ -7,7 +7,7 @@ use nannou::{
 };
 use visor_engine::AccessSketchStore;
 
-use crate::{DrawId, ShapeCommand, ShapeId, SketchState};
+use crate::draw_plugin::{DrawId, ShapeCommand, ShapeId, SketchState};
 
 pub(crate) type EllipseCommandMap = HashMap<ShapeId, (DrawId, Vec<EllipseCommand>)>;
 
