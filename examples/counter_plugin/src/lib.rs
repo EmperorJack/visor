@@ -4,7 +4,7 @@ mod counter_plugin;
 mod tests {
     use std::path::PathBuf;
 
-    use visor_core::{Engine, EngineBuilder, SketchBuilder, default_plugins};
+    use visor_core::{Engine, EngineBuilder, SketchBuilder, core_plugins};
 
     use crate::counter_plugin::CounterPlugin;
 
@@ -38,7 +38,7 @@ mod tests {
 
     #[test]
     fn as_compiled_plugin() {
-        let mut plugins = default_plugins();
+        let mut plugins = core_plugins();
         plugins.push(Box::new(CounterPlugin));
 
         let engine = EngineBuilder::default().with_plugins(plugins).build();
@@ -53,7 +53,7 @@ mod tests {
             .join("target/debug/libcounter_plugin.dylib");
 
         let engine = EngineBuilder::default()
-            .with_plugins(default_plugins())
+            .with_plugins(core_plugins())
             .with_linked_plugins(vec![plugin_path])
             .build();
 

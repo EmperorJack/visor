@@ -2,7 +2,7 @@ use std::{fs::File, io::Write, path::PathBuf};
 
 use anyhow::{Result, bail};
 use clap::Parser;
-use visor_core::{EngineBuilder, default_plugins};
+use visor_core::{EngineBuilder, core_plugins};
 
 #[derive(Parser)]
 pub(crate) struct TypesArgs {
@@ -11,7 +11,7 @@ pub(crate) struct TypesArgs {
 }
 
 pub(crate) fn generate_types(args: TypesArgs, plugins: Option<Vec<PathBuf>>) -> Result<()> {
-    let mut engine_builder = EngineBuilder::default().with_plugins(default_plugins());
+    let mut engine_builder = EngineBuilder::default().with_plugins(core_plugins());
 
     if let Some(plugins) = plugins {
         engine_builder = engine_builder.with_linked_plugins(plugins)

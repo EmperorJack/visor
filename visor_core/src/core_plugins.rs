@@ -7,7 +7,7 @@ use visor_plugin_midi::MidiPlugin;
 use visor_plugin_state::StatePlugin;
 use visor_plugin_time::TimePlugin;
 
-pub fn default_plugins() -> Vec<Box<dyn Plugin>> {
+pub fn core_plugins() -> Vec<Box<dyn Plugin>> {
     vec![
         Box::new(TimePlugin),
         Box::new(LogPlugin),

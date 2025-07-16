@@ -1,4 +1,4 @@
-mod default_plugins;
+mod core_plugins;
 
-pub use default_plugins::default_plugins;
+pub use core_plugins::core_plugins;
 pub use visor_engine::*;

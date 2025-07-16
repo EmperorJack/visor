@@ -10,7 +10,7 @@ use tao::{
     event::{Event, WindowEvent},
     window::WindowBuilder,
 };
-use visor_core::{DisplayBuilder, EngineBuilder, SketchBuilder, default_plugins};
+use visor_core::{DisplayBuilder, EngineBuilder, SketchBuilder, core_plugins};
 
 #[derive(Parser)]
 pub(crate) struct RunArgs {
@@ -47,7 +47,7 @@ pub(crate) fn run_sketch(args: RunArgs, plugins: Option<Vec<PathBuf>>) -> Result
 
     let event_loop = tao::event_loop::EventLoop::new();
 
-    let mut engine_builder = EngineBuilder::default().with_plugins(default_plugins());
+    let mut engine_builder = EngineBuilder::default().with_plugins(core_plugins());
 
     if let Some(plugins) = plugins {
         engine_builder = engine_builder.with_linked_plugins(plugins)
