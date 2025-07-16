@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/*", "examples/*", "visor_core", "visor_live_cli"]
+members = ["crates/*", "examples/*", "visor_cli", "visor_core"]
 
 [workspace.dependencies]
 anyhow = "1.0"

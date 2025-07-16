@@ -106,8 +106,7 @@ pub(crate) fn run_sketch(args: RunArgs, plugins: Option<Vec<PathBuf>>) {
             }
 
             if sketch_file_updated {
-                // TODO: rename here too
-                println!("[Live CLI] Detected file change, recompiling sketch...");
+                println!("[CLI] Detected file change, recompiling sketch...");
 
                 // TODO: should calling recompile actually do the compile?
                 // The issue is it might actually draw, if code is outside the lifecycle functions, maybe that is fine?

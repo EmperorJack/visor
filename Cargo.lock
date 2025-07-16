@@ -5169,6 +5169,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 
 [[package]]
+name = "visor_cli"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "notify",
+ "tao",
+ "visor_core",
+ "visor_plugin_log",
+]
+
+[[package]]
 name = "visor_core"
 version = "0.1.0"
 dependencies = [
@@ -5195,17 +5206,6 @@ dependencies = [
  "tao",
  "tokio",
  "uuid",
-]
-
-[[package]]
-name = "visor_live_cli"
-version = "0.1.0"
-dependencies = [
- "clap",
- "notify",
- "tao",
- "visor_core",
- "visor_plugin_log",
 ]
 
 [[package]]
