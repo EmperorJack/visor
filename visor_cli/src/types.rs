@@ -1,5 +1,6 @@
 use std::{fs::File, io::Write, path::PathBuf};
 
+use anyhow::{Result, bail};
 use clap::Parser;
 use visor_core::{EngineBuilder, default_plugins};
 
@@ -9,9 +10,7 @@ pub(crate) struct TypesArgs {
     output_file_path: PathBuf,
 }
 
-pub(crate) fn generate_types(args: TypesArgs, plugins: Option<Vec<PathBuf>>) {
-    println!("Outputting: {:?}", plugins);
-
+pub(crate) fn generate_types(args: TypesArgs, plugins: Option<Vec<PathBuf>>) -> Result<()> {
     let mut engine_builder = EngineBuilder::default().with_plugins(default_plugins());
 
     if let Some(plugins) = plugins {
@@ -26,23 +25,24 @@ pub(crate) fn generate_types(args: TypesArgs, plugins: Option<Vec<PathBuf>>) {
 
     let output_file_path_string = args.output_file_path.clone().display().to_string();
 
-    let mut file = File::create(args.output_file_path).unwrap_or_else(|_| {
-        panic!(
+    let Ok(mut file) = File::create(args.output_file_path) else {
+        bail!(
             "Failed to create file at output path: {}",
             output_file_path_string
         )
-    });
+    };
 
-    file.write_all(typescript_declarations.as_bytes())
-        .unwrap_or_else(|_| {
-            panic!(
-                "Failed to write TypeScript declarations to file: {}",
-                output_file_path_string
-            )
-        });
+    if file.write_all(typescript_declarations.as_bytes()).is_err() {
+        bail!(
+            "Failed to write TypeScript declarations to file: {}",
+            output_file_path_string
+        )
+    }
 
     println!(
         "[CLI] Wrote TypeScript declarations to output file {}",
         output_file_path_string
     );
+
+    Ok(())
 }

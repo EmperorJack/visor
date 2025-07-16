@@ -3,6 +3,7 @@ use std::{
     sync::{Arc, mpsc},
 };
 
+use anyhow::{Result, bail};
 use clap::Parser;
 use notify::{RecommendedWatcher, Watcher};
 use tao::{
@@ -20,7 +21,7 @@ pub(crate) struct RunArgs {
     watch: bool,
 }
 
-pub(crate) fn run_sketch(args: RunArgs, plugins: Option<Vec<PathBuf>>) {
+pub(crate) fn run_sketch(args: RunArgs, plugins: Option<Vec<PathBuf>>) -> Result<()> {
     let watcher_state = if args.watch {
         let (watcher_event_sender, watcher_event_receiver) =
             mpsc::channel::<Result<notify::Event, notify::Error>>();
@@ -53,6 +54,13 @@ pub(crate) fn run_sketch(args: RunArgs, plugins: Option<Vec<PathBuf>>) {
     }
 
     let mut engine = engine_builder.build();
+
+    if !args.sketch_file_path.exists() {
+        bail!(
+            "Failed to find sketch file for path: {}",
+            args.sketch_file_path.display()
+        );
+    }
 
     let sketch_id = *SketchBuilder::new(args.sketch_file_path)
         .build(&mut engine)

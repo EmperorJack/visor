@@ -6,6 +6,7 @@ edition = "2024"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+anyhow.workspace = true
 clap = { version = "4.5.17", features = ["derive"] }
 notify = "6.1.1"
 tao.workspace = true

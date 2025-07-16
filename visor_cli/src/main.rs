@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use anyhow::Result;
 use clap::Parser;
 
 use crate::{
@@ -38,7 +39,7 @@ enum Command {
     Types(TypesArgs),
 }
 
-fn main() {
+fn main() -> Result<()> {
     let args = Args::parse();
 
     match args.command {
