@@ -1,4 +1,6 @@
 use std::{
+    fs::File,
+    io::Write,
     path::PathBuf,
     sync::{Arc, mpsc},
 };
@@ -11,21 +13,59 @@ use tao::{
 };
 use visor_core::{DisplayBuilder, EngineBuilder, SketchBuilder, default_plugins};
 
-#[derive(Parser, Debug)]
-#[command(version, about, long_about = None)]
+#[derive(Parser)]
+#[command(
+    version,
+    about = "Utility for running Visor sketches from the command line."
+)]
 struct Args {
+    #[clap(subcommand)]
+    command: Command,
+
+    #[arg(
+        short,
+        long,
+        help = "List of Visor plugin file paths e.g: ~/visor/plugin_a.dylib ~/visor/plugin_b.dylib",
+        num_args = 1..,
+        value_delimiter = ' ',
+        global = true,
+    )]
+    plugins: Option<Vec<PathBuf>>,
+}
+
+#[derive(Parser)]
+enum Command {
+    #[clap(about = "Run a Visor sketch")]
+    Run(RunArgs),
+    #[clap(about = "Generate TypeScript declarations for the Visor API")]
+    Types(TypesArgs),
+}
+
+#[derive(Parser)]
+struct RunArgs {
+    #[arg(help = "Path to a Visor sketch file e.g: ~/visor/sketch.ts")]
     sketch_file_path: PathBuf,
 
-    #[arg(short, long)]
-    plugins: Option<Vec<PathBuf>>,
-
-    #[arg(short, long)]
+    #[arg(short, long, help = "Watch the sketch file and hot reload on changes")]
     watch: bool,
+}
+
+#[derive(Parser)]
+struct TypesArgs {
+    #[arg(help = "Path to write the TypeScript declarations file e.g: ~/visor/types.d.ts")]
+    output_file_path: PathBuf,
 }
 
 fn main() {
     let args = Args::parse();
 
+    match args.command {
+        Command::Run(run_args) => run_sketch(run_args, args.plugins),
+        Command::Types(types_args) => generate_types(types_args, args.plugins),
+    }
+}
+
+fn run_sketch(args: RunArgs, plugins: Option<Vec<PathBuf>>) {
     let watcher_state = if args.watch {
         let (watcher_event_sender, watcher_event_receiver) =
             mpsc::channel::<Result<notify::Event, notify::Error>>();
@@ -53,7 +93,7 @@ fn main() {
 
     let mut engine_builder = EngineBuilder::default().with_plugins(default_plugins());
 
-    if let Some(plugins) = args.plugins {
+    if let Some(plugins) = plugins {
         engine_builder = engine_builder.with_linked_plugins(plugins)
     }
 
@@ -200,4 +240,42 @@ fn main() {
             _ => (),
         }
     });
+}
+
+fn generate_types(args: TypesArgs, plugins: Option<Vec<PathBuf>>) {
+    println!("Outputting: {:?}", plugins);
+
+    let mut engine_builder = EngineBuilder::default().with_plugins(default_plugins());
+
+    if let Some(plugins) = plugins {
+        engine_builder = engine_builder.with_linked_plugins(plugins)
+    }
+
+    let engine = engine_builder.build();
+
+    let typescript_declarations = engine
+        .typescript_declarations()
+        .expect("Unexpected: engine typescript declarations should exist");
+
+    let output_file_path_string = args.output_file_path.clone().display().to_string();
+
+    let mut file = File::create(args.output_file_path).unwrap_or_else(|_| {
+        panic!(
+            "Failed to create file at output path: {}",
+            output_file_path_string
+        )
+    });
+
+    file.write_all(typescript_declarations.as_bytes())
+        .unwrap_or_else(|_| {
+            panic!(
+                "Failed to write TypeScript declarations to file: {}",
+                output_file_path_string
+            )
+        });
+
+    println!(
+        "[Live CLI] Wrote TypeScript declarations to output file {}",
+        output_file_path_string
+    );
 }
