@@ -3,8 +3,6 @@ name = "visor_plugin_draw"
 version = "0.1.0"
 edition = "2024"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 bevy_math = "0.14.2"
 deno_core.workspace = true
