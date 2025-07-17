@@ -24,4 +24,5 @@ pub use sketch_builder::SketchBuilder;
 pub use sketch_store::SketchStore;
 pub use store::Store;
 pub use wgpu::display::WgpuDisplay;
-pub use wgpu::render_texture::{RenderTexture, RenderTextureId};
+pub use wgpu::render_texture::RenderTextureId;
+pub use wgpu::render_texture_builder::RenderTextureBuilder;

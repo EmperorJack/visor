@@ -10,7 +10,9 @@ use tao::{
     event::{Event, WindowEvent},
     window::WindowBuilder,
 };
-use visor_core::{DisplayBuilder, EngineBuilder, SketchBuilder, core_plugins};
+use visor_core::{
+    DisplayBuilder, EngineBuilder, RenderTextureBuilder, SketchBuilder, core_plugins,
+};
 
 #[derive(Parser)]
 pub(crate) struct RunArgs {
@@ -79,7 +81,7 @@ pub(crate) fn run_sketch(args: RunArgs, plugins: Option<Vec<PathBuf>>) -> Result
         .build(&mut engine)
         .id();
 
-    let render_texture = engine.create_render_texture(width, height);
+    let render_texture = RenderTextureBuilder::new(width, height).build(&mut engine);
     let render_texture_id = *render_texture.id();
     let render_texture_view = render_texture.texture_view();
 

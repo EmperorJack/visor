@@ -3,10 +3,10 @@ use std::path::PathBuf;
 use uuid::Uuid;
 
 use crate::{
-    SketchStore,
     draw::Draw,
     engine::Engine,
     sketch::{Sketch, SketchId},
+    sketch_store::SketchStore,
 };
 
 pub struct SketchBuilder {

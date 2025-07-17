@@ -10,7 +10,6 @@ use tokio::{
     runtime::{Handle, Runtime},
     task::JoinSet,
 };
-use uuid::Uuid;
 
 use crate::{
     display::{Display, DisplayId},
@@ -283,12 +282,11 @@ impl Engine {
         &mut self.sketches
     }
 
-    pub fn create_render_texture(&mut self, width: u32, height: u32) -> &RenderTexture {
-        let id = RenderTextureId(Uuid::new_v4());
-
-        let render_texture = self.runtime_handle.block_on(async {
-            RenderTexture::new(self.wgpu_handle.clone(), id, width, height).await
-        });
+    pub(crate) fn manage_render_texture(
+        &mut self,
+        render_texture: RenderTexture,
+    ) -> &RenderTexture {
+        let id = *render_texture.id();
 
         self.render_textures.entry(id).or_insert(render_texture)
     }
