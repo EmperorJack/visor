@@ -17,7 +17,17 @@ pub(crate) struct RunArgs {
     #[arg(help = "Path to a Visor sketch file e.g: ~/visor/sketch.ts")]
     sketch_file_path: PathBuf,
 
-    #[arg(short, long, help = "Watch the sketch file and hot reload on changes")]
+    #[arg(help = "Display width in pixels")]
+    width: Option<u32>,
+
+    #[arg(help = "Display height in pixels")]
+    height: Option<u32>,
+
+    #[arg(
+        short,
+        long,
+        help = "Watch the sketch file and hot reload when it changes"
+    )]
     watch: bool,
 }
 
@@ -53,6 +63,9 @@ pub(crate) fn run_sketch(args: RunArgs, plugins: Option<Vec<PathBuf>>) -> Result
         engine_builder = engine_builder.with_linked_plugins(plugins)
     }
 
+    let width = args.width.unwrap_or(600);
+    let height = args.height.unwrap_or(400);
+
     let mut engine = engine_builder.build();
 
     if !args.sketch_file_path.exists() {
@@ -66,7 +79,7 @@ pub(crate) fn run_sketch(args: RunArgs, plugins: Option<Vec<PathBuf>>) -> Result
         .build(&mut engine)
         .id();
 
-    let render_texture = engine.create_render_texture(600, 400);
+    let render_texture = engine.create_render_texture(width, height);
     let render_texture_id = *render_texture.id();
     let render_texture_view = render_texture.texture_view();
 
@@ -78,7 +91,7 @@ pub(crate) fn run_sketch(args: RunArgs, plugins: Option<Vec<PathBuf>>) -> Result
 
     let window = WindowBuilder::new()
         .with_title("Display")
-        .with_inner_size(tao::dpi::PhysicalSize::new(600, 400))
+        .with_inner_size(tao::dpi::PhysicalSize::new(width, height))
         .build(&event_loop)
         .expect("Unexpected: could not build display window");
 

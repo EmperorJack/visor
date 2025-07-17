@@ -12,10 +12,7 @@ mod run;
 mod types;
 
 #[derive(Parser)]
-#[command(
-    version,
-    about = "Utility for running Visor sketches from the command line."
-)]
+#[command(version, about = "Command line interface for running Visor sketches.")]
 struct Args {
     #[clap(subcommand)]
     command: Command,
