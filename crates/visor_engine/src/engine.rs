@@ -43,8 +43,7 @@ impl Engine {
         plugins: Vec<Box<dyn Plugin>>,
         linked_plugin_paths: Vec<PathBuf>,
     ) -> Self {
-        // TODO: use a logging crate
-        println!("[Engine] Setting up Visor engine...");
+        log::info!("Setting up Visor engine...");
 
         let (runtime, runtime_handle) = runtime_handle
             .map(|runtime_handle| (None, runtime_handle))
@@ -135,9 +134,9 @@ impl Engine {
             plugin.build(&mut engine, &ENGINE_STORE);
         }
 
-        println!("[Engine] {} plugins loaded.", Self::plugins().len());
+        log::info!("{} plugins loaded.", Self::plugins().len());
 
-        println!("[Engine] Visor engine ready!");
+        log::info!("Visor engine ready!");
 
         engine
     }
@@ -230,7 +229,6 @@ impl Engine {
                 let render_texture = self
                     .render_textures
                     .get_mut(render_texture_id)
-                    // TODO: handle error
                     .expect("Engine error: no render texture found for given id!");
 
                 render_texture.render(&sketch.draw().inner, &mut encoder);

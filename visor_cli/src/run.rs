@@ -129,7 +129,7 @@ pub(crate) fn run_sketch(args: RunArgs, plugins: Option<Vec<PathBuf>>) -> Result
             }
 
             if sketch_file_updated {
-                println!("[CLI] Detected file change, recompiling sketch...");
+                log::info!("Recompiling sketch...");
 
                 // TODO: should calling recompile actually do the compile?
                 // The issue is it might actually draw, if code is outside the lifecycle functions, maybe that is fine?
@@ -187,14 +187,12 @@ pub(crate) fn run_sketch(args: RunArgs, plugins: Option<Vec<PathBuf>>) -> Result
 
                 if just_recompiled {
                     if let Some(error) = sketch.compile_error() {
-                        println!("[Sketch compile error] {}", error);
+                        log::error!("{}", error);
+                    } else {
+                        log::info!("Sketch compiled successfully!");
                     }
 
                     just_recompiled = false;
-                }
-
-                if let Some(error) = sketch.runtime_error() {
-                    println!("[Sketch runtime error] {}", error);
                 }
 
                 let sketch_store = engine
@@ -207,12 +205,16 @@ pub(crate) fn run_sketch(args: RunArgs, plugins: Option<Vec<PathBuf>>) -> Result
                 for log in logs {
                     match log.message_type {
                         visor_plugin_log::LogEntryType::Stdout => {
-                            println!("[Sketch log] {}", log.message)
+                            log::info!("{}", log.message)
                         }
                         visor_plugin_log::LogEntryType::Stderr => {
-                            eprintln!("[Sketch error] {}", log.message)
+                            log::error!("{}", log.message)
                         }
                     };
+                }
+
+                if let Some(error) = sketch.runtime_error() {
+                    log::error!("{}", error);
                 }
             }
             _ => (),

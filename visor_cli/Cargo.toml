@@ -6,6 +6,10 @@ edition = "2024"
 [dependencies]
 anyhow.workspace = true
 clap = { version = "4.5.17", features = ["derive"] }
+env_logger = { version = "0.11.8", default-features = false, features = [
+  "auto-color",
+] }
+log.workspace = true
 notify = "6.1.1"
 tao.workspace = true
 visor_core.workspace = true

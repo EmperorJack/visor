@@ -6,6 +6,7 @@ members = ["crates/*", "examples/*", "visor_cli", "visor_core"]
 anyhow = "1.0"
 deno_core = "0.352.0"
 deno_error = "0.6.1"
+log = "0.4"
 nannou = { git = "https://github.com/EmperorJack/nannou.git", branch = "upgrade-wgpu" }
 tao = { version = "0.34.0" }
 tokio = { version = "1.26.0" }

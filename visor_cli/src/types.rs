@@ -39,8 +39,8 @@ pub(crate) fn generate_types(args: TypesArgs, plugins: Option<Vec<PathBuf>>) -> 
         )
     }
 
-    println!(
-        "[CLI] Wrote TypeScript declarations to output file {}",
+    log::info!(
+        "Wrote type declarations to output file {}",
         output_file_path_string
     );
 

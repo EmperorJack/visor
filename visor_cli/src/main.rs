@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use clap::Parser;
+use log::LevelFilter;
 
 use crate::{
     run::{RunArgs, run_sketch},
@@ -37,6 +38,18 @@ enum Command {
 }
 
 fn main() -> Result<()> {
+    let env = env_logger::Env::new();
+
+    env_logger::Builder::new()
+        .filter_level(LevelFilter::Info)
+        .filter_module("naga", LevelFilter::Off)
+        .filter_module("tao", LevelFilter::Off)
+        .filter_module("wgpu", LevelFilter::Off)
+        .filter_module("wgpu_core", LevelFilter::Off)
+        .format_timestamp(None)
+        .parse_env(env)
+        .init();
+
     let args = Args::parse();
 
     match args.command {
