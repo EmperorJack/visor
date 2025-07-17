@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use anyhow::Error;
+use anyhow::Result;
 use tokio::sync::{mpsc, oneshot};
 
 use crate::{
@@ -133,13 +133,13 @@ impl SketchWorker {
             if self.compile_error.is_none() {
                 runtime.put_state(store);
 
-                let runtime_error = Self::execute_sketch_lifecycle(self.request_setup, runtime);
+                let execute_result = Self::execute_sketch_lifecycle(self.request_setup, runtime);
 
                 store = runtime.take_state();
 
                 self.request_setup = false;
 
-                self.runtime_error = runtime_error.map(|error| error.to_string());
+                self.runtime_error = execute_result.err().map(|error| error.to_string());
             }
 
             for plugin in Engine::plugins() {
@@ -150,20 +150,19 @@ impl SketchWorker {
         store
     }
 
-    // TODO: should this return a Result?
-    fn execute_sketch_lifecycle(request_setup: bool, runtime: &mut SketchRuntime) -> Option<Error> {
+    fn execute_sketch_lifecycle(request_setup: bool, runtime: &mut SketchRuntime) -> Result<()> {
         if request_setup {
             // TODO: setup errors are being overridden by next successful update, setup should be fallible like compile
             // Might mean we need a teardown function too? E.g: connect/disconnect midi input device
             if let RuntimeExecuteFunctionResult::Error(error) = runtime.execute_function("setup") {
-                return Some(error);
+                return Err(error);
             }
         }
 
         if let RuntimeExecuteFunctionResult::Error(error) = runtime.execute_function("update") {
-            return Some(error);
+            return Err(error);
         }
 
-        None
+        Ok(())
     }
 }
