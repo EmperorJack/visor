@@ -160,12 +160,7 @@ impl SketchWorker {
             }
         }
 
-        // TODO: combine update and render into one method?
         if let RuntimeExecuteFunctionResult::Error(error) = runtime.execute_function("update") {
-            return Some(error);
-        }
-
-        if let RuntimeExecuteFunctionResult::Error(error) = runtime.execute_function("render") {
             return Some(error);
         }
 

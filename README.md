@@ -25,7 +25,7 @@ export function setup() {
   console.log("Hello, world!");
 }
 
-export function render() {
+export function update() {
   draw.clear();
 
   for (let i = -5; i <= 5; i++) {
