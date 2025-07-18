@@ -10,7 +10,7 @@ mod tests {
 
     fn verify_plugin(mut engine: Engine) {
         let sketch_path =
-            PathBuf::from(format!("{}/example-sketch.js", env!("CARGO_MANIFEST_DIR")));
+            PathBuf::from(format!("{}/counter-example.js", env!("CARGO_MANIFEST_DIR")));
 
         let sketch_id = *SketchBuilder::new(sketch_path).build(&mut engine).id();
 

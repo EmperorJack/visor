@@ -5,6 +5,7 @@
     "./crates/visor_plugin_math",
     "./crates/visor_plugin_midi",
     "./crates/visor_plugin_state",
-    "./crates/visor_plugin_time"
+    "./crates/visor_plugin_time",
+    "./examples"
   ]
 }

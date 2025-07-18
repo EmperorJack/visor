@@ -65,7 +65,7 @@ visor_cli run ~/path/to/sketch.js
 If you clone this repository onto your machine, you can run the examples directly:
 
 ```sh
-visor_cli run ~/path/to/visor-core/examples/draw-shapes.ts
+visor_cli run ~/path/to/visor-core/examples/hello-world.js
 ```
 
 Use the `--help` flag to learn more about the `visor_cli` options or sub-commands:

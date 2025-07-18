@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "lib": ["deno.ns"],
+    "types": [
+      "../crates/visor_plugin_draw/src/draw-plugin.d.ts",
+      "../crates/visor_plugin_log/src/log-plugin.d.ts",
+      "../crates/visor_plugin_math/src/math-plugin.d.ts",
+      "../crates/visor_plugin_midi/src/midi-plugin.d.ts",
+      "../crates/visor_plugin_state/src/state-plugin.d.ts",
+      "../crates/visor_plugin_time/src/time-plugin.d.ts"
+    ]
+  }
+}
