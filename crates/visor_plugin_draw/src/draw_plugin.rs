@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::RwLock};
 
 use bevy_math::{
     Vec2,
@@ -33,7 +33,11 @@ pub(crate) struct SketchState {
     pub(crate) quad_command_map: QuadCommandMap,
     pub(crate) polyline_command_map: PolylineCommandMap,
     pub(crate) spline_command_map: SplineCommandMap,
+    width: u32,
+    height: u32,
 }
+
+type SketchSizeState = HashMap<SketchId, [u32; 2]>;
 
 impl SketchState {
     fn get_draw(&self, id: DrawId) -> &Draw {
@@ -314,6 +318,8 @@ extension!(
         op_draw_translate,
         op_draw_rotate,
         op_draw_scale,
+        op_draw_width,
+        op_draw_height,
     ],
     esm_entry_point = "ext:visor_plugin_draw/src/draw-plugin.ts",
     esm = [
@@ -336,6 +342,10 @@ impl Plugin for DrawPlugin {
 
     fn typescript_declaration(&self) -> Option<String> {
         Some(include_str!("draw-plugin.d.ts").into())
+    }
+
+    fn build(&self, _engine: &mut Engine, store: &Store) {
+        store.set(RwLock::new(SketchSizeState::default()));
     }
 
     fn build_sketch(
@@ -361,16 +371,60 @@ impl Plugin for DrawPlugin {
             quad_command_map: Default::default(),
             polyline_command_map: Default::default(),
             spline_command_map: Default::default(),
+            width: 0,
+            height: 0,
         });
+    }
+
+    fn before_engine_update(&self, engine: &mut Engine, store: &Store) {
+        let mut sketch_size_state = store
+            .get::<RwLock<SketchSizeState>>()
+            .write()
+            .expect("Unexpected: could not acquire write lock for sketch size state");
+
+        for sketch_id in engine.sketches().keys() {
+            let render_texture_id = engine
+                .sketches()
+                .get(sketch_id)
+                .expect("Unexpected: could not find sketch")
+                .get_target_render_texture_id();
+
+            let render_texture = render_texture_id.map(|id| {
+                engine
+                    .render_textures()
+                    .get(id)
+                    .expect("Unexpected: could not find render texture")
+            });
+
+            let size = render_texture
+                .map(|render_texture| render_texture.texture_view().size())
+                .unwrap_or([0, 0]);
+
+            sketch_size_state.insert(*sketch_id, size);
+        }
     }
 
     fn before_sketch_update(
         &self,
-        _sketch_id: &SketchId,
-        _store: &Store,
+        sketch_id: &SketchId,
+        store: &Store,
         sketch_store: &mut SketchStore,
     ) {
-        sketch_store.get_mut::<SketchState>().reset();
+        let sketch_state = sketch_store.get_mut::<SketchState>();
+
+        sketch_state.reset();
+
+        let sketch_size_state = store
+            .get::<RwLock<SketchSizeState>>()
+            .read()
+            .expect("Unexpected: could not acquire read lock for sketch size state");
+
+        let sketch_size = sketch_size_state
+            .get(sketch_id)
+            .expect("Unexpected: could not get sketch size");
+
+        sketch_state.width = sketch_size[0];
+        sketch_state.height = sketch_size[1];
     }
 
     fn after_sketch_update(
@@ -434,4 +488,18 @@ fn op_draw_scale(state: &mut OpState, id: u32, s: f32) -> u32 {
     let draw = draw.inner.scale(s);
 
     sketch_state.store_draw(draw.into()).0
+}
+
+#[op2(fast)]
+fn op_draw_width(state: &OpState) -> u32 {
+    let sketch_state = state.sketch_store().get::<SketchState>();
+
+    sketch_state.width
+}
+
+#[op2(fast)]
+fn op_draw_height(state: &OpState) -> u32 {
+    let sketch_state = state.sketch_store().get::<SketchState>();
+
+    sketch_state.height
 }

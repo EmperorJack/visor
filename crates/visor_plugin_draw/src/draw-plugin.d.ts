@@ -98,3 +98,6 @@ declare function rgb(r: number, g: number, b: number): Color;
 declare function rgba(r: number, g: number, b: number, a: number): Color;
 declare function hsv(h: number, s: number, v: number): Color;
 declare function hsva(h: number, s: number, v: number, a: number): Color;
+
+declare function width(): number;
+declare function height(): number;

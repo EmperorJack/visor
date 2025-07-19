@@ -94,6 +94,8 @@ declare namespace Deno {
       op_draw_rotate: (id: number, radians: number) => number;
       op_draw_scale: (id: number, s: number) => number;
       op_draw_noise: (x: number, y: number, z: number) => number;
+      op_draw_width: () => number;
+      op_draw_height: () => number;
     };
   };
 }
