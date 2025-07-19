@@ -213,6 +213,10 @@ impl SketchState {
                 }
             }
 
+            if points.is_empty() {
+                continue;
+            }
+
             let _polyline = polyline.points(points);
         }
 
@@ -234,6 +238,10 @@ impl SketchState {
                 }
             }
 
+            if points.is_empty() {
+                continue;
+            }
+
             let resolution = resolution.unwrap_or_else(|| points.len() * 20);
 
             let curve = CubicCardinalSpline::new(tension, points).to_curve();
@@ -242,7 +250,7 @@ impl SketchState {
                 .iter_positions(resolution)
                 .map(|point| (point.x, point.y));
 
-            let _polyline = spline.points(points);
+            let _spline = spline.points(points);
         }
 
         self.ellipse_command_map.clear();
