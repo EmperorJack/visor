@@ -61,6 +61,14 @@ export class Spline {
   }
 
   resolution(n: number) {
+    if (!Number.isInteger(n)) {
+      throw new Error("Resolution must be an integer");
+    }
+
+    if (n <= 0) {
+      throw new Error("Resolution must be greater than 0");
+    }
+
     op_draw_spline_resolution(this.#id, n);
     return this;
   }
