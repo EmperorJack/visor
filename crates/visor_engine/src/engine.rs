@@ -289,6 +289,10 @@ impl Engine {
         self.render_textures.entry(id).or_insert(render_texture)
     }
 
+    pub fn remove_render_texture(&mut self, id: &RenderTextureId) {
+        self.render_textures.remove(id);
+    }
+
     pub fn render_textures(&self) -> &HashMap<RenderTextureId, RenderTexture> {
         &self.render_textures
     }
