@@ -2818,7 +2818,7 @@ dependencies = [
 [[package]]
 name = "nannou"
 version = "0.19.0"
-source = "git+https://github.com/EmperorJack/nannou.git?branch=upgrade-wgpu#91f176481481ff218296f2a861fecb3a4ef611e2"
+source = "git+https://github.com/EmperorJack/nannou.git?branch=upgrade-wgpu#5515c13cae0d82c4ab5410e392882744da4b1348"
 dependencies = [
  "find_folder",
  "futures",
@@ -2847,7 +2847,7 @@ dependencies = [
 [[package]]
 name = "nannou_core"
 version = "0.19.0"
-source = "git+https://github.com/EmperorJack/nannou.git?branch=upgrade-wgpu#91f176481481ff218296f2a861fecb3a4ef611e2"
+source = "git+https://github.com/EmperorJack/nannou.git?branch=upgrade-wgpu#5515c13cae0d82c4ab5410e392882744da4b1348"
 dependencies = [
  "glam 0.17.3",
  "num-traits",
@@ -2858,7 +2858,7 @@ dependencies = [
 [[package]]
 name = "nannou_mesh"
 version = "0.19.0"
-source = "git+https://github.com/EmperorJack/nannou.git?branch=upgrade-wgpu#91f176481481ff218296f2a861fecb3a4ef611e2"
+source = "git+https://github.com/EmperorJack/nannou.git?branch=upgrade-wgpu#5515c13cae0d82c4ab5410e392882744da4b1348"
 dependencies = [
  "nannou_core",
  "serde",
@@ -2867,7 +2867,7 @@ dependencies = [
 [[package]]
 name = "nannou_wgpu"
 version = "0.19.0"
-source = "git+https://github.com/EmperorJack/nannou.git?branch=upgrade-wgpu#91f176481481ff218296f2a861fecb3a4ef611e2"
+source = "git+https://github.com/EmperorJack/nannou.git?branch=upgrade-wgpu#5515c13cae0d82c4ab5410e392882744da4b1348"
 dependencies = [
  "futures",
  "image",
@@ -3070,7 +3070,7 @@ version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "af1844ef2428cc3e1cb900be36181049ef3d3193c63e43026cfe202983b27a56"
 dependencies = [
- "proc-macro-crate 2.0.0",
+ "proc-macro-crate 1.3.1",
  "proc-macro2",
  "quote",
  "syn 2.0.104",

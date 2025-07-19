@@ -69,7 +69,7 @@ impl WgpuDisplay {
             nannou::wgpu::TextureReshaper::new(
                 &self.wgpu_handle.device,
                 texture_view,
-                1,
+                texture_view.info().sample_count,
                 texture_view.sample_type(),
                 1,
                 self.surface_format,

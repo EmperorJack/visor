@@ -20,6 +20,7 @@ impl RenderTexture {
         id: RenderTextureId,
         width: u32,
         height: u32,
+        sample_count: u32,
     ) -> Self {
         let format = nannou::wgpu::TextureFormat::Rgba16Float;
 
@@ -29,7 +30,7 @@ impl RenderTexture {
                 nannou::wgpu::TextureUsages::RENDER_ATTACHMENT
                     | nannou::wgpu::TextureUsages::TEXTURE_BINDING,
             )
-            .sample_count(1)
+            .sample_count(sample_count)
             .format(format)
             .build(&wgpu_handle.device);
 
