@@ -1,4 +1,4 @@
-use deno_core::anyhow::{anyhow, Result};
+use deno_core::anyhow::{Result, anyhow};
 use std::collections::HashMap;
 use tokio::sync::broadcast;
 
