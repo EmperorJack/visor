@@ -141,3 +141,7 @@ Plugins can be built statically into a Rust app that uses the Visor engine, or t
 ## Contributing
 
 This project is still in early stages and is not ready for code contributions yet. However, feedback is very welcome! The best way to contribute is through feature requests, bug reports, and general feedback. Please feel free to submit this as an issue on [Github](https://github.com/EmperorJack/visor-core/issues). Thanks!
+
+## Acknowledgements
+
+This project would not be possible without the hard work and dedication of many amazing open source projects. Notable shout-outs include the creators of [Nannou](https://nannou.cc/), [Deno](https://deno.com/), and [wgpu](https://wgpu.rs/), to name a few. Thank you!
