@@ -263,6 +263,14 @@ impl Engine {
             .expect("Unexpected: sketch not found")
     }
 
+    pub fn sketches(&self) -> &HashMap<SketchId, Sketch> {
+        &self.sketches
+    }
+
+    pub fn sketches_mut(&mut self) -> &mut HashMap<SketchId, Sketch> {
+        &mut self.sketches
+    }
+
     pub fn remove_sketch(&mut self, id: &SketchId) {
         self.sketches.remove(id);
 
@@ -270,14 +278,6 @@ impl Engine {
             .as_mut()
             .expect("Unexpected: sketch stores should be defined!")
             .remove(id);
-    }
-
-    pub fn sketches(&self) -> &HashMap<SketchId, Sketch> {
-        &self.sketches
-    }
-
-    pub fn sketches_mut(&mut self) -> &mut HashMap<SketchId, Sketch> {
-        &mut self.sketches
     }
 
     pub(crate) fn manage_render_texture(
@@ -289,10 +289,6 @@ impl Engine {
         self.render_textures.entry(id).or_insert(render_texture)
     }
 
-    pub fn remove_render_texture(&mut self, id: &RenderTextureId) {
-        self.render_textures.remove(id);
-    }
-
     pub fn render_textures(&self) -> &HashMap<RenderTextureId, RenderTexture> {
         &self.render_textures
     }
@@ -301,12 +297,12 @@ impl Engine {
         &mut self.render_textures
     }
 
-    pub fn manage_display(&mut self, display: Display) -> &Display {
-        self.display_manager.manage_display(display)
+    pub fn remove_render_texture(&mut self, id: &RenderTextureId) {
+        self.render_textures.remove(id);
     }
 
-    pub fn remove_display(&mut self, id: &DisplayId) {
-        self.display_manager.remove_display(id)
+    pub fn manage_display(&mut self, display: Display) -> &Display {
+        self.display_manager.manage_display(display)
     }
 
     pub fn displays(&self) -> &HashMap<DisplayId, Display> {
@@ -319,6 +315,10 @@ impl Engine {
 
     pub fn display_id_for_window_id(&self, window_id: &WindowId) -> &DisplayId {
         self.display_manager.display_id_for_window_id(window_id)
+    }
+
+    pub fn remove_display(&mut self, id: &DisplayId) {
+        self.display_manager.remove_display(id)
     }
 
     pub(crate) fn plugins() -> &'static Vec<LoadedPlugin> {
