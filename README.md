@@ -1,18 +1,19 @@
-# Visor Core
+# Visor
 
 ![Visor visuals screenshot](./assets/readme/visuals-screenshot.png)
 
-Real-time engine for creative coding visuals in JavaScript or TypeScript.
+Creative coding system for making real-time visuals in JavaScript or TypeScript.
 
 - Designed with the aim to be user-friendly, fast, and extensible.
 - Inspired by [Processing](https://processing.org/), [Nannou](https://nannou.cc/), and other creative coding frameworks.
-- Powers the new version of the [Visor](https://www.visor.live/) VJing app (unreleased).
+- Rust-based engine powered by [Deno Core](https://github.com/denoland/deno_core), a secure, sandboxed JavaScript runtime.
+- Is the core engine for the new version of [Visor VJ](https://www.visor.live/) (unreleased).
 
 ## Disclaimer ⚠️
 
-The Visor engine is still very early in development. The APIs are minimal, likely to change, and documentation is sparse. Please keep this in mind if you use it!
+Visor is still very early in development. The APIs are minimal, likely to change, and documentation is sparse. Please keep this in mind if you use it!
 
-If you think of a feature request, notice any bugs, or have any other feedback, please feel free to submit an issue on [Github](https://github.com/EmperorJack/visor-core/issues).
+If you think of a feature request, notice any bugs, or have any other feedback, please feel free to submit an issue on [Github](https://github.com/EmperorJack/visor/issues), or send a message on [TODO]().
 
 ## Examples
 
@@ -44,7 +45,7 @@ And the corresponding visuals:
 
 ![Visor sketch example](./assets/readme/sketch-example.png)
 
-Examples that illustrate different API features can be found in the [examples](./examples/) folder.
+More examples can be found in the [examples](./examples/) folder.
 
 ## Running a Visor sketch
 
@@ -65,7 +66,7 @@ visor_cli run ~/path/to/sketch.js
 If you clone this repository onto your machine, you can run the examples directly:
 
 ```sh
-visor_cli run ~/path/to/visor-core/examples/hello-world.js
+visor_cli run ~/path/to/visor/examples/hello-world.js
 ```
 
 Use the `--help` flag to learn more about the `visor_cli` options or sub-commands:
@@ -85,7 +86,7 @@ visor_cli run ~/path/to/sketch.js --watch
 
 ## TypeScript
 
-To best make use of TypeScript in your sketches you can use the the Visor API type declarations. These can be generated with `visor_cli` by running:
+To best make use of TypeScript in your sketches you can use the the Visor type declarations. These can be generated with `visor_cli` by running:
 
 ```sh
 visor_cli types ~/output/path/for/visor-types.d.ts
@@ -106,19 +107,19 @@ With Deno installed, you can create a `deno.json` file in your sketch folder to 
 }
 ```
 
-Please note that none of the Deno standard libraries (such as `fetch`) are available with the Visor engine by default. Specifying `lib` in your `deno.json` like above configures your type checker to understand this.
+Please note that none of the Deno standard libraries (such as `fetch`) are available with Visor by default. Specifying `lib` in your `deno.json` like above configures your type checker to understand this.
 
 ## How it works
 
 The Visor engine is powered by [Deno Core](https://github.com/denoland/deno_core), which underpins the [Deno](https://deno.com/) JavaScript runtime. For Visor, this means the user can sketch in JavaScript or TypeScript, depsite the engine itself being written in Rust. This makes the engine both fast and reliable, while enabling user-friendly creative coding.
 
-Graphics are enabled by using a mix of APIs from the [Nannou](https://nannou.cc/) creative coding framework and the underlying [wgpu](https://wgpu.rs/) graphics API. Windowing is supported by the [TAO](https://github.com/tauri-apps/tao) library.
+Graphics rendering is enabled by using a mix of APIs from the [Nannou](https://nannou.cc/) creative coding framework and the underlying [wgpu](https://wgpu.rs/) graphics API. Windowing is supported by the [TAO](https://github.com/tauri-apps/tao) library.
 
 ## Crates
 
 | Crate | Description |
 | --- | --- |
-| `visor_cli`  | Command line interface for running Visor sketches. Uses the Visor engine. |
+| `visor_cli`  | Command line interface for running Visor sketches. |
 | `visor_core` | Re-exports `visor_engine` and all of the core plugins. |
 | `visor_engine` | The Visor engine. |
 | `visor_plugin_draw` | Plugin for drawing shapes. |
@@ -134,13 +135,13 @@ The Visor engine can be called from a Rust program. To see how this works, check
 
 ## Plugins
 
-Plugins are the best way to extend the Visor engine with your own APIs. Plugins are written in both Rust and JavaScript or TypeScript. Check out the [counter_plugin](./examples/counter_plugin/) as an example, or look at the core plugins within the [crates](./crates/) folder.
+Plugins are the best way to extend Visor with your own APIs. Plugins are written in both Rust and JavaScript or TypeScript. Check out the [counter_plugin](./examples/counter_plugin/) as an example, or look at the core plugins within the [crates](./crates/) folder.
 
 Plugins can be built statically into a Rust app that uses the Visor engine, or they can be linked at runtime after building them as dynamic libraries e.g: `cdylib`. The latter enables custom plugins to be loaded into the `visor_cli` by passing their paths to the `--plugins` option.
 
 ## Contributing
 
-This project is still in early stages and is not ready for code contributions yet. However, feedback is very welcome! The best way to contribute is through feature requests, bug reports, and general feedback. Please feel free to submit this as an issue on [Github](https://github.com/EmperorJack/visor-core/issues). Thanks!
+This project is still in early stages and is not ready for code contributions yet. However, hearing your feedback and support is very welcome! The best way to contribute is through feature requests, bug reports, and general feedback. Please feel free to submit an issue on [Github](https://github.com/EmperorJack/visor/issues), or send a message on [TODO](). You are also welcome to share anything cool you've made with Visor too. ✨
 
 ## Acknowledgements
 
