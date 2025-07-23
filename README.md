@@ -2,7 +2,7 @@
 
 ![Visor visuals screenshot](./assets/readme/visuals-screenshot.png)
 
-Creative coding system for making real-time visuals in JavaScript or TypeScript.
+Creative code real-time visuals in JavaScript or TypeScript.
 
 - Designed with the aim to be user-friendly, fast, and extensible.
 - Inspired by [Processing](https://processing.org/), [Nannou](https://nannou.cc/), and other creative coding frameworks.

@@ -3,7 +3,7 @@ resolver = "2"
 members = ["crates/*", "examples/*", "visor_cli", "visor_core"]
 
 [workspace.package]
-description = "Creative coding system for making real-time visuals in JavaScript or TypeScript."
+description = "Creative code real-time visuals in JavaScript or TypeScript."
 edition = "2024"
 homepage = "https://github.com/EmperorJack/visor"
 license = "MIT"
