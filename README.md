@@ -13,7 +13,7 @@ Creative coding system for making real-time visuals in JavaScript or TypeScript.
 
 Visor is still very early in development. The APIs are minimal, likely to change, and documentation is sparse. Please keep this in mind if you use it!
 
-If you think of a feature request, notice any bugs, or have any other feedback, please feel free to submit an issue on [Github](https://github.com/EmperorJack/visor/issues), or send a message on [TODO]().
+If you think of a feature request, notice any bugs, or have any other feedback, please feel free to submit an issue on [Github](https://github.com/EmperorJack/visor/issues), or chat on [Matrix](https://matrix.to/#/#visor:matrix.org).
 
 ## Examples
 
@@ -141,7 +141,7 @@ Plugins can be built statically into a Rust app that uses the Visor engine, or t
 
 ## Contributing
 
-This project is still in early stages and is not ready for code contributions yet. However, hearing your feedback and support is very welcome! The best way to contribute is through feature requests, bug reports, and general feedback. Please feel free to submit an issue on [Github](https://github.com/EmperorJack/visor/issues), or send a message on [TODO](). You are also welcome to share anything cool you've made with Visor too. ✨
+This project is still in early stages and is not ready for code contributions yet. However, hearing your feedback and support is very welcome! The best way to contribute is through feature requests, bug reports, and general feedback. Please feel free to submit an issue on [Github](https://github.com/EmperorJack/visor/issues), or chat on [Matrix](https://matrix.to/#/#visor:matrix.org). You are also welcome to share anything cool you've made with Visor. ✨
 
 ## Acknowledgements
 
