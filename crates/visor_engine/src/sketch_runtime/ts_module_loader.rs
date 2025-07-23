@@ -134,7 +134,7 @@ pub(crate) fn maybe_transpile_source(
     }
 
     let parsed = deno_ast::parse_module(ParseParams {
-        specifier: Url::parse(&specifier).unwrap(),
+        specifier: Url::parse(&specifier).expect("Failed to parse module specifier"),
         text: source.into(),
         media_type,
         capture_tokens: false,
