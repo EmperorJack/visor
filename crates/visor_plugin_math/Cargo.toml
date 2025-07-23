@@ -1,7 +1,12 @@
 [package]
 name = "visor_plugin_math"
 version = "0.1.0"
-edition = "2024"
+description = "Plugin for useful math functions."
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
 
 [dependencies]
 deno_core.workspace = true

@@ -1,7 +1,13 @@
 [package]
 name = "visor_cli"
 version = "0.1.0"
-edition = "2024"
+description = "Command line interface for running Visor sketches."
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+readme.workspace = true
+repository.workspace = true
+rust-version.workspace = true
 
 [dependencies]
 anyhow.workspace = true

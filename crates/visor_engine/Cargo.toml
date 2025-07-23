@@ -1,7 +1,13 @@
 [package]
 name = "visor_engine"
 version = "0.1.0"
-edition = "2024"
+description = "The Visor engine."
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+readme.workspace = true
+repository.workspace = true
+rust-version.workspace = true
 
 [dependencies]
 anyhow.workspace = true

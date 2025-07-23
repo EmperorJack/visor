@@ -1,7 +1,13 @@
 [package]
 name = "visor_core"
 version = "0.1.0"
-edition = "2024"
+description = "Re-exports visor_engine and all of the core plugins."
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+readme.workspace = true
+repository.workspace = true
+rust-version.workspace = true
 
 [dependencies]
 visor_engine.workspace = true

@@ -1,7 +1,12 @@
 [package]
 name = "visor_plugin_draw"
 version = "0.1.0"
-edition = "2024"
+description = "Plugin for drawing shapes."
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
 
 [dependencies]
 bevy_math = "0.14.2"

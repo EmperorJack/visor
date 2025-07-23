@@ -1,7 +1,12 @@
 [package]
 name = "visor_plugin_log"
 version = "0.1.0"
-edition = "2024"
+description = "Plugin for console logging."
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
 
 [dependencies]
 deno_core.workspace = true

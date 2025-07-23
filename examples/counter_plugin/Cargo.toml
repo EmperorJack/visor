@@ -1,7 +1,9 @@
 [package]
 name = "counter_plugin"
 version = "0.1.0"
-edition = "2024"
+description = "Example plugin implementation."
+edition.workspace = true
+publish = false
 
 [dependencies]
 deno_core.workspace = true

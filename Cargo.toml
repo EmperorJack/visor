@@ -2,6 +2,15 @@
 resolver = "2"
 members = ["crates/*", "examples/*", "visor_cli", "visor_core"]
 
+[workspace.package]
+description = "Creative coding system for making real-time visuals in JavaScript or TypeScript."
+edition = "2024"
+homepage = "https://github.com/EmperorJack/visor"
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/EmperorJack/visor"
+rust-version = "1.85.0"
+
 [workspace.dependencies]
 anyhow = "1.0"
 deno_core = "0.352.0"
