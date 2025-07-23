@@ -12,4 +12,4 @@ visor_core.workspace = true
 visor_plugin_log.workspace = true
 
 [lib]
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "rlib"]
