@@ -19,14 +19,14 @@ log = "0.4"
 nannou = { git = "https://github.com/EmperorJack/nannou.git", branch = "upgrade-wgpu" }
 tao = { version = "0.34.0" }
 tokio = { version = "1.26.0" }
-visor_core = { path = "./visor_core" }
-visor_engine = { path = "./crates/visor_engine" }
-visor_plugin_draw = { path = "./crates/visor_plugin_draw" }
-visor_plugin_log = { path = "./crates/visor_plugin_log" }
-visor_plugin_math = { path = "./crates/visor_plugin_math" }
-visor_plugin_midi = { path = "./crates/visor_plugin_midi" }
-visor_plugin_state = { path = "./crates/visor_plugin_state" }
-visor_plugin_time = { path = "./crates/visor_plugin_time" }
+visor_core = { path = "./visor_core", version = "0.1.0" }
+visor_engine = { path = "./crates/visor_engine", version = "0.1.0" }
+visor_plugin_draw = { path = "./crates/visor_plugin_draw", version = "0.1.0" }
+visor_plugin_log = { path = "./crates/visor_plugin_log", version = "0.1.0" }
+visor_plugin_math = { path = "./crates/visor_plugin_math", version = "0.1.0" }
+visor_plugin_midi = { path = "./crates/visor_plugin_midi", version = "0.1.0" }
+visor_plugin_state = { path = "./crates/visor_plugin_state", version = "0.1.0" }
+visor_plugin_time = { path = "./crates/visor_plugin_time", version = "0.1.0" }
 
 [profile.dev]
 opt-level = 1
