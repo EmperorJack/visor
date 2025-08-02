@@ -49,6 +49,10 @@ impl RenderTexture {
         &self.id
     }
 
+    pub fn texture(&self) -> &nannou::wgpu::Texture {
+        &self.texture
+    }
+
     pub fn texture_view(&self) -> nannou::wgpu::TextureView {
         self.texture.view().build()
     }
