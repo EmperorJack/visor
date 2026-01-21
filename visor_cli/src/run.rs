@@ -85,7 +85,7 @@ pub(crate) fn run_sketch(args: RunArgs, plugins: Option<Vec<PathBuf>>) -> Result
         .with_sample_count(4)
         .build(&mut engine);
     let render_texture_id = *render_texture.id();
-    let render_texture_view = render_texture.texture_view();
+    let render_texture_view = render_texture.texture_view().clone();
 
     engine
         .sketches_mut()

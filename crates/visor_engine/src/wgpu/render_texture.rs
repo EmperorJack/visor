@@ -10,6 +10,7 @@ pub struct RenderTextureId(pub Uuid);
 pub struct RenderTexture {
     id: RenderTextureId,
     texture: nannou::wgpu::Texture,
+    texture_view: nannou::wgpu::TextureView,
     renderer: nannou::draw::Renderer,
     wgpu_handle: Arc<WgpuHandle>,
 }
@@ -22,12 +23,13 @@ impl RenderTexture {
         height: u32,
         sample_count: u32,
     ) -> Self {
-        let (texture, renderer) =
+        let (texture, texture_view, renderer) =
             Self::create_graphics(&wgpu_handle.device, width, height, sample_count);
 
         Self {
             id,
             texture,
+            texture_view,
             renderer,
             wgpu_handle,
         }
@@ -38,7 +40,11 @@ impl RenderTexture {
         width: u32,
         height: u32,
         sample_count: u32,
-    ) -> (nannou::wgpu::Texture, nannou::draw::Renderer) {
+    ) -> (
+        nannou::wgpu::Texture,
+        nannou::wgpu::TextureView,
+        nannou::draw::Renderer,
+    ) {
         let format = nannou::wgpu::TextureFormat::Rgba16Float;
 
         let texture = nannou::wgpu::TextureBuilder::new()
@@ -51,10 +57,12 @@ impl RenderTexture {
             .format(format)
             .build(device);
 
+        let texture_view = texture.view().build();
+
         let renderer = nannou::draw::RendererBuilder::new()
             .build_from_texture_descriptor(device, texture.descriptor());
 
-        (texture, renderer)
+        (texture, texture_view, renderer)
     }
 
     pub fn id(&self) -> &RenderTextureId {
@@ -65,12 +73,13 @@ impl RenderTexture {
         &self.texture
     }
 
-    pub fn texture_view(&self) -> nannou::wgpu::TextureView {
-        self.texture.view().build()
+    pub fn texture_view(&self) -> &nannou::wgpu::TextureView {
+        &self.texture_view
     }
 
+    /// Please note this recreates the underlying wgpu Texture. Therefore, any external copies of the TextureView will need to be updated.
     pub fn resize(&mut self, width: u32, height: u32) {
-        (self.texture, self.renderer) = Self::create_graphics(
+        (self.texture, self.texture_view, self.renderer) = Self::create_graphics(
             &self.wgpu_handle.device,
             width,
             height,
