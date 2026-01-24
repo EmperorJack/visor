@@ -1,5 +1,6 @@
 import { Ellipse } from "./ellipse.ts";
 import ops from "./ops.ts";
+import { Polygon } from "./polygon.ts";
 import { Polyline } from "./polyline.ts";
 import { Quad } from "./quad.ts";
 import { Rect } from "./rect.ts";
@@ -11,6 +12,7 @@ const {
   op_draw_ellipse,
   op_draw_rect,
   op_draw_quad,
+  op_draw_polygon,
   op_draw_polyline,
   op_draw_spline,
   op_draw_translate,
@@ -57,6 +59,10 @@ export class Draw {
   quad() {
     const shapeId = op_draw_quad(this.#id);
     return new Quad(shapeId);
+  }
+  polygon() {
+    const shapeId = op_draw_polygon(this.#id);
+    return new Polygon(shapeId);
   }
   polyline() {
     const shapeId = op_draw_polyline(this.#id);

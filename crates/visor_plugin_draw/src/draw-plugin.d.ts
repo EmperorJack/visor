@@ -7,6 +7,7 @@ interface Draw {
   ellipse(): Ellipse;
   rect(): Rect;
   quad(): Quad;
+  polygon(): Polygon;
   polyline(): Polyline;
   spline(): Spline;
 
@@ -18,13 +19,15 @@ interface Draw {
 }
 
 interface Ellipse
-  extends ShapePosition<Ellipse>,
+  extends
+    ShapePosition<Ellipse>,
     ShapeWidthHeight<Ellipse>,
     ShapeFill<Ellipse>,
     ShapeStroke<Ellipse> {}
 
 interface Rect
-  extends ShapePosition<Rect>,
+  extends
+    ShapePosition<Rect>,
     ShapeWidthHeight<Rect>,
     ShapeFill<Rect>,
     ShapeStroke<Rect> {}
@@ -38,19 +41,25 @@ interface Quad extends ShapePosition<Quad>, ShapeFill<Quad>, ShapeStroke<Quad> {
     x3: number,
     y3: number,
     x4: number,
-    y4: number
+    y4: number,
   ): Quad;
 }
 
+interface Polygon
+  extends
+    ShapePosition<Polygon>,
+    ShapePoint<Polygon>,
+    ShapeFill<Polygon>,
+    ShapeStroke<Polygon> {}
+
 interface Polyline
-  extends ShapePosition<Polyline>,
+  extends
+    ShapePosition<Polyline>,
     ShapePoint<Polyline>,
     ShapeStroke<Polyline> {}
 
 interface Spline
-  extends ShapePosition<Spline>,
-    ShapePoint<Spline>,
-    ShapeStroke<Spline> {
+  extends ShapePosition<Spline>, ShapePoint<Spline>, ShapeStroke<Spline> {
   tension(t: number): Spline;
   resolution(s: number): Spline;
 }

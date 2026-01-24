@@ -7,14 +7,14 @@ type ShapeRGBACommand = (
   r: number,
   g: number,
   b: number,
-  a: number
+  a: number,
 ) => void;
 type ShapeHSVACommand = (
   id: number,
   h: number,
   s: number,
   v: number,
-  a: number
+  a: number,
 ) => void;
 type ShapeNoFillCommand = (id: number) => void;
 type ShapeStrokeWeightCommand = (id: number, w: number) => void;
@@ -28,13 +28,13 @@ declare namespace Deno {
         id: number,
         r: number,
         g: number,
-        b: number
+        b: number,
       ) => void;
       op_draw_background_hsv: (
         id: number,
         h: number,
         s: number,
-        v: number
+        v: number,
       ) => void;
       op_draw_ellipse: ShapeCommand;
       op_draw_ellipse_xy: ShapeXYCommand;
@@ -68,7 +68,7 @@ declare namespace Deno {
         x3: number,
         y3: number,
         x4: number,
-        y4: number
+        y4: number,
       ) => void;
       op_draw_quad_fill_rgba: ShapeRGBACommand;
       op_draw_quad_fill_hsva: ShapeHSVACommand;
@@ -76,6 +76,16 @@ declare namespace Deno {
       op_draw_quad_stroke_rgba: ShapeRGBACommand;
       op_draw_quad_stroke_hsva: ShapeHSVACommand;
       op_draw_quad_stroke_weight: ShapeStrokeWeightCommand;
+      op_draw_polygon: ShapeCommand;
+      op_draw_polygon_xy: ShapeXYCommand;
+      op_draw_polygon_xyz: ShapeXYZCommand;
+      op_draw_polygon_point: ShapePointCommand;
+      op_draw_polygon_fill_rgba: ShapeRGBACommand;
+      op_draw_polygon_fill_hsva: ShapeHSVACommand;
+      op_draw_polygon_no_fill: ShapeNoFillCommand;
+      op_draw_polygon_stroke_rgba: ShapeRGBACommand;
+      op_draw_polygon_stroke_hsva: ShapeHSVACommand;
+      op_draw_polygon_stroke_weight: ShapeStrokeWeightCommand;
       op_draw_polyline: ShapeCommand;
       op_draw_polyline_xyz: ShapeXYZCommand;
       op_draw_polyline_point: ShapePointCommand;

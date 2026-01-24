@@ -9,6 +9,7 @@ use nannou::draw::Drawing;
 use visor_engine::{AccessSketchStore, Draw, Engine, Plugin, SketchId, SketchStore, Store};
 
 use crate::ellipse::*;
+use crate::polygon::*;
 use crate::polyline::*;
 use crate::quad::*;
 use crate::rect::*;
@@ -31,6 +32,7 @@ pub(crate) struct SketchState {
     pub(crate) ellipse_command_map: EllipseCommandMap,
     pub(crate) rect_command_map: RectCommandMap,
     pub(crate) quad_command_map: QuadCommandMap,
+    pub(crate) polygon_command_map: PolygonCommandMap,
     pub(crate) polyline_command_map: PolylineCommandMap,
     pub(crate) spline_command_map: SplineCommandMap,
     width: u32,
@@ -118,6 +120,25 @@ impl SketchState {
             .push(command);
     }
 
+    pub(crate) fn start_drawing_polygon(&mut self, draw_id: DrawId) -> ShapeId {
+        self.next_shape_id.0 += 1;
+
+        let draw_id = self.clamp_draw_id(draw_id);
+
+        self.polygon_command_map
+            .insert(self.next_shape_id, (draw_id, Vec::new()));
+
+        self.next_shape_id
+    }
+
+    pub(crate) fn store_polygon_command(&mut self, id: ShapeId, command: PolygonCommand) {
+        self.polygon_command_map
+            .get_mut(&id)
+            .expect("Unexpected: could not find shape commands for given id")
+            .1
+            .push(command);
+    }
+
     pub(crate) fn start_drawing_polyline(&mut self, draw_id: DrawId) -> ShapeId {
         self.next_shape_id.0 += 1;
 
@@ -199,6 +220,27 @@ impl SketchState {
             }
         }
 
+        for (draw_id, commands) in self.polygon_command_map.values() {
+            let draw = self.get_draw(*draw_id);
+
+            let mut polygon = draw.inner.polygon();
+
+            let mut points: Vec<(f32, f32)> = vec![];
+
+            for command in commands {
+                match command {
+                    PolygonCommand::Point { x, y } => points.push((*x, *y)),
+                    _ => polygon = command.apply(polygon),
+                }
+            }
+
+            if points.is_empty() {
+                continue;
+            }
+
+            let _polygon = polygon.points(points);
+        }
+
         for (draw_id, commands) in self.polyline_command_map.values() {
             let draw = self.get_draw(*draw_id);
 
@@ -256,6 +298,7 @@ impl SketchState {
         self.ellipse_command_map.clear();
         self.rect_command_map.clear();
         self.quad_command_map.clear();
+        self.polygon_command_map.clear();
         self.polyline_command_map.clear();
         self.spline_command_map.clear();
     }
@@ -309,6 +352,16 @@ extension!(
         op_draw_quad_stroke_rgba,
         op_draw_quad_stroke_hsva,
         op_draw_quad_stroke_weight,
+        op_draw_polygon,
+        op_draw_polygon_xy,
+        op_draw_polygon_xyz,
+        op_draw_polygon_point,
+        op_draw_polygon_fill_rgba,
+        op_draw_polygon_fill_hsva,
+        op_draw_polygon_no_fill,
+        op_draw_polygon_stroke_rgba,
+        op_draw_polygon_stroke_hsva,
+        op_draw_polygon_stroke_weight,
         op_draw_polyline,
         op_draw_polyline_xyz,
         op_draw_polyline_point,
@@ -335,6 +388,7 @@ extension!(
         "src/draw.ts",
         "src/ellipse.ts",
         "src/ops.ts",
+        "src/polygon.ts",
         "src/polyline.ts",
         "src/quad.ts",
         "src/rect.ts",
@@ -377,6 +431,7 @@ impl Plugin for DrawPlugin {
             ellipse_command_map: Default::default(),
             rect_command_map: Default::default(),
             quad_command_map: Default::default(),
+            polygon_command_map: Default::default(),
             polyline_command_map: Default::default(),
             spline_command_map: Default::default(),
             width: 0,
