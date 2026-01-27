@@ -14,6 +14,8 @@ interface Draw {
   translate(x: number, y: number): Draw;
   rotate(radians: number): Draw;
   scale(s: number): Draw;
+  scaleX(s: number): Draw;
+  scaleY(s: number): Draw;
 
   copy(): Draw;
 }

@@ -103,6 +103,8 @@ declare namespace Deno {
       op_draw_translate: (id: number, x: number, y: number) => number;
       op_draw_rotate: (id: number, radians: number) => number;
       op_draw_scale: (id: number, s: number) => number;
+      op_draw_scale_x: (id: number, s: number) => number;
+      op_draw_scale_y: (id: number, s: number) => number;
       op_draw_noise: (x: number, y: number, z: number) => number;
       op_draw_width: () => number;
       op_draw_height: () => number;

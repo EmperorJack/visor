@@ -18,6 +18,8 @@ const {
   op_draw_translate,
   op_draw_rotate,
   op_draw_scale,
+  op_draw_scale_x,
+  op_draw_scale_y,
 } = ops;
 
 export class Draw {
@@ -84,6 +86,14 @@ export class Draw {
   }
   scale(s: number) {
     const nextId = op_draw_scale(this.#id, s);
+    return new Draw(nextId);
+  }
+  scaleX(s: number) {
+    const nextId = op_draw_scale_x(this.#id, s);
+    return new Draw(nextId);
+  }
+  scaleY(s: number) {
+    const nextId = op_draw_scale_y(this.#id, s);
     return new Draw(nextId);
   }
 

@@ -379,6 +379,8 @@ extension!(
         op_draw_translate,
         op_draw_rotate,
         op_draw_scale,
+        op_draw_scale_x,
+        op_draw_scale_y,
         op_draw_width,
         op_draw_height,
     ],
@@ -549,6 +551,28 @@ fn op_draw_scale(state: &mut OpState, id: u32, s: f32) -> u32 {
     let draw = sketch_state.get_draw(DrawId(id));
 
     let draw = draw.inner.scale(s);
+
+    sketch_state.store_draw(draw.into()).0
+}
+
+#[op2(fast)]
+fn op_draw_scale_x(state: &mut OpState, id: u32, s: f32) -> u32 {
+    let sketch_state = state.sketch_store_mut().get_mut::<SketchState>();
+
+    let draw = sketch_state.get_draw(DrawId(id));
+
+    let draw = draw.inner.scale_x(s);
+
+    sketch_state.store_draw(draw.into()).0
+}
+
+#[op2(fast)]
+fn op_draw_scale_y(state: &mut OpState, id: u32, s: f32) -> u32 {
+    let sketch_state = state.sketch_store_mut().get_mut::<SketchState>();
+
+    let draw = sketch_state.get_draw(DrawId(id));
+
+    let draw = draw.inner.scale_y(s);
 
     sketch_state.store_draw(draw.into()).0
 }

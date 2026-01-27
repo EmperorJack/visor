@@ -6,7 +6,7 @@ export function update() {
   const drawTranslated = draw.translate(-150, 0);
   drawTranslated.rect().wh(75, 75);
 
-  const drawScaled = draw.scale(1.5);
+  const drawScaled = draw.scaleX(0.5).scaleY(1.5);
   drawScaled.rect().wh(75, 75);
 
   const drawRotated = draw.translate(150, 0).rotate(Math.PI * 0.25);
