@@ -19,6 +19,7 @@ type ShapeHSVACommand = (
 type ShapeNoFillCommand = (id: number) => void;
 type ShapeStrokeWeightCommand = (id: number, w: number) => void;
 type ShapeTensionCommand = (id: number, t: number) => void;
+type ShapeResolutionCommand = (id: number, n: number) => void;
 type ShapePointCommand = (id: number, x: number, y: number) => void;
 
 declare namespace Deno {
@@ -99,7 +100,15 @@ declare namespace Deno {
       op_draw_spline_stroke_hsva: ShapeHSVACommand;
       op_draw_spline_stroke_weight: ShapeStrokeWeightCommand;
       op_draw_spline_tension: ShapeTensionCommand;
-      op_draw_spline_resolution: (id: number, n: number) => void;
+      op_draw_spline_resolution: ShapeResolutionCommand;
+      op_draw_path: ShapeCommand;
+      op_draw_path_xy: ShapeXYCommand;
+      op_draw_path_xyz: ShapeXYZCommand;
+      op_draw_path_point: ShapePointCommand;
+      op_draw_path_fill_rgba: ShapeRGBACommand;
+      op_draw_path_fill_hsva: ShapeHSVACommand;
+      op_draw_path_tension: ShapeTensionCommand;
+      op_draw_path_resolution: ShapeResolutionCommand;
       op_draw_translate: (id: number, x: number, y: number) => number;
       op_draw_rotate: (id: number, radians: number) => number;
       op_draw_scale: (id: number, s: number) => number;

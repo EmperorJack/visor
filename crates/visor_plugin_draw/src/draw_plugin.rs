@@ -9,6 +9,7 @@ use nannou::draw::Drawing;
 use visor_engine::{AccessSketchStore, Draw, Engine, Plugin, SketchId, SketchStore, Store};
 
 use crate::ellipse::*;
+use crate::path::*;
 use crate::polygon::*;
 use crate::polyline::*;
 use crate::quad::*;
@@ -35,6 +36,7 @@ pub(crate) struct SketchState {
     pub(crate) polygon_command_map: PolygonCommandMap,
     pub(crate) polyline_command_map: PolylineCommandMap,
     pub(crate) spline_command_map: SplineCommandMap,
+    pub(crate) path_command_map: PathCommandMap,
     width: u32,
     height: u32,
 }
@@ -177,6 +179,25 @@ impl SketchState {
             .push(command);
     }
 
+    pub(crate) fn start_drawing_path(&mut self, draw_id: DrawId) -> ShapeId {
+        self.next_shape_id.0 += 1;
+
+        let draw_id = self.clamp_draw_id(draw_id);
+
+        self.path_command_map
+            .insert(self.next_shape_id, (draw_id, Vec::new()));
+
+        self.next_shape_id
+    }
+
+    pub(crate) fn store_path_command(&mut self, id: ShapeId, command: PathCommand) {
+        self.path_command_map
+            .get_mut(&id)
+            .expect("Unexpected: could not find shape commands for given id")
+            .1
+            .push(command);
+    }
+
     pub(crate) fn clamp_draw_id(&self, id: DrawId) -> DrawId {
         if id.0 == 0 {
             return id;
@@ -288,11 +309,50 @@ impl SketchState {
 
             let curve = CubicCardinalSpline::new(tension, points).to_curve();
 
-            let points = curve
+            let points: Vec<_> = curve
                 .iter_positions(resolution)
-                .map(|point| (point.x, point.y));
+                .map(|point| (point.x, point.y))
+                .collect();
 
             let _spline = spline.points(points);
+        }
+
+        for (draw_id, commands) in self.path_command_map.values() {
+            let draw = self.get_draw(*draw_id);
+
+            let mut path = draw.inner.path().fill();
+
+            let mut points: Vec<Vec2> = vec![];
+            let mut tension: f32 = 0.0;
+            let mut resolution: Option<usize> = None;
+
+            for command in commands {
+                match command {
+                    PathCommand::Point { x, y } => points.push((*x, *y).into()),
+                    PathCommand::Tension { t } => tension = *t,
+                    PathCommand::Resolution { n } => resolution = Some(*n as usize),
+                    _ => path = command.apply(path),
+                }
+            }
+
+            if points.is_empty() {
+                continue;
+            }
+
+            let points: Vec<_> = if tension > 0.0 {
+                let resolution = resolution.unwrap_or_else(|| points.len() * 20);
+
+                let curve = CubicCardinalSpline::new(tension, points).to_curve();
+
+                curve
+                    .iter_positions(resolution)
+                    .map(|point| (point.x, point.y))
+                    .collect()
+            } else {
+                points.into_iter().map(|point| (point.x, point.y)).collect()
+            };
+
+            let _path = path.points(points);
         }
 
         self.ellipse_command_map.clear();
@@ -301,6 +361,7 @@ impl SketchState {
         self.polygon_command_map.clear();
         self.polyline_command_map.clear();
         self.spline_command_map.clear();
+        self.path_command_map.clear();
     }
 
     fn reset(&mut self) {
@@ -376,6 +437,14 @@ extension!(
         op_draw_spline_stroke_weight,
         op_draw_spline_tension,
         op_draw_spline_resolution,
+        op_draw_path,
+        op_draw_path_xy,
+        op_draw_path_xyz,
+        op_draw_path_point,
+        op_draw_path_fill_rgba,
+        op_draw_path_fill_hsva,
+        op_draw_path_tension,
+        op_draw_path_resolution,
         op_draw_translate,
         op_draw_rotate,
         op_draw_scale,
@@ -390,6 +459,7 @@ extension!(
         "src/draw.ts",
         "src/ellipse.ts",
         "src/ops.ts",
+        "src/path.ts",
         "src/polygon.ts",
         "src/polyline.ts",
         "src/quad.ts",
@@ -436,6 +506,7 @@ impl Plugin for DrawPlugin {
             polygon_command_map: Default::default(),
             polyline_command_map: Default::default(),
             spline_command_map: Default::default(),
+            path_command_map: Default::default(),
             width: 0,
             height: 0,
         });

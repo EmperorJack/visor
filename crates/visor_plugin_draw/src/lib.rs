@@ -1,5 +1,6 @@
 mod draw_plugin;
 mod ellipse;
+mod path;
 mod polygon;
 mod polyline;
 mod quad;

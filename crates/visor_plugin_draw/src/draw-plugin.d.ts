@@ -10,6 +10,7 @@ interface Draw {
   polygon(): Polygon;
   polyline(): Polyline;
   spline(): Spline;
+  path(): Path;
 
   translate(x: number, y: number): Draw;
   rotate(radians: number): Draw;
@@ -61,10 +62,18 @@ interface Polyline
     ShapeStroke<Polyline> {}
 
 interface Spline
-  extends ShapePosition<Spline>, ShapePoint<Spline>, ShapeStroke<Spline> {
-  tension(t: number): Spline;
-  resolution(s: number): Spline;
-}
+  extends
+    ShapePosition<Spline>,
+    ShapePoint<Spline>,
+    ShapeStroke<Spline>,
+    ShapeCurve<Spline> {}
+
+interface Path
+  extends
+    ShapePosition<Path>,
+    ShapePoint<Path>,
+    Omit<ShapeFill<Path>, "noFill">,
+    ShapeCurve<Path> {}
 
 interface ShapePosition<S> {
   xy(x: number, y: number): S;
@@ -87,6 +96,11 @@ interface ShapeFill<S> {
 interface ShapeStroke<S> {
   stroke(color: Color): S;
   strokeWeight(w: number): S;
+}
+
+interface ShapeCurve<S> {
+  tension(t: number): S;
+  resolution(s: number): S;
 }
 
 type Color =

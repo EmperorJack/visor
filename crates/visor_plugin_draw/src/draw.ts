@@ -1,5 +1,6 @@
 import { Ellipse } from "./ellipse.ts";
 import ops from "./ops.ts";
+import { Path } from "./path.ts";
 import { Polygon } from "./polygon.ts";
 import { Polyline } from "./polyline.ts";
 import { Quad } from "./quad.ts";
@@ -15,6 +16,7 @@ const {
   op_draw_polygon,
   op_draw_polyline,
   op_draw_spline,
+  op_draw_path,
   op_draw_translate,
   op_draw_rotate,
   op_draw_scale,
@@ -73,6 +75,10 @@ export class Draw {
   spline() {
     const shapeId = op_draw_spline(this.#id);
     return new Spline(shapeId);
+  }
+  path() {
+    const shapeId = op_draw_path(this.#id);
+    return new Path(shapeId);
   }
 
   // Transforms
