@@ -1,20 +1,15 @@
 use std::{collections::HashMap, sync::RwLock};
 
-use bevy_math::{
-    Vec2,
-    cubic_splines::{CubicCardinalSpline, CubicGenerator},
-};
 use deno_core::{Extension, OpState, extension, op2};
-use nannou::draw::Drawing;
 use visor_engine::{AccessSketchStore, Draw, Engine, Plugin, SketchId, SketchStore, Store};
 
-use crate::ellipse::*;
-use crate::path::*;
-use crate::polygon::*;
 use crate::polyline::*;
 use crate::quad::*;
 use crate::rect::*;
 use crate::spline::*;
+use crate::{ellipse::*, shape::Shape};
+use crate::{path::*, shape::ShapeKind};
+use crate::{polygon::*, shape::ShapeCommand};
 
 pub struct DrawPlugin;
 
@@ -30,13 +25,7 @@ pub(crate) struct SketchState {
     draw_map: DrawMap,
     next_draw_id: DrawId,
     pub(crate) next_shape_id: ShapeId,
-    pub(crate) ellipse_command_map: EllipseCommandMap,
-    pub(crate) rect_command_map: RectCommandMap,
-    pub(crate) quad_command_map: QuadCommandMap,
-    pub(crate) polygon_command_map: PolygonCommandMap,
-    pub(crate) polyline_command_map: PolylineCommandMap,
-    pub(crate) spline_command_map: SplineCommandMap,
-    pub(crate) path_command_map: PathCommandMap,
+    shapes: HashMap<ShapeId, Shape>,
     width: u32,
     height: u32,
 }
@@ -65,136 +54,28 @@ impl SketchState {
         self.next_draw_id
     }
 
-    pub(crate) fn start_drawing_ellipse(&mut self, draw_id: DrawId) -> ShapeId {
+    pub(crate) fn start_drawing_shape(&mut self, kind: ShapeKind, draw_id: DrawId) -> ShapeId {
         self.next_shape_id.0 += 1;
 
         let draw_id = self.clamp_draw_id(draw_id);
 
-        self.ellipse_command_map
-            .insert(self.next_shape_id, (draw_id, Vec::new()));
+        self.shapes.insert(
+            self.next_shape_id,
+            Shape {
+                kind,
+                draw_id,
+                commands: Vec::new(),
+            },
+        );
 
         self.next_shape_id
     }
 
-    pub(crate) fn store_ellipse_command(&mut self, id: ShapeId, command: EllipseCommand) {
-        self.ellipse_command_map
+    pub(crate) fn store_shape_command(&mut self, id: ShapeId, command: ShapeCommand) {
+        self.shapes
             .get_mut(&id)
             .expect("Unexpected: could not find shape commands for given id")
-            .1
-            .push(command);
-    }
-
-    pub(crate) fn start_drawing_rect(&mut self, draw_id: DrawId) -> ShapeId {
-        self.next_shape_id.0 += 1;
-
-        let draw_id = self.clamp_draw_id(draw_id);
-
-        self.rect_command_map
-            .insert(self.next_shape_id, (draw_id, Vec::new()));
-
-        self.next_shape_id
-    }
-
-    pub(crate) fn store_rect_command(&mut self, id: ShapeId, command: RectCommand) {
-        self.rect_command_map
-            .get_mut(&id)
-            .expect("Unexpected: could not find shape commands for given id")
-            .1
-            .push(command);
-    }
-
-    pub(crate) fn start_drawing_quad(&mut self, draw_id: DrawId) -> ShapeId {
-        self.next_shape_id.0 += 1;
-
-        let draw_id = self.clamp_draw_id(draw_id);
-
-        self.quad_command_map
-            .insert(self.next_shape_id, (draw_id, Vec::new()));
-
-        self.next_shape_id
-    }
-
-    pub(crate) fn store_quad_command(&mut self, id: ShapeId, command: QuadCommand) {
-        self.quad_command_map
-            .get_mut(&id)
-            .expect("Unexpected: could not find shape commands for given id")
-            .1
-            .push(command);
-    }
-
-    pub(crate) fn start_drawing_polygon(&mut self, draw_id: DrawId) -> ShapeId {
-        self.next_shape_id.0 += 1;
-
-        let draw_id = self.clamp_draw_id(draw_id);
-
-        self.polygon_command_map
-            .insert(self.next_shape_id, (draw_id, Vec::new()));
-
-        self.next_shape_id
-    }
-
-    pub(crate) fn store_polygon_command(&mut self, id: ShapeId, command: PolygonCommand) {
-        self.polygon_command_map
-            .get_mut(&id)
-            .expect("Unexpected: could not find shape commands for given id")
-            .1
-            .push(command);
-    }
-
-    pub(crate) fn start_drawing_polyline(&mut self, draw_id: DrawId) -> ShapeId {
-        self.next_shape_id.0 += 1;
-
-        let draw_id = self.clamp_draw_id(draw_id);
-
-        self.polyline_command_map
-            .insert(self.next_shape_id, (draw_id, Vec::new()));
-
-        self.next_shape_id
-    }
-
-    pub(crate) fn store_polyline_command(&mut self, id: ShapeId, command: PolylineCommand) {
-        self.polyline_command_map
-            .get_mut(&id)
-            .expect("Unexpected: could not find shape commands for given id")
-            .1
-            .push(command);
-    }
-
-    pub(crate) fn start_drawing_spline(&mut self, draw_id: DrawId) -> ShapeId {
-        self.next_shape_id.0 += 1;
-
-        let draw_id = self.clamp_draw_id(draw_id);
-
-        self.spline_command_map
-            .insert(self.next_shape_id, (draw_id, Vec::new()));
-
-        self.next_shape_id
-    }
-
-    pub(crate) fn store_spline_command(&mut self, id: ShapeId, command: SplineCommand) {
-        self.spline_command_map
-            .get_mut(&id)
-            .expect("Unexpected: could not find shape commands for given id")
-            .1
-            .push(command);
-    }
-
-    pub(crate) fn start_drawing_path(&mut self, draw_id: DrawId) -> ShapeId {
-        self.next_shape_id.0 += 1;
-
-        let draw_id = self.clamp_draw_id(draw_id);
-
-        self.path_command_map
-            .insert(self.next_shape_id, (draw_id, Vec::new()));
-
-        self.next_shape_id
-    }
-
-    pub(crate) fn store_path_command(&mut self, id: ShapeId, command: PathCommand) {
-        self.path_command_map
-            .get_mut(&id)
-            .expect("Unexpected: could not find shape commands for given id")
-            .1
+            .commands
             .push(command);
     }
 
@@ -211,157 +92,21 @@ impl SketchState {
     }
 
     fn apply_shape_commands(&mut self) {
-        for (draw_id, commands) in self.ellipse_command_map.values() {
-            let draw = self.get_draw(*draw_id);
+        let shapes: Vec<_> = self.shapes.drain().collect();
 
-            let mut ellipse = draw.inner.ellipse();
+        for (_, shape) in shapes {
+            let draw = self.get_draw(shape.draw_id);
 
-            for command in commands {
-                ellipse = command.apply(ellipse);
+            match shape.kind {
+                ShapeKind::Ellipse => build_ellipse(draw, shape.commands),
+                ShapeKind::Rect => build_rect(draw, shape.commands),
+                ShapeKind::Quad => build_quad(draw, shape.commands),
+                ShapeKind::Polygon => build_polygon(draw, shape.commands),
+                ShapeKind::Polyline => build_polyline(draw, shape.commands),
+                ShapeKind::Spline => build_spline(draw, shape.commands),
+                ShapeKind::Path => build_path(draw, shape.commands),
             }
         }
-
-        for (draw_id, commands) in self.rect_command_map.values() {
-            let draw = self.get_draw(*draw_id);
-
-            let mut rect = draw.inner.rect();
-
-            for command in commands {
-                rect = command.apply(rect);
-            }
-        }
-
-        for (draw_id, commands) in self.quad_command_map.values() {
-            let draw = self.get_draw(*draw_id);
-
-            let mut quad = draw.inner.quad();
-
-            for command in commands {
-                quad = command.apply(quad);
-            }
-        }
-
-        for (draw_id, commands) in self.polygon_command_map.values() {
-            let draw = self.get_draw(*draw_id);
-
-            let mut polygon = draw.inner.polygon();
-
-            let mut points: Vec<(f32, f32)> = vec![];
-
-            for command in commands {
-                match command {
-                    PolygonCommand::Point { x, y } => points.push((*x, *y)),
-                    _ => polygon = command.apply(polygon),
-                }
-            }
-
-            if points.is_empty() {
-                continue;
-            }
-
-            let _polygon = polygon.points(points);
-        }
-
-        for (draw_id, commands) in self.polyline_command_map.values() {
-            let draw = self.get_draw(*draw_id);
-
-            let mut polyline = draw.inner.polyline();
-
-            let mut points: Vec<(f32, f32)> = vec![];
-
-            for command in commands {
-                match command {
-                    PolylineCommand::Point { x, y } => points.push((*x, *y)),
-                    _ => polyline = command.apply(polyline),
-                }
-            }
-
-            if points.is_empty() {
-                continue;
-            }
-
-            let _polyline = polyline.points(points);
-        }
-
-        for (draw_id, commands) in self.spline_command_map.values() {
-            let draw = self.get_draw(*draw_id);
-
-            let mut spline = draw.inner.polyline();
-
-            let mut points: Vec<Vec2> = vec![];
-            let mut tension: f32 = 0.5;
-            let mut resolution: Option<usize> = None;
-
-            for command in commands {
-                match command {
-                    SplineCommand::Point { x, y } => points.push((*x, *y).into()),
-                    SplineCommand::Tension { t } => tension = *t,
-                    SplineCommand::Resolution { n } => resolution = Some(*n as usize),
-                    _ => spline = command.apply(spline),
-                }
-            }
-
-            if points.is_empty() {
-                continue;
-            }
-
-            let resolution = resolution.unwrap_or_else(|| points.len() * 20);
-
-            let curve = CubicCardinalSpline::new(tension, points).to_curve();
-
-            let points: Vec<_> = curve
-                .iter_positions(resolution)
-                .map(|point| (point.x, point.y))
-                .collect();
-
-            let _spline = spline.points(points);
-        }
-
-        for (draw_id, commands) in self.path_command_map.values() {
-            let draw = self.get_draw(*draw_id);
-
-            let mut path = draw.inner.path().fill();
-
-            let mut points: Vec<Vec2> = vec![];
-            let mut tension: f32 = 0.0;
-            let mut resolution: Option<usize> = None;
-
-            for command in commands {
-                match command {
-                    PathCommand::Point { x, y } => points.push((*x, *y).into()),
-                    PathCommand::Tension { t } => tension = *t,
-                    PathCommand::Resolution { n } => resolution = Some(*n as usize),
-                    _ => path = command.apply(path),
-                }
-            }
-
-            if points.is_empty() {
-                continue;
-            }
-
-            let points: Vec<_> = if tension > 0.0 {
-                let resolution = resolution.unwrap_or_else(|| points.len() * 20);
-
-                let curve = CubicCardinalSpline::new(tension, points).to_curve();
-
-                curve
-                    .iter_positions(resolution)
-                    .map(|point| (point.x, point.y))
-                    .collect()
-            } else {
-                points.into_iter().map(|point| (point.x, point.y)).collect()
-            };
-
-            let _path = path.points(points);
-        }
-
-        self.ellipse_command_map.clear();
-        self.rect_command_map.clear();
-        self.quad_command_map.clear();
-        self.polygon_command_map.clear();
-        self.polyline_command_map.clear();
-        self.spline_command_map.clear();
-        self.path_command_map.clear();
     }
 
     fn reset(&mut self) {
@@ -372,10 +117,6 @@ impl SketchState {
         self.next_draw_id.0 = 0;
         self.next_shape_id.0 = 0;
     }
-}
-
-pub(crate) trait ShapeCommand<T> {
-    fn apply<'a>(&self, drawing: Drawing<'a, T>) -> Drawing<'a, T>;
 }
 
 extension!(
@@ -500,13 +241,7 @@ impl Plugin for DrawPlugin {
             draw_map: Default::default(),
             next_draw_id: DrawId(0),
             next_shape_id: ShapeId(0),
-            ellipse_command_map: Default::default(),
-            rect_command_map: Default::default(),
-            quad_command_map: Default::default(),
-            polygon_command_map: Default::default(),
-            polyline_command_map: Default::default(),
-            spline_command_map: Default::default(),
-            path_command_map: Default::default(),
+            shapes: Default::default(),
             width: 0,
             height: 0,
         });

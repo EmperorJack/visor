@@ -5,6 +5,7 @@ mod polygon;
 mod polyline;
 mod quad;
 mod rect;
+mod shape;
 mod spline;
 
 pub use draw_plugin::DrawPlugin;
