@@ -5195,9 +5195,9 @@ dependencies = [
 
 [[package]]
 name = "visor_nannou"
-version = "0.19.0"
+version = "0.19.0-1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fc09e39427d7226d02f65d5c8f6679128a327b36e4f041476c5c2e85c9a7325a"
+checksum = "e8bca1fd27c33938ebfde37aed94ab51dcdd5fa49293ae96b13870c3aaf86c53"
 dependencies = [
  "find_folder",
  "futures",
