@@ -9,6 +9,7 @@ repository.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+anyhow.workspace = true
 deno_core.workspace = true
 deno_error.workspace = true
 midir = "0.10.1"

@@ -1,4 +1,8 @@
-use std::{collections::HashMap, path::PathBuf, sync::RwLock};
+use std::{
+    collections::HashMap,
+    path::PathBuf,
+    sync::{Mutex, RwLock},
+};
 
 use deno_core::{
     Extension, OpState,
@@ -53,7 +57,7 @@ impl State {
 }
 
 struct InputConnection {
-    connection: MidiInputConnection<mpsc::Sender<(u8, MidiMessage)>>,
+    connection: Mutex<MidiInputConnection<mpsc::Sender<(u8, MidiMessage)>>>,
     message_receiver: mpsc::Receiver<(u8, MidiMessage)>,
 }
 
@@ -123,7 +127,11 @@ impl MidiPlugin {
             .expect("Unexpected: could not acquire write lock for state");
 
         if let Some(input_connection) = state.input_connections.remove(&name) {
-            input_connection.connection.close();
+            input_connection
+                .connection
+                .into_inner()
+                .expect("Unexpected: could not acquire mutex inner for connection")
+                .close();
         }
     }
 
@@ -306,7 +314,11 @@ impl Plugin for MidiPlugin {
                 }
                 Event::RemoveInputConnection(name) => {
                     if let Some(input_connection) = state.input_connections.remove(&name) {
-                        input_connection.connection.close();
+                        input_connection
+                            .connection
+                            .into_inner()
+                            .expect("Unexpected: could not acquire mutex inner for connection")
+                            .close();
                     }
                 }
                 Event::LoadMapping(midi_mapping) => state.midi_mapping = Some(*midi_mapping),
@@ -384,23 +396,25 @@ fn create_input_connection(name: String) -> Result<InputConnection> {
 
     let (message_sender, message_receiver) = mpsc::channel::<(u8, MidiMessage)>(1024);
 
-    let connection = midi_input.connect(
-        port,
-        &format!("Visor plugin MIDI input connection to {}", name),
-        |_timestamp, event, message_sender| {
-            let event = LiveEvent::parse(event).ok();
+    let connection = midi_input
+        .connect(
+            port,
+            &format!("Visor plugin MIDI input connection to {}", name),
+            |_timestamp, event, message_sender| {
+                let event = LiveEvent::parse(event).ok();
 
-            if let Some(LiveEvent::Midi { channel, message }) = event {
-                message_sender
-                    .try_send((channel.into(), message))
-                    .expect("Unexpected: could not send to midi message channel");
-            }
-        },
-        message_sender,
-    )?;
+                if let Some(LiveEvent::Midi { channel, message }) = event {
+                    message_sender
+                        .try_send((channel.into(), message))
+                        .expect("Unexpected: could not send to midi message channel");
+                }
+            },
+            message_sender,
+        )
+        .map_err(|error| anyhow!(error.to_string()))?;
 
     Ok(InputConnection {
-        connection,
+        connection: Mutex::new(connection),
         message_receiver,
     })
 }

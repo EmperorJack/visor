@@ -5268,6 +5268,7 @@ dependencies = [
 name = "visor_plugin_midi"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "deno_core",
  "deno_error",
  "midir",
