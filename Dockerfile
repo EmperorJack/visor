@@ -1,0 +1,20 @@
+# To build the image run: docker build --tag visor .
+
+ARG RUST_VERSION=1.85
+
+FROM rust:${RUST_VERSION}
+
+WORKDIR /visor
+
+RUN apt-get update && apt-get install -y libgtk-3-dev libasound2-dev
+
+COPY ./crates ./crates
+COPY ./examples ./examples
+COPY ./visor_cli ./visor_cli
+COPY ./visor_core ./visor_core
+COPY ./Cargo.toml ./Cargo.toml
+COPY ./Cargo.lock ./Cargo.lock
+COPY ./rust-toolchain.toml ./rust-toolchain.toml
+
+RUN cargo fetch
+RUN cargo build
