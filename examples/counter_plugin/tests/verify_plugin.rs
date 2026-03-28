@@ -45,9 +45,19 @@ mod tests {
 
     #[test]
     fn as_linked_plugin() {
+        let mut shared_library_filename = PathBuf::from("libcounter_plugin");
+
+        #[cfg(target_os = "macos")]
+        shared_library_filename.set_extension("dylib");
+        #[cfg(target_os = "windows")]
+        shared_library_filename.set_extension("dll");
+        #[cfg(target_os = "linux")]
+        shared_library_filename.set_extension("so");
+
         let plugin_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
             .join("../..")
-            .join("target/debug/libcounter_plugin.dylib");
+            .join("target/debug")
+            .join(shared_library_filename);
 
         let engine = EngineBuilder::default()
             .with_plugins(core_plugins())
