@@ -1,0 +1,26 @@
+# To build the image run:
+# docker build --file Dockerfile.arch --platform linux/amd64 --tag visor-arch .
+
+FROM archlinux:latest
+
+WORKDIR /visor
+
+RUN pacman -Syu --noconfirm --disable-sandbox
+
+RUN pacman -S --noconfirm --disable-sandbox rustup
+RUN pacman -S --noconfirm --disable-sandbox pkgconf gcc glib2 gtk3 alsa-lib
+RUN pacman -S --noconfirm --disable-sandbox python ninja git
+
+COPY ./crates ./crates
+COPY ./examples ./examples
+COPY ./visor_cli ./visor_cli
+COPY ./visor_core ./visor_core
+COPY ./Cargo.toml ./Cargo.toml
+COPY ./Cargo.lock ./Cargo.lock
+COPY ./rust-toolchain.toml ./rust-toolchain.toml
+
+RUN cargo fetch
+
+ENV V8_FROM_SOURCE=1
+ENV V8_TLS_MODEL=initial-exec
+RUN cargo build
