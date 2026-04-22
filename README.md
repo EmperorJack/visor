@@ -54,7 +54,7 @@ The recommended way to run Visor sketches is with the `visor_cli` command line i
 With Rust installed, you can install `visor_cli` using `cargo`:
 
 ```sh
-cargo install visor_cli
+cargo install visor_cli --locked
 ```
 
 Now, to run a sketch:
