@@ -5151,7 +5151,7 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 
 [[package]]
 name = "visor_cli"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "clap",
@@ -5165,7 +5165,7 @@ dependencies = [
 
 [[package]]
 name = "visor_core"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "visor_engine",
  "visor_plugin_draw",
@@ -5178,7 +5178,7 @@ dependencies = [
 
 [[package]]
 name = "visor_engine"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "deno_ast",
@@ -5239,7 +5239,7 @@ dependencies = [
 
 [[package]]
 name = "visor_plugin_draw"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "bevy_math",
  "deno_core",
@@ -5249,7 +5249,7 @@ dependencies = [
 
 [[package]]
 name = "visor_plugin_log"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "deno_core",
  "visor_engine",
@@ -5257,7 +5257,7 @@ dependencies = [
 
 [[package]]
 name = "visor_plugin_math"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "deno_core",
  "visor_engine",
@@ -5266,7 +5266,7 @@ dependencies = [
 
 [[package]]
 name = "visor_plugin_midi"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "deno_core",
@@ -5281,7 +5281,7 @@ dependencies = [
 
 [[package]]
 name = "visor_plugin_state"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "deno_core",
  "visor_engine",
@@ -5289,7 +5289,7 @@ dependencies = [
 
 [[package]]
 name = "visor_plugin_time"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "deno_core",
  "visor_engine",

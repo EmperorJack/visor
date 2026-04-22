@@ -1,6 +1,6 @@
 [package]
 name = "visor_plugin_time"
-version = "0.1.0"
+version = "0.1.1"
 description = "Plugin for time and frame related functions."
 edition.workspace = true
 homepage.workspace = true

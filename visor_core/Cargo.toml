@@ -1,6 +1,6 @@
 [package]
 name = "visor_core"
-version = "0.1.0"
+version = "0.1.1"
 description = "Re-exports visor_engine and all of the core plugins."
 edition.workspace = true
 homepage.workspace = true

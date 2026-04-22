@@ -1,6 +1,6 @@
 [package]
 name = "visor_plugin_log"
-version = "0.1.0"
+version = "0.1.1"
 description = "Plugin for console logging."
 edition.workspace = true
 homepage.workspace = true

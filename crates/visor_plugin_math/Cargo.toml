@@ -1,6 +1,6 @@
 [package]
 name = "visor_plugin_math"
-version = "0.1.0"
+version = "0.1.1"
 description = "Plugin for useful math functions."
 edition.workspace = true
 homepage.workspace = true
