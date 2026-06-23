@@ -7,7 +7,7 @@ Creative code real-time visuals in JavaScript or TypeScript.
 - Designed with the aim to be user-friendly, fast, and extensible.
 - Inspired by [Processing](https://processing.org/), [Nannou](https://nannou.cc/), and other creative coding frameworks.
 - Rust-based engine powered by [Deno Core](https://github.com/denoland/deno_core), a secure, sandboxed JavaScript runtime.
-- Is the core engine for the new version of [Visor VJ](https://www.visor.live/) (unreleased).
+- Is the core engine for the new version of [Visor VJ](https://vj.visorvisuals.com/) (unreleased).
 
 ## Disclaimer ⚠️
 
