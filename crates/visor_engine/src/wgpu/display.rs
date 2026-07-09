@@ -47,10 +47,10 @@ impl WgpuDisplay {
             format: surface_format,
             width,
             height,
-            present_mode: surface_capabilities.present_modes[0],
+            present_mode: nannou::wgpu::PresentMode::Fifo,
             alpha_mode: surface_capabilities.alpha_modes[0],
             view_formats: vec![],
-            desired_maximum_frame_latency: 2,
+            desired_maximum_frame_latency: 1,
         };
 
         surface.configure(&wgpu.device, &surface_config);
