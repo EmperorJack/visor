@@ -262,6 +262,19 @@ impl MidiPlugin {
 
         Ok(midi_mapping.subscribe())
     }
+
+    pub fn config(store: &Store) -> Result<MidiMappingConfig> {
+        let state = store
+            .get::<RwLock<State>>()
+            .read()
+            .expect("Unexpected: could not acquire read lock for state");
+
+        let Some(ref midi_mapping) = state.midi_mapping else {
+            return Err(anyhow!("No MIDI variable mapping loaded"));
+        };
+
+        Ok(midi_mapping.config().clone())
+    }
 }
 
 impl Plugin for MidiPlugin {

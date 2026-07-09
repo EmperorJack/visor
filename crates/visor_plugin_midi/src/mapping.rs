@@ -10,6 +10,7 @@ use crate::{
 };
 
 pub(crate) struct MidiMapping {
+    config: MidiMappingConfig,
     event_sender: Option<broadcast::Sender<(String, MidiMappingEvent)>>,
     variable_name_mapping: MidiVariableNameMapping,
     variables: MidiVariables,
@@ -123,6 +124,10 @@ impl MidiMapping {
         &self.variables
     }
 
+    pub fn config(&self) -> &MidiMappingConfig {
+        &self.config
+    }
+
     pub fn after_sketch_update(&mut self) {
         for encoder in self.variables.encoders.values_mut() {
             encoder.after_sketch_update();
@@ -230,7 +235,7 @@ impl From<MidiMappingConfig> for MidiMapping {
             notes: Default::default(),
         };
 
-        for (name, variable_config) in mapping_config {
+        for (name, variable_config) in mapping_config.clone() {
             match variable_config {
                 MidiVariableConfig::Control {
                     channel,
@@ -275,6 +280,7 @@ impl From<MidiMappingConfig> for MidiMapping {
         }
 
         Self {
+            config: mapping_config,
             event_sender: None,
             variable_name_mapping,
             variables,

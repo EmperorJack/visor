@@ -5,5 +5,6 @@ mod mapping;
 mod midi_plugin;
 mod note;
 
+pub use config::{MidiEncoderMode, MidiMappingConfig, MidiVariableConfig};
 pub use mapping::MidiMappingEvent;
 pub use midi_plugin::MidiPlugin;

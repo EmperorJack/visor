@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
-pub(crate) type MidiMappingConfig = HashMap<String, MidiVariableConfig>;
+pub type MidiMappingConfig = HashMap<String, MidiVariableConfig>;
 
-#[derive(serde::Deserialize)]
+#[derive(Clone, serde::Deserialize)]
 #[serde(tag = "type", rename_all = "camelCase")]
-pub(crate) enum MidiVariableConfig {
+pub enum MidiVariableConfig {
     Control {
         channel: u8,
         number: u8,
@@ -22,7 +22,7 @@ pub(crate) enum MidiVariableConfig {
 }
 
 #[derive(Clone, serde::Deserialize)]
-pub(crate) enum MidiEncoderMode {
+pub enum MidiEncoderMode {
     #[serde(rename = "7Fh/01h")]
     Mode7fh01h,
     #[serde(rename = "3Fh/41h")]
