@@ -3,10 +3,8 @@ use std::path::PathBuf;
 use uuid::Uuid;
 
 use crate::{
-    draw::Draw,
     engine::Engine,
     sketch::{Sketch, SketchId},
-    sketch_store::SketchStore,
 };
 
 pub struct SketchBuilder {
@@ -30,13 +28,8 @@ impl SketchBuilder {
     pub fn build(self, engine: &mut Engine) -> &Sketch {
         let id = self.id.unwrap_or(SketchId(Uuid::new_v4()));
 
-        let draw = Draw::default();
-
         let sketch = Sketch::new(engine.runtime_handle.clone(), id, self.file_path);
 
-        let mut sketch_store = SketchStore::default();
-        sketch_store.set(draw);
-
-        engine.manage_sketch(sketch, sketch_store)
+        engine.manage_sketch(sketch)
     }
 }

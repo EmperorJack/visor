@@ -197,12 +197,7 @@ pub(crate) fn run_sketch(args: RunArgs, plugins: Option<Vec<PathBuf>>) -> Result
                     just_recompiled = false;
                 }
 
-                let sketch_store = engine
-                    .sketch_stores()
-                    .get(&sketch_id)
-                    .expect("Unexpected: could not find sketch store");
-
-                let logs = visor_plugin_log::LogPlugin::get_state(sketch_store);
+                let logs = visor_plugin_log::LogPlugin::get_state(sketch.sketch_store());
 
                 for log in logs {
                     match log.message_type {

@@ -7,6 +7,7 @@ use tokio::{
 use uuid::Uuid;
 
 use crate::{
+    draw::Draw,
     sketch_store::SketchStore,
     sketch_worker::{SketchUpdateResult, SketchWorker, SketchWorkerTask},
     wgpu::render_texture::RenderTextureId,
@@ -21,6 +22,7 @@ pub struct Sketch {
     file_path: PathBuf,
     is_built: bool,
     is_enabled: bool,
+    sketch_store: Option<SketchStore>,
     target_render_texture_id: Option<RenderTextureId>,
     worker_task_sender: mpsc::Sender<SketchWorkerTask>,
     compile_error: Option<String>,
@@ -39,12 +41,18 @@ impl Sketch {
             });
         }
 
+        let draw = Draw::default();
+
+        let mut sketch_store = SketchStore::default();
+        sketch_store.set(draw);
+
         Self {
             runtime_handle,
             id,
             file_path,
             is_built: false,
             is_enabled: true,
+            sketch_store: Some(sketch_store),
             target_render_texture_id: None,
             worker_task_sender,
             compile_error: None,
@@ -58,6 +66,42 @@ impl Sketch {
 
     pub fn file_path(&self) -> &PathBuf {
         &self.file_path
+    }
+
+    pub fn draw(&self) -> &Draw {
+        self.sketch_store
+            .as_ref()
+            .expect("Unexpected: cannot get sketch draw during engine update")
+            .get()
+    }
+
+    pub fn set_draw(&mut self, draw: Draw) {
+        self.sketch_store
+            .as_mut()
+            .expect("Unexpected: cannot set sketch draw during engine update")
+            .set(draw);
+    }
+
+    pub fn sketch_store(&self) -> &SketchStore {
+        self.sketch_store
+            .as_ref()
+            .expect("Unexpected: cannot get sketch store during engine update")
+    }
+
+    pub fn sketch_store_mut(&mut self) -> &mut SketchStore {
+        self.sketch_store
+            .as_mut()
+            .expect("Unexpected: cannot get sketch store during engine update")
+    }
+
+    pub(crate) fn take_store(&mut self) -> SketchStore {
+        self.sketch_store
+            .take()
+            .expect("Unexpected: cannot take sketch store during engine update")
+    }
+
+    pub(crate) fn set_store(&mut self, sketch_store: SketchStore) {
+        self.sketch_store = Some(sketch_store);
     }
 
     pub(crate) fn is_built(&self) -> bool {
