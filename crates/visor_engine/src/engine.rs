@@ -12,6 +12,7 @@ use tokio::{
 };
 
 use crate::{
+    Draw,
     display::{Display, DisplayId},
     display_manager::DisplayManager,
     plugin::{LoadedPlugin, Plugin, load_plugin},
@@ -216,8 +217,6 @@ impl Engine {
             }
         });
 
-        self.sketch_stores = Some(sketch_stores);
-
         let mut encoder = self.wgpu_handle.device.create_command_encoder(
             &nannou::wgpu::CommandEncoderDescriptor {
                 label: Some("Engine texture render encoder"),
@@ -231,9 +230,16 @@ impl Engine {
                     .get_mut(render_texture_id)
                     .expect("Engine error: no render texture found for given id!");
 
-                render_texture.render(&sketch.draw().inner, &mut encoder);
+                let draw = sketch_stores
+                    .get(sketch.id())
+                    .expect("Unexpected: could not find sketch store")
+                    .get::<Draw>();
+
+                render_texture.render(&draw.inner, &mut encoder);
             }
         }
+
+        self.sketch_stores = Some(sketch_stores);
 
         for plugin in Self::plugins() {
             plugin.engine_render(self, &ENGINE_STORE, &mut encoder);

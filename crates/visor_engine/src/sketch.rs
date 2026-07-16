@@ -7,7 +7,6 @@ use tokio::{
 use uuid::Uuid;
 
 use crate::{
-    draw::Draw,
     sketch_store::SketchStore,
     sketch_worker::{SketchUpdateResult, SketchWorker, SketchWorkerTask},
     wgpu::render_texture::RenderTextureId,
@@ -20,7 +19,6 @@ pub struct Sketch {
     runtime_handle: Handle,
     id: SketchId,
     file_path: PathBuf,
-    draw: Draw,
     is_built: bool,
     is_enabled: bool,
     target_render_texture_id: Option<RenderTextureId>,
@@ -30,12 +28,7 @@ pub struct Sketch {
 }
 
 impl Sketch {
-    pub(crate) fn new(
-        runtime_handle: Handle,
-        id: SketchId,
-        file_path: PathBuf,
-        draw: Draw,
-    ) -> Self {
+    pub(crate) fn new(runtime_handle: Handle, id: SketchId, file_path: PathBuf) -> Self {
         let (worker_task_sender, worker_task_receiver) = mpsc::channel::<SketchWorkerTask>(1);
 
         {
@@ -50,7 +43,6 @@ impl Sketch {
             runtime_handle,
             id,
             file_path,
-            draw,
             is_built: false,
             is_enabled: true,
             target_render_texture_id: None,
@@ -66,10 +58,6 @@ impl Sketch {
 
     pub fn file_path(&self) -> &PathBuf {
         &self.file_path
-    }
-
-    pub fn draw(&self) -> &Draw {
-        &self.draw
     }
 
     pub(crate) fn is_built(&self) -> bool {

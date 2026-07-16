@@ -32,12 +32,7 @@ impl SketchBuilder {
 
         let draw = Draw::default();
 
-        let sketch = Sketch::new(
-            engine.runtime_handle.clone(),
-            id,
-            self.file_path,
-            draw.clone(),
-        );
+        let sketch = Sketch::new(engine.runtime_handle.clone(), id, self.file_path);
 
         let mut sketch_store = SketchStore::default();
         sketch_store.set(draw);

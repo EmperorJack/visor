@@ -26,7 +26,6 @@ type DrawMap = HashMap<DrawId, Draw>;
 pub(crate) struct ShapeId(pub(crate) u32);
 
 pub(crate) struct SketchState {
-    draw: Draw,
     draw_map: DrawMap,
     next_draw_id: DrawId,
     pub(crate) next_shape_id: ShapeId,
@@ -43,20 +42,22 @@ pub(crate) struct SketchState {
 
 type SketchSizeState = HashMap<SketchId, [u32; 2]>;
 
-impl SketchState {
-    fn get_draw(&self, id: DrawId) -> &Draw {
-        if id.0 == 0 {
-            return &self.draw;
-        }
-
-        if let Some(draw) = self.draw_map.get(&id) {
-            return draw;
-        }
-
-        // Return base draw if the given draw ID is invalid
-        &self.draw
+fn get_draw(sketch_store: &SketchStore, id: DrawId) -> &Draw {
+    if id.0 == 0 {
+        return sketch_store.get();
     }
 
+    let sketch_state = sketch_store.get::<SketchState>();
+
+    if let Some(draw) = sketch_state.draw_map.get(&id) {
+        return draw;
+    }
+
+    // Return base draw if the given draw ID is invalid
+    sketch_store.get()
+}
+
+impl SketchState {
     fn store_draw(&mut self, draw: Draw) -> DrawId {
         self.next_draw_id.0 += 1;
 
@@ -210,9 +211,9 @@ impl SketchState {
         DrawId(0)
     }
 
-    fn apply_shape_commands(&mut self) {
+    fn apply_shape_commands(&self, sketch_store: &SketchStore) {
         for (draw_id, commands) in self.ellipse_command_map.values() {
-            let draw = self.get_draw(*draw_id);
+            let draw = get_draw(sketch_store, *draw_id);
 
             let mut ellipse = draw.inner.ellipse();
 
@@ -222,7 +223,7 @@ impl SketchState {
         }
 
         for (draw_id, commands) in self.rect_command_map.values() {
-            let draw = self.get_draw(*draw_id);
+            let draw = get_draw(sketch_store, *draw_id);
 
             let mut rect = draw.inner.rect();
 
@@ -232,7 +233,7 @@ impl SketchState {
         }
 
         for (draw_id, commands) in self.quad_command_map.values() {
-            let draw = self.get_draw(*draw_id);
+            let draw = get_draw(sketch_store, *draw_id);
 
             let mut quad = draw.inner.quad();
 
@@ -242,7 +243,7 @@ impl SketchState {
         }
 
         for (draw_id, commands) in self.polygon_command_map.values() {
-            let draw = self.get_draw(*draw_id);
+            let draw = get_draw(sketch_store, *draw_id);
 
             let mut polygon = draw.inner.polygon();
 
@@ -263,7 +264,7 @@ impl SketchState {
         }
 
         for (draw_id, commands) in self.polyline_command_map.values() {
-            let draw = self.get_draw(*draw_id);
+            let draw = get_draw(sketch_store, *draw_id);
 
             let mut polyline = draw.inner.polyline();
 
@@ -284,7 +285,7 @@ impl SketchState {
         }
 
         for (draw_id, commands) in self.spline_command_map.values() {
-            let draw = self.get_draw(*draw_id);
+            let draw = get_draw(sketch_store, *draw_id);
 
             let mut spline = draw.inner.polyline();
 
@@ -318,7 +319,7 @@ impl SketchState {
         }
 
         for (draw_id, commands) in self.path_command_map.values() {
-            let draw = self.get_draw(*draw_id);
+            let draw = get_draw(sketch_store, *draw_id);
 
             let mut path = draw.inner.path().fill();
 
@@ -354,7 +355,9 @@ impl SketchState {
 
             let _path = path.points(points);
         }
+    }
 
+    fn clear_shape_commands(&mut self) {
         self.ellipse_command_map.clear();
         self.rect_command_map.clear();
         self.quad_command_map.clear();
@@ -365,8 +368,6 @@ impl SketchState {
     }
 
     fn reset(&mut self) {
-        self.draw.inner.reset();
-
         self.draw_map.clear();
 
         self.next_draw_id.0 = 0;
@@ -484,19 +485,12 @@ impl Plugin for DrawPlugin {
 
     fn build_sketch(
         &self,
-        sketch_id: &SketchId,
-        engine: &mut Engine,
+        _sketch_id: &SketchId,
+        _engine: &mut Engine,
         _store: &Store,
         sketch_store: &mut SketchStore,
     ) {
-        let draw = engine
-            .sketches()
-            .get(sketch_id)
-            .expect("Unexpected: could not find sketch")
-            .draw();
-
         sketch_store.set(SketchState {
-            draw: draw.clone(),
             draw_map: Default::default(),
             next_draw_id: DrawId(0),
             next_shape_id: ShapeId(0),
@@ -546,6 +540,8 @@ impl Plugin for DrawPlugin {
         store: &Store,
         sketch_store: &mut SketchStore,
     ) {
+        sketch_store.get::<Draw>().inner.reset();
+
         let sketch_state = sketch_store.get_mut::<SketchState>();
 
         sketch_state.reset();
@@ -569,82 +565,75 @@ impl Plugin for DrawPlugin {
         _store: &Store,
         sketch_store: &mut SketchStore,
     ) {
-        let sketch_state = sketch_store.get_mut::<SketchState>();
+        let sketch_state = sketch_store.get::<SketchState>();
+        sketch_state.apply_shape_commands(sketch_store);
 
-        sketch_state.apply_shape_commands();
+        let sketch_state = sketch_store.get_mut::<SketchState>();
+        sketch_state.clear_shape_commands();
     }
 }
 
 #[op2(fast)]
 fn op_draw_background_rgb(state: &OpState, id: u32, r: f32, g: f32, b: f32) {
-    let sketch_state = state.sketch_store().get::<SketchState>();
-
-    let draw = sketch_state.get_draw(DrawId(id));
+    let draw = get_draw(state.sketch_store(), DrawId(id));
 
     draw.inner.background().rgb(r, g, b);
 }
 
 #[op2(fast)]
 fn op_draw_background_hsv(state: &OpState, id: u32, h: f32, s: f32, v: f32) {
-    let sketch_state = state.sketch_store().get::<SketchState>();
-
-    let draw = sketch_state.get_draw(DrawId(id));
+    let draw = get_draw(state.sketch_store(), DrawId(id));
 
     draw.inner.background().hsv(h, s, v);
 }
 
 #[op2(fast)]
 fn op_draw_translate(state: &mut OpState, id: u32, x: f32, y: f32) -> u32 {
-    let sketch_state = state.sketch_store_mut().get_mut::<SketchState>();
-
-    let draw = sketch_state.get_draw(DrawId(id));
+    let draw = get_draw(state.sketch_store(), DrawId(id));
 
     let draw = draw.inner.x_y(x, y);
 
+    let sketch_state = state.sketch_store_mut().get_mut::<SketchState>();
     sketch_state.store_draw(draw.into()).0
 }
 
 #[op2(fast)]
 fn op_draw_rotate(state: &mut OpState, id: u32, radians: f32) -> u32 {
-    let sketch_state = state.sketch_store_mut().get_mut::<SketchState>();
-
-    let draw = sketch_state.get_draw(DrawId(id));
+    let draw = get_draw(state.sketch_store(), DrawId(id));
 
     let draw = draw.inner.rotate(radians);
 
+    let sketch_state = state.sketch_store_mut().get_mut::<SketchState>();
     sketch_state.store_draw(draw.into()).0
 }
 
 #[op2(fast)]
 fn op_draw_scale(state: &mut OpState, id: u32, s: f32) -> u32 {
-    let sketch_state = state.sketch_store_mut().get_mut::<SketchState>();
-
-    let draw = sketch_state.get_draw(DrawId(id));
+    let draw = get_draw(state.sketch_store(), DrawId(id));
 
     let draw = draw.inner.scale(s);
 
+    let sketch_state = state.sketch_store_mut().get_mut::<SketchState>();
     sketch_state.store_draw(draw.into()).0
 }
 
 #[op2(fast)]
 fn op_draw_scale_x(state: &mut OpState, id: u32, s: f32) -> u32 {
-    let sketch_state = state.sketch_store_mut().get_mut::<SketchState>();
-
-    let draw = sketch_state.get_draw(DrawId(id));
+    let draw = get_draw(state.sketch_store(), DrawId(id));
 
     let draw = draw.inner.scale_x(s);
 
+    let sketch_state = state.sketch_store_mut().get_mut::<SketchState>();
     sketch_state.store_draw(draw.into()).0
 }
 
 #[op2(fast)]
 fn op_draw_scale_y(state: &mut OpState, id: u32, s: f32) -> u32 {
-    let sketch_state = state.sketch_store_mut().get_mut::<SketchState>();
-
-    let draw = sketch_state.get_draw(DrawId(id));
+    let draw = get_draw(state.sketch_store(), DrawId(id));
 
     let draw = draw.inner.scale_y(s);
 
+    let sketch_state = state.sketch_store_mut().get_mut::<SketchState>();
     sketch_state.store_draw(draw.into()).0
 }
 
