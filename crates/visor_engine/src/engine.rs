@@ -5,6 +5,7 @@ use std::{
 };
 
 use deno_core::Extension;
+use indexmap::IndexMap;
 use tao::window::WindowId;
 use tokio::{
     runtime::{Handle, Runtime},
@@ -30,8 +31,8 @@ static PLUGINS_CELL: OnceLock<Vec<LoadedPlugin>> = OnceLock::new();
 pub struct Engine {
     _runtime: Option<Runtime>,
     pub(crate) runtime_handle: Handle,
-    sketches: HashMap<SketchId, Sketch>,
-    render_textures: HashMap<RenderTextureId, RenderTexture>,
+    sketches: IndexMap<SketchId, Sketch>,
+    render_textures: IndexMap<RenderTextureId, RenderTexture>,
     display_manager: DisplayManager,
     wgpu_handle: Arc<WgpuHandle>,
 }
@@ -270,16 +271,16 @@ impl Engine {
             });
     }
 
-    pub fn sketches(&self) -> &HashMap<SketchId, Sketch> {
+    pub fn sketches(&self) -> &IndexMap<SketchId, Sketch> {
         &self.sketches
     }
 
-    pub fn sketches_mut(&mut self) -> &mut HashMap<SketchId, Sketch> {
+    pub fn sketches_mut(&mut self) -> &mut IndexMap<SketchId, Sketch> {
         &mut self.sketches
     }
 
     pub fn remove_sketch(&mut self, id: &SketchId) {
-        self.sketches.remove(id);
+        self.sketches.shift_remove(id);
     }
 
     pub(crate) fn manage_render_texture(
@@ -291,16 +292,16 @@ impl Engine {
         self.render_textures.entry(id).or_insert(render_texture)
     }
 
-    pub fn render_textures(&self) -> &HashMap<RenderTextureId, RenderTexture> {
+    pub fn render_textures(&self) -> &IndexMap<RenderTextureId, RenderTexture> {
         &self.render_textures
     }
 
-    pub fn render_textures_mut(&mut self) -> &mut HashMap<RenderTextureId, RenderTexture> {
+    pub fn render_textures_mut(&mut self) -> &mut IndexMap<RenderTextureId, RenderTexture> {
         &mut self.render_textures
     }
 
     pub fn remove_render_texture(&mut self, id: &RenderTextureId) {
-        self.render_textures.remove(id);
+        self.render_textures.shift_remove(id);
     }
 
     pub fn manage_display(&mut self, display: Display) -> &Display {
