@@ -5242,8 +5242,11 @@ dependencies = [
 name = "visor_plugin_draw"
 version = "0.1.1"
 dependencies = [
+ "anyhow",
  "bevy_math",
  "deno_core",
+ "deno_error",
+ "tokio",
  "visor_engine",
  "visor_nannou",
 ]

@@ -5,6 +5,7 @@ import { Polygon } from "./polygon.ts";
 import { Polyline } from "./polyline.ts";
 import { Quad } from "./quad.ts";
 import { Rect } from "./rect.ts";
+import { FullscreenShader } from "./fullscreen-shader.ts";
 import { Spline } from "./spline.ts";
 
 const {
@@ -17,6 +18,7 @@ const {
   op_draw_polyline,
   op_draw_spline,
   op_draw_path,
+  op_draw_fullscreen_shader,
   op_draw_translate,
   op_draw_rotate,
   op_draw_scale,
@@ -79,6 +81,11 @@ export class Draw {
   path() {
     const shapeId = op_draw_path(this.#id);
     return new Path(shapeId);
+  }
+
+  // Shaders
+  fullscreenShader(shader: FullscreenShader) {
+    op_draw_fullscreen_shader(this.#id, shader.id());
   }
 
   // Transforms

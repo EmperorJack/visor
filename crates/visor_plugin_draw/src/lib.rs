@@ -1,5 +1,6 @@
 mod draw_plugin;
 mod ellipse;
+mod fullscreen_shader;
 mod path;
 mod polygon;
 mod polyline;

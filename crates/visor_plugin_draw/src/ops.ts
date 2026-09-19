@@ -109,6 +109,7 @@ declare namespace Deno {
       op_draw_path_fill_hsva: ShapeHSVACommand;
       op_draw_path_tension: ShapeTensionCommand;
       op_draw_path_resolution: ShapeResolutionCommand;
+      op_draw_fullscreen_shader: (id: number, shaderId: number) => void;
       op_draw_translate: (id: number, x: number, y: number) => number;
       op_draw_rotate: (id: number, radians: number) => number;
       op_draw_scale: (id: number, s: number) => number;
@@ -117,6 +118,7 @@ declare namespace Deno {
       op_draw_noise: (x: number, y: number, z: number) => number;
       op_draw_width: () => number;
       op_draw_height: () => number;
+      op_draw_fullscreen_shader_load: (path: string) => number;
     };
   };
 }

@@ -12,6 +12,8 @@ interface Draw {
   spline(): Spline;
   path(): Path;
 
+  fullscreenShader(shader: FullscreenShader): void;
+
   translate(x: number, y: number): Draw;
   rotate(radians: number): Draw;
   scale(s: number): Draw;
@@ -126,3 +128,8 @@ declare function hsva(h: number, s: number, v: number, a: number): Color;
 
 declare function width(): number;
 declare function height(): number;
+
+// deno-lint-ignore no-empty-interface
+interface FullscreenShader {}
+
+declare function loadFullscreenShader(path: string): FullscreenShader;

@@ -1,14 +1,21 @@
-use std::{collections::HashMap, sync::RwLock};
+use std::{
+    collections::HashMap,
+    hash::{Hash, Hasher},
+    sync::RwLock,
+};
 
+use anyhow::{Result, anyhow};
 use bevy_math::{
     Vec2,
     cubic_splines::{CubicCardinalSpline, CubicGenerator},
 };
 use deno_core::{Extension, OpState, extension, op2};
 use nannou::draw::Drawing;
+use tokio::sync::mpsc;
 use visor_engine::{AccessSketchStore, Draw, Engine, Plugin, SketchId, SketchStore, Store};
 
 use crate::ellipse::*;
+use crate::fullscreen_shader::*;
 use crate::path::*;
 use crate::polygon::*;
 use crate::polyline::*;
@@ -25,6 +32,19 @@ type DrawMap = HashMap<DrawId, Draw>;
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub(crate) struct ShapeId(pub(crate) u32);
 
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+pub(crate) struct FullscreenShaderId(pub(crate) u32);
+
+impl FullscreenShaderId {
+    fn new(path: &str) -> Self {
+        let mut hasher = std::hash::DefaultHasher::new();
+
+        path.hash(&mut hasher);
+
+        FullscreenShaderId(hasher.finish() as u32)
+    }
+}
+
 pub(crate) struct SketchState {
     draw_map: DrawMap,
     next_draw_id: DrawId,
@@ -36,8 +56,12 @@ pub(crate) struct SketchState {
     pub(crate) polyline_command_map: PolylineCommandMap,
     pub(crate) spline_command_map: SplineCommandMap,
     pub(crate) path_command_map: PathCommandMap,
+    pub(crate) fullscreen_shader_command_map: FullscreenShaderCommandMap,
     width: u32,
     height: u32,
+    fullscreen_shader_map: HashMap<FullscreenShaderId, FullscreenShader>,
+    pub(crate) fullscreen_shader_event_sender: mpsc::Sender<FullscreenShaderEvent>,
+    fullscreen_shader_event_receiver: mpsc::Receiver<FullscreenShaderEvent>,
 }
 
 type SketchSizeState = HashMap<SketchId, [u32; 2]>;
@@ -199,6 +223,17 @@ impl SketchState {
             .push(command);
     }
 
+    pub(crate) fn start_drawing_shader(&mut self, draw_id: DrawId, shader_id: FullscreenShaderId) {
+        let draw_id = self.clamp_draw_id(draw_id);
+
+        self.fullscreen_shader_command_map
+            .insert(self.next_shape_id, (draw_id, shader_id));
+
+        if let Some(shader) = self.fullscreen_shader_map.get_mut(&shader_id) {
+            shader.is_being_drawn = true;
+        }
+    }
+
     pub(crate) fn clamp_draw_id(&self, id: DrawId) -> DrawId {
         if id.0 == 0 {
             return id;
@@ -212,6 +247,19 @@ impl SketchState {
     }
 
     fn apply_shape_commands(&self, sketch_store: &SketchStore) {
+        for (draw_id, shader_id) in self.fullscreen_shader_command_map.values() {
+            let draw = get_draw(sketch_store, *draw_id);
+
+            let shader = self.fullscreen_shader_map.get(shader_id);
+
+            if let Some(shader) = shader {
+                draw.inner
+                    .texture(&shader.texture_view)
+                    .width(self.width as f32)
+                    .height(self.height as f32);
+            }
+        }
+
         for (draw_id, commands) in self.ellipse_command_map.values() {
             let draw = get_draw(sketch_store, *draw_id);
 
@@ -365,6 +413,7 @@ impl SketchState {
         self.polyline_command_map.clear();
         self.spline_command_map.clear();
         self.path_command_map.clear();
+        self.fullscreen_shader_command_map.clear();
     }
 
     fn reset(&mut self) {
@@ -372,6 +421,28 @@ impl SketchState {
 
         self.next_draw_id.0 = 0;
         self.next_shape_id.0 = 0;
+
+        for shader in self.fullscreen_shader_map.values_mut() {
+            shader.is_being_drawn = false;
+        }
+    }
+
+    pub(crate) fn load_fullscreen_shader(&mut self, path: String) -> Result<FullscreenShaderId> {
+        let shader_id = FullscreenShaderId::new(&path);
+
+        let source = std::fs::read_to_string(&path)
+            .map_err(|_| anyhow!("Could not load shader at path {}", path))?;
+
+        self.fullscreen_shader_event_sender
+            .try_send(FullscreenShaderEvent::Load {
+                id: shader_id,
+                source,
+                width: self.width,
+                height: self.height,
+            })
+            .expect("Unexpected: could not send shader event");
+
+        Ok(shader_id)
     }
 }
 
@@ -446,6 +517,7 @@ extension!(
         op_draw_path_fill_hsva,
         op_draw_path_tension,
         op_draw_path_resolution,
+        op_draw_fullscreen_shader,
         op_draw_translate,
         op_draw_rotate,
         op_draw_scale,
@@ -453,12 +525,14 @@ extension!(
         op_draw_scale_y,
         op_draw_width,
         op_draw_height,
+        op_draw_fullscreen_shader_load,
     ],
     esm_entry_point = "ext:visor_plugin_draw/src/draw-plugin.ts",
     esm = [
         "src/color.ts",
         "src/draw.ts",
         "src/ellipse.ts",
+        "src/fullscreen-shader.ts",
         "src/ops.ts",
         "src/path.ts",
         "src/polygon.ts",
@@ -490,6 +564,8 @@ impl Plugin for DrawPlugin {
         _store: &Store,
         sketch_store: &mut SketchStore,
     ) {
+        let (shader_event_sender, shader_event_receiver) = mpsc::channel::<_>(64);
+
         sketch_store.set(SketchState {
             draw_map: Default::default(),
             next_draw_id: DrawId(0),
@@ -501,8 +577,12 @@ impl Plugin for DrawPlugin {
             polyline_command_map: Default::default(),
             spline_command_map: Default::default(),
             path_command_map: Default::default(),
+            fullscreen_shader_command_map: Default::default(),
             width: 0,
             height: 0,
+            fullscreen_shader_map: Default::default(),
+            fullscreen_shader_event_sender: shader_event_sender,
+            fullscreen_shader_event_receiver: shader_event_receiver,
         });
     }
 
@@ -512,12 +592,10 @@ impl Plugin for DrawPlugin {
             .write()
             .expect("Unexpected: could not acquire write lock for sketch size state");
 
-        for sketch_id in engine.sketches().keys() {
-            let render_texture_id = engine
-                .sketches()
-                .get(sketch_id)
-                .expect("Unexpected: could not find sketch")
-                .get_target_render_texture_id();
+        let mut resized_sketches: HashMap<SketchId, [u32; 2]> = HashMap::new();
+
+        for (sketch_id, sketch) in engine.sketches().iter() {
+            let render_texture_id = sketch.get_target_render_texture_id();
 
             let render_texture = render_texture_id.map(|id| {
                 engine
@@ -530,7 +608,25 @@ impl Plugin for DrawPlugin {
                 .map(|render_texture| render_texture.texture_view().size())
                 .unwrap_or([0, 0]);
 
+            if let Some(current_size) = sketch_size_state.get(sketch_id) {
+                if *current_size != size {
+                    resized_sketches.insert(*sketch_id, size);
+                }
+            }
+
             sketch_size_state.insert(*sketch_id, size);
+        }
+
+        for (sketch_id, [width, height]) in resized_sketches {
+            engine
+                .sketches_mut()
+                .get_mut(&sketch_id)
+                .expect("Unexpected: could not find sketch")
+                .sketch_store_mut()
+                .get_mut::<SketchState>()
+                .fullscreen_shader_map
+                .values_mut()
+                .for_each(|shader| shader.resize(width, height));
         }
     }
 
@@ -570,6 +666,70 @@ impl Plugin for DrawPlugin {
 
         let sketch_state = sketch_store.get_mut::<SketchState>();
         sketch_state.clear_shape_commands();
+    }
+
+    fn before_engine_render(
+        &self,
+        engine: &mut Engine,
+        _store: &Store,
+        encoder: &mut nannou::wgpu::CommandEncoder,
+    ) {
+        // Fetch shader events
+        // TODO: this can be collapsed after wgpu_handle is passed as parameter to plugin callbacks
+        let mut shader_events: HashMap<SketchId, Vec<FullscreenShaderEvent>> = HashMap::new();
+
+        for sketch in engine.sketches_mut().values_mut() {
+            let sketch_state = sketch.sketch_store_mut().get_mut::<SketchState>();
+
+            if sketch_state.fullscreen_shader_event_receiver.is_empty() {
+                continue;
+            }
+
+            let mut events = Vec::new();
+            while let Ok(event) = sketch_state.fullscreen_shader_event_receiver.try_recv() {
+                events.push(event);
+            }
+
+            shader_events.insert(*sketch.id(), events);
+        }
+
+        // Process shader events
+        for (sketch_id, events) in shader_events {
+            for event in events {
+                match event {
+                    FullscreenShaderEvent::Load {
+                        id,
+                        source,
+                        width,
+                        height,
+                    } => {
+                        let shader = FullscreenShader::new(source, engine, width, height);
+
+                        engine
+                            .sketches_mut()
+                            .get_mut(&sketch_id)
+                            .expect("Unexpected: could not find sketch")
+                            .sketch_store_mut()
+                            .get_mut::<SketchState>()
+                            .fullscreen_shader_map
+                            .insert(id, shader);
+                    }
+                }
+            }
+        }
+
+        // Render shaders
+        for sketch in engine.sketches_mut().values_mut() {
+            let sketch_state = sketch.sketch_store_mut().get_mut::<SketchState>();
+
+            for shader in sketch_state.fullscreen_shader_map.values_mut() {
+                if !shader.is_being_drawn {
+                    continue;
+                }
+
+                shader.render(encoder);
+            }
+        }
     }
 }
 

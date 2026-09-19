@@ -9,7 +9,10 @@ repository.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+anyhow.workspace = true
 bevy_math = "0.14.2"
 deno_core.workspace = true
+deno_error.workspace = true
+tokio = { workspace = true, features = ["sync"] }
 nannou.workspace = true
 visor_engine.workspace = true
