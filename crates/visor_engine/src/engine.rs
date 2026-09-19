@@ -217,6 +217,10 @@ impl Engine {
             },
         );
 
+        for plugin in Self::plugins() {
+            plugin.before_engine_render(self, &ENGINE_STORE, &mut encoder);
+        }
+
         for sketch in self.sketches.values().filter(|sketch| sketch.is_enabled()) {
             if let Some(render_texture_id) = sketch.get_target_render_texture_id() {
                 let render_texture = self
@@ -229,7 +233,7 @@ impl Engine {
         }
 
         for plugin in Self::plugins() {
-            plugin.engine_render(self, &ENGINE_STORE, &mut encoder);
+            plugin.after_engine_render(self, &ENGINE_STORE, &mut encoder);
         }
 
         self.wgpu_handle.queue.submit(Some(encoder.finish()));

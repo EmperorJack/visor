@@ -40,7 +40,15 @@ pub trait Plugin: Send + Sync {
     ) {
     }
 
-    fn engine_render(
+    fn before_engine_render(
+        &self,
+        _engine: &mut Engine,
+        _store: &Store,
+        _encoder: &mut nannou::wgpu::CommandEncoder,
+    ) {
+    }
+
+    fn after_engine_render(
         &self,
         _engine: &mut Engine,
         _store: &Store,
