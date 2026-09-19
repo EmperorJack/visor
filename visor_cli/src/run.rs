@@ -164,6 +164,15 @@ pub(crate) fn run_sketch(args: RunArgs, plugins: Option<Vec<PathBuf>>) -> Result
                 WindowEvent::Resized(size) => {
                     let display_id = *engine.display_id_for_window_id(&window_id);
 
+                    let render_texture = engine
+                        .render_textures_mut()
+                        .get_mut(&render_texture_id)
+                        .expect("Unexpected: could not find render texture");
+
+                    render_texture.resize(size.width, size.height);
+
+                    let render_texture_view = render_texture.texture_view().clone();
+
                     let display = engine
                         .displays_mut()
                         .get_mut(&display_id)
@@ -175,6 +184,8 @@ pub(crate) fn run_sketch(args: RunArgs, plugins: Option<Vec<PathBuf>>) -> Result
                         });
 
                     display.resize_surface(size);
+
+                    display.set_source_texture(Some(&render_texture_view));
                 }
                 _ => {}
             },
