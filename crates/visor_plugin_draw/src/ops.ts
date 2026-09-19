@@ -119,6 +119,11 @@ declare namespace Deno {
       op_draw_width: () => number;
       op_draw_height: () => number;
       op_draw_fullscreen_shader_load: (path: string) => number;
+      op_draw_fullscreen_shader_set_uniform: (
+        shaderId: number,
+        key: string,
+        value: number,
+      ) => void;
     };
   };
 }

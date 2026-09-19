@@ -129,7 +129,8 @@ declare function hsva(h: number, s: number, v: number, a: number): Color;
 declare function width(): number;
 declare function height(): number;
 
-// deno-lint-ignore no-empty-interface
-interface FullscreenShader {}
+interface FullscreenShader {
+  setUniform(name: string, value: number): void;
+}
 
 declare function loadFullscreenShader(path: string): FullscreenShader;

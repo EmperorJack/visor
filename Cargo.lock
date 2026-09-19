@@ -5246,6 +5246,7 @@ dependencies = [
  "bevy_math",
  "deno_core",
  "deno_error",
+ "naga",
  "tokio",
  "visor_engine",
  "visor_nannou",
