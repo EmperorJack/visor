@@ -141,33 +141,7 @@ impl Engine {
     }
 
     pub fn update(&mut self) {
-        let unbuilt_sketch_ids: Vec<SketchId> = self
-            .sketches
-            .values()
-            .filter(|sketch| !sketch.is_built())
-            .map(|sketch| *sketch.id())
-            .collect();
-
-        if !unbuilt_sketch_ids.is_empty() {
-            let mut sketch_stores = self.take_sketch_stores();
-
-            for sketch_id in unbuilt_sketch_ids {
-                let store = sketch_stores
-                    .get_mut(&sketch_id)
-                    .expect("Unexpected: could not find sketch store");
-
-                for plugin in Self::plugins() {
-                    plugin.build_sketch(&sketch_id, self, &ENGINE_STORE, store);
-                }
-
-                self.sketches
-                    .get_mut(&sketch_id)
-                    .expect("Unexpected: could not find sketch")
-                    .mark_built();
-            }
-
-            self.set_sketch_stores(sketch_stores);
-        }
+        self.ensure_sketches_built();
 
         for plugin in Self::plugins() {
             plugin.before_engine_update(self, &ENGINE_STORE);
@@ -217,6 +191,8 @@ impl Engine {
             },
         );
 
+        self.ensure_sketches_built();
+
         for plugin in Self::plugins() {
             plugin.before_engine_render(self, &ENGINE_STORE, &mut encoder);
         }
@@ -232,6 +208,8 @@ impl Engine {
             }
         }
 
+        self.ensure_sketches_built();
+
         for plugin in Self::plugins() {
             plugin.after_engine_render(self, &ENGINE_STORE, &mut encoder);
         }
@@ -240,9 +218,45 @@ impl Engine {
 
         self.display_manager.render();
 
+        self.ensure_sketches_built();
+
         for plugin in Self::plugins() {
             plugin.after_engine_update(self, &ENGINE_STORE);
         }
+    }
+
+    // TODO: this is now run quite a bit, can we do it more efficiently?
+    // Otherwise, can we build sketches when they are managed instead?
+    fn ensure_sketches_built(&mut self) {
+        let unbuilt_sketch_ids: Vec<SketchId> = self
+            .sketches
+            .values()
+            .filter(|sketch| !sketch.is_built())
+            .map(|sketch| *sketch.id())
+            .collect();
+
+        if unbuilt_sketch_ids.is_empty() {
+            return;
+        }
+
+        let mut sketch_stores = self.take_sketch_stores();
+
+        for sketch_id in unbuilt_sketch_ids {
+            let store = sketch_stores
+                .get_mut(&sketch_id)
+                .expect("Unexpected: could not find sketch store");
+
+            for plugin in Self::plugins() {
+                plugin.build_sketch(&sketch_id, self, &ENGINE_STORE, store);
+            }
+
+            self.sketches
+                .get_mut(&sketch_id)
+                .expect("Unexpected: could not find sketch")
+                .mark_built();
+        }
+
+        self.set_sketch_stores(sketch_stores);
     }
 
     pub(crate) fn manage_sketch(&mut self, sketch: Sketch) -> &Sketch {
