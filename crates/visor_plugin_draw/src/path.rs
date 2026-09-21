@@ -7,7 +7,7 @@ use nannou::{
 };
 use visor_engine::AccessSketchStore;
 
-use crate::draw_plugin::{DrawId, ShapeCommand, ShapeId, SketchState};
+use crate::draw_plugin::{DrawId, ShapeCommand, ShapeId, ShapeType, SketchState};
 
 pub(crate) type PathCommandMap = HashMap<ShapeId, (DrawId, Vec<PathCommand>)>;
 
@@ -32,6 +32,29 @@ impl ShapeCommand<PathFill> for PathCommand {
             Self::Tension { .. } => panic!("Unexpected: cannot apply spline tension command"),
             Self::Resolution { .. } => panic!("Unexpected: cannot apply spline resolution command"),
         }
+    }
+}
+
+impl SketchState {
+    pub(crate) fn start_drawing_path(&mut self, draw_id: DrawId) -> ShapeId {
+        self.next_shape_id.0 += 1;
+
+        let draw_id = self.clamp_draw_id(draw_id);
+
+        self.path_command_map
+            .insert(self.next_shape_id, (draw_id, Vec::new()));
+
+        self.shape_order.push((self.next_shape_id, ShapeType::Path));
+
+        self.next_shape_id
+    }
+
+    pub(crate) fn store_path_command(&mut self, id: ShapeId, command: PathCommand) {
+        self.path_command_map
+            .get_mut(&id)
+            .expect("Unexpected: could not find shape commands for given id")
+            .1
+            .push(command);
     }
 }
 

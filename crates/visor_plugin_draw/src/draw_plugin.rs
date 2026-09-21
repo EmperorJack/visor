@@ -1,10 +1,5 @@
-use std::{
-    collections::HashMap,
-    hash::{Hash, Hasher},
-    sync::RwLock,
-};
+use std::{collections::HashMap, hash::Hash, sync::RwLock};
 
-use anyhow::{Result, anyhow};
 use bevy_math::{
     Vec2,
     cubic_splines::{CubicCardinalSpline, CubicGenerator},
@@ -32,24 +27,11 @@ type DrawMap = HashMap<DrawId, Draw>;
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub(crate) struct ShapeId(pub(crate) u32);
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
-pub(crate) struct FullscreenShaderId(pub(crate) u32);
-
-impl FullscreenShaderId {
-    fn new(path: &str) -> Self {
-        let mut hasher = std::hash::DefaultHasher::new();
-
-        path.hash(&mut hasher);
-
-        FullscreenShaderId(hasher.finish() as u32)
-    }
-}
-
 pub(crate) struct SketchState {
     draw_map: DrawMap,
     next_draw_id: DrawId,
     pub(crate) next_shape_id: ShapeId,
-    shape_order: Vec<(ShapeId, ShapeType)>,
+    pub(crate) shape_order: Vec<(ShapeId, ShapeType)>,
     pub(crate) ellipse_command_map: EllipseCommandMap,
     pub(crate) rect_command_map: RectCommandMap,
     pub(crate) quad_command_map: QuadCommandMap,
@@ -58,14 +40,14 @@ pub(crate) struct SketchState {
     pub(crate) spline_command_map: SplineCommandMap,
     pub(crate) path_command_map: PathCommandMap,
     pub(crate) fullscreen_shader_command_map: FullscreenShaderCommandMap,
-    width: u32,
-    height: u32,
-    fullscreen_shader_map: HashMap<FullscreenShaderId, FullscreenShader>,
+    pub(crate) width: u32,
+    pub(crate) height: u32,
+    pub(crate) fullscreen_shader_map: HashMap<FullscreenShaderId, FullscreenShader>,
     pub(crate) fullscreen_shader_event_sender: mpsc::Sender<FullscreenShaderEvent>,
     fullscreen_shader_event_receiver: mpsc::Receiver<FullscreenShaderEvent>,
 }
 
-enum ShapeType {
+pub(crate) enum ShapeType {
     Ellipse,
     Rect,
     Quad,
@@ -102,179 +84,6 @@ impl SketchState {
         self.next_draw_id
     }
 
-    pub(crate) fn start_drawing_ellipse(&mut self, draw_id: DrawId) -> ShapeId {
-        self.next_shape_id.0 += 1;
-
-        let draw_id = self.clamp_draw_id(draw_id);
-
-        self.ellipse_command_map
-            .insert(self.next_shape_id, (draw_id, Vec::new()));
-
-        self.shape_order
-            .push((self.next_shape_id, ShapeType::Ellipse));
-
-        self.next_shape_id
-    }
-
-    pub(crate) fn store_ellipse_command(&mut self, id: ShapeId, command: EllipseCommand) {
-        self.ellipse_command_map
-            .get_mut(&id)
-            .expect("Unexpected: could not find shape commands for given id")
-            .1
-            .push(command);
-    }
-
-    pub(crate) fn start_drawing_rect(&mut self, draw_id: DrawId) -> ShapeId {
-        self.next_shape_id.0 += 1;
-
-        let draw_id = self.clamp_draw_id(draw_id);
-
-        self.rect_command_map
-            .insert(self.next_shape_id, (draw_id, Vec::new()));
-
-        self.shape_order.push((self.next_shape_id, ShapeType::Rect));
-
-        self.next_shape_id
-    }
-
-    pub(crate) fn store_rect_command(&mut self, id: ShapeId, command: RectCommand) {
-        self.rect_command_map
-            .get_mut(&id)
-            .expect("Unexpected: could not find shape commands for given id")
-            .1
-            .push(command);
-    }
-
-    pub(crate) fn start_drawing_quad(&mut self, draw_id: DrawId) -> ShapeId {
-        self.next_shape_id.0 += 1;
-
-        let draw_id = self.clamp_draw_id(draw_id);
-
-        self.quad_command_map
-            .insert(self.next_shape_id, (draw_id, Vec::new()));
-
-        self.shape_order.push((self.next_shape_id, ShapeType::Quad));
-
-        self.next_shape_id
-    }
-
-    pub(crate) fn store_quad_command(&mut self, id: ShapeId, command: QuadCommand) {
-        self.quad_command_map
-            .get_mut(&id)
-            .expect("Unexpected: could not find shape commands for given id")
-            .1
-            .push(command);
-    }
-
-    pub(crate) fn start_drawing_polygon(&mut self, draw_id: DrawId) -> ShapeId {
-        self.next_shape_id.0 += 1;
-
-        let draw_id = self.clamp_draw_id(draw_id);
-
-        self.polygon_command_map
-            .insert(self.next_shape_id, (draw_id, Vec::new()));
-
-        self.shape_order
-            .push((self.next_shape_id, ShapeType::Polygon));
-
-        self.next_shape_id
-    }
-
-    pub(crate) fn store_polygon_command(&mut self, id: ShapeId, command: PolygonCommand) {
-        self.polygon_command_map
-            .get_mut(&id)
-            .expect("Unexpected: could not find shape commands for given id")
-            .1
-            .push(command);
-    }
-
-    pub(crate) fn start_drawing_polyline(&mut self, draw_id: DrawId) -> ShapeId {
-        self.next_shape_id.0 += 1;
-
-        let draw_id = self.clamp_draw_id(draw_id);
-
-        self.polyline_command_map
-            .insert(self.next_shape_id, (draw_id, Vec::new()));
-
-        self.shape_order
-            .push((self.next_shape_id, ShapeType::Polyline));
-
-        self.next_shape_id
-    }
-
-    pub(crate) fn store_polyline_command(&mut self, id: ShapeId, command: PolylineCommand) {
-        self.polyline_command_map
-            .get_mut(&id)
-            .expect("Unexpected: could not find shape commands for given id")
-            .1
-            .push(command);
-    }
-
-    pub(crate) fn start_drawing_spline(&mut self, draw_id: DrawId) -> ShapeId {
-        self.next_shape_id.0 += 1;
-
-        let draw_id = self.clamp_draw_id(draw_id);
-
-        self.spline_command_map
-            .insert(self.next_shape_id, (draw_id, Vec::new()));
-
-        self.shape_order
-            .push((self.next_shape_id, ShapeType::Spline));
-
-        self.next_shape_id
-    }
-
-    pub(crate) fn store_spline_command(&mut self, id: ShapeId, command: SplineCommand) {
-        self.spline_command_map
-            .get_mut(&id)
-            .expect("Unexpected: could not find shape commands for given id")
-            .1
-            .push(command);
-    }
-
-    pub(crate) fn start_drawing_path(&mut self, draw_id: DrawId) -> ShapeId {
-        self.next_shape_id.0 += 1;
-
-        let draw_id = self.clamp_draw_id(draw_id);
-
-        self.path_command_map
-            .insert(self.next_shape_id, (draw_id, Vec::new()));
-
-        self.shape_order.push((self.next_shape_id, ShapeType::Path));
-
-        self.next_shape_id
-    }
-
-    pub(crate) fn store_path_command(&mut self, id: ShapeId, command: PathCommand) {
-        self.path_command_map
-            .get_mut(&id)
-            .expect("Unexpected: could not find shape commands for given id")
-            .1
-            .push(command);
-    }
-
-    pub(crate) fn start_drawing_fullscreen_shader(
-        &mut self,
-        draw_id: DrawId,
-        shader_id: FullscreenShaderId,
-    ) {
-        let draw_id = self.clamp_draw_id(draw_id);
-
-        self.fullscreen_shader_command_map
-            .insert(self.next_shape_id, (draw_id, shader_id));
-
-        if let FullscreenShader::Loaded(shader) = self
-            .fullscreen_shader_map
-            .get_mut(&shader_id)
-            .expect("Unexpected: could not find fullscreen shader for given id")
-        {
-            shader.is_being_drawn = true;
-        }
-
-        self.shape_order
-            .push((self.next_shape_id, ShapeType::FullscreenShader));
-    }
-
     pub(crate) fn clamp_draw_id(&self, id: DrawId) -> DrawId {
         if id.0 == 0 {
             return id;
@@ -289,6 +98,7 @@ impl SketchState {
 
     fn apply_shape_commands(&self, sketch_store: &SketchStore) {
         for (shape_id, shape_type) in self.shape_order.iter() {
+            // TODO: move these to respective files and implement as trait
             match shape_type {
                 ShapeType::Ellipse => {
                     let (draw_id, commands) = self
@@ -501,52 +311,6 @@ impl SketchState {
                 shader.is_being_drawn = false;
             }
         }
-    }
-
-    pub(crate) fn load_fullscreen_shader(&mut self, path: String) -> Result<FullscreenShaderId> {
-        let shader_id = FullscreenShaderId::new(&path);
-
-        let source = std::fs::read_to_string(&path)
-            .map_err(|_| anyhow!("Could not load shader at path {}", path))?;
-
-        naga::front::wgsl::parse_str(&source).map_err(|error| {
-            anyhow!(
-                "Could not load shader due to invalid WGSL syntax: {}",
-                error.to_string()
-            )
-        })?;
-
-        self.fullscreen_shader_map
-            .insert(shader_id, FullscreenShader::Unloaded);
-
-        self.fullscreen_shader_event_sender
-            .try_send(FullscreenShaderEvent::Load {
-                id: shader_id,
-                source,
-                width: self.width,
-                height: self.height,
-            })
-            .expect("Unexpected: could not send shader event");
-
-        Ok(shader_id)
-    }
-
-    pub(crate) fn set_fullscreen_shader_uniform(
-        &mut self,
-        id: FullscreenShaderId,
-        key: String,
-        value: f32,
-    ) -> Result<()> {
-        // TODO: assign uniform value to unloaded shader anyway so it can be applied immediately after loaded
-        if let FullscreenShader::Loaded(shader) = self
-            .fullscreen_shader_map
-            .get_mut(&id)
-            .expect("Unexpected: could not find shader for given id")
-        {
-            shader.set_uniform(&key, value)?;
-        }
-
-        Ok(())
     }
 }
 

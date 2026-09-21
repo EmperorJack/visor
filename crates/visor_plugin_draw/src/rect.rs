@@ -7,7 +7,7 @@ use nannou::{
 };
 use visor_engine::AccessSketchStore;
 
-use crate::draw_plugin::{DrawId, ShapeCommand, ShapeId, SketchState};
+use crate::draw_plugin::{DrawId, ShapeCommand, ShapeId, ShapeType, SketchState};
 
 pub(crate) type RectCommandMap = HashMap<ShapeId, (DrawId, Vec<RectCommand>)>;
 
@@ -36,6 +36,29 @@ impl ShapeCommand<Rect> for RectCommand {
             Self::StrokeHsva { h, s, v, a } => drawing.stroke(color::hsva(h, s, v, a)),
             Self::StrokeWeight { w } => drawing.stroke_weight(w),
         }
+    }
+}
+
+impl SketchState {
+    pub(crate) fn start_drawing_rect(&mut self, draw_id: DrawId) -> ShapeId {
+        self.next_shape_id.0 += 1;
+
+        let draw_id = self.clamp_draw_id(draw_id);
+
+        self.rect_command_map
+            .insert(self.next_shape_id, (draw_id, Vec::new()));
+
+        self.shape_order.push((self.next_shape_id, ShapeType::Rect));
+
+        self.next_shape_id
+    }
+
+    pub(crate) fn store_rect_command(&mut self, id: ShapeId, command: RectCommand) {
+        self.rect_command_map
+            .get_mut(&id)
+            .expect("Unexpected: could not find shape commands for given id")
+            .1
+            .push(command);
     }
 }
 

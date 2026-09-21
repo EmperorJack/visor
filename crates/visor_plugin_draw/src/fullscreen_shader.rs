@@ -1,11 +1,28 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    collections::HashMap,
+    hash::{Hash, Hasher},
+    sync::Arc,
+};
 
 use anyhow::{Result, anyhow};
 use deno_core::{OpState, op2};
 use deno_error::JsErrorBox;
 use visor_engine::{AccessSketchStore, Engine, WgpuHandle};
 
-use crate::draw_plugin::{DrawId, FullscreenShaderId, ShapeId, SketchState};
+use crate::draw_plugin::{DrawId, ShapeId, ShapeType, SketchState};
+
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+pub(crate) struct FullscreenShaderId(pub(crate) u32);
+
+impl FullscreenShaderId {
+    fn new(path: &str) -> Self {
+        let mut hasher = std::hash::DefaultHasher::new();
+
+        path.hash(&mut hasher);
+
+        FullscreenShaderId(hasher.finish() as u32)
+    }
+}
 
 pub(crate) enum FullscreenShader {
     Unloaded,
@@ -247,9 +264,85 @@ pub(crate) enum FullscreenShaderEvent {
         width: u32,
         height: u32,
     },
+    // SetUniform {
+    //     id: FullscreenShaderId,
+    //     key: String,
+    //     value: f32,
+    // },
 }
 
 pub(crate) type FullscreenShaderCommandMap = HashMap<ShapeId, (DrawId, FullscreenShaderId)>;
+
+impl SketchState {
+    pub(crate) fn start_drawing_fullscreen_shader(
+        &mut self,
+        draw_id: DrawId,
+        shader_id: FullscreenShaderId,
+    ) {
+        let draw_id = self.clamp_draw_id(draw_id);
+
+        self.fullscreen_shader_command_map
+            .insert(self.next_shape_id, (draw_id, shader_id));
+
+        self.shape_order
+            .push((self.next_shape_id, ShapeType::FullscreenShader));
+
+        if let FullscreenShader::Loaded(shader) = self
+            .fullscreen_shader_map
+            .get_mut(&shader_id)
+            .expect("Unexpected: could not find fullscreen shader for given id")
+        {
+            shader.is_being_drawn = true;
+        }
+    }
+
+    pub(crate) fn load_fullscreen_shader(&mut self, path: String) -> Result<FullscreenShaderId> {
+        let shader_id = FullscreenShaderId::new(&path);
+
+        let source = std::fs::read_to_string(&path)
+            .map_err(|_| anyhow!("Could not load shader at path {}", path))?;
+
+        naga::front::wgsl::parse_str(&source).map_err(|error| {
+            anyhow!(
+                "Could not load shader due to invalid WGSL syntax: {}",
+                // TODO: don't expose visor internals here
+                error.message()
+            )
+        })?;
+
+        self.fullscreen_shader_map
+            .insert(shader_id, FullscreenShader::Unloaded);
+
+        self.fullscreen_shader_event_sender
+            .try_send(FullscreenShaderEvent::Load {
+                id: shader_id,
+                source,
+                width: self.width,
+                height: self.height,
+            })
+            .expect("Unexpected: could not send shader event");
+
+        Ok(shader_id)
+    }
+
+    pub(crate) fn set_fullscreen_shader_uniform(
+        &mut self,
+        id: FullscreenShaderId,
+        key: String,
+        value: f32,
+    ) -> Result<()> {
+        // TODO: assign uniform value to unloaded shader anyway so it can be applied immediately after loaded
+        if let FullscreenShader::Loaded(shader) = self
+            .fullscreen_shader_map
+            .get_mut(&id)
+            .expect("Unexpected: could not find shader for given id")
+        {
+            shader.set_uniform(&key, value)?;
+        }
+
+        Ok(())
+    }
+}
 
 #[op2(fast)]
 pub(crate) fn op_draw_fullscreen_shader(state: &mut OpState, id: u32, shader_id: u32) {

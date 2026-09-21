@@ -7,7 +7,7 @@ use nannou::{
 };
 use visor_engine::AccessSketchStore;
 
-use crate::draw_plugin::{DrawId, ShapeCommand, ShapeId, SketchState};
+use crate::draw_plugin::{DrawId, ShapeCommand, ShapeId, ShapeType, SketchState};
 
 pub(crate) type QuadCommandMap = HashMap<ShapeId, (DrawId, Vec<QuadCommand>)>;
 
@@ -83,6 +83,29 @@ impl ShapeCommand<Quad> for QuadCommand {
             Self::StrokeHsva { h, s, v, a } => drawing.stroke_color(color::hsva(h, s, v, a)),
             Self::StrokeWeight { w } => drawing.stroke_weight(w),
         }
+    }
+}
+
+impl SketchState {
+    pub(crate) fn start_drawing_quad(&mut self, draw_id: DrawId) -> ShapeId {
+        self.next_shape_id.0 += 1;
+
+        let draw_id = self.clamp_draw_id(draw_id);
+
+        self.quad_command_map
+            .insert(self.next_shape_id, (draw_id, Vec::new()));
+
+        self.shape_order.push((self.next_shape_id, ShapeType::Quad));
+
+        self.next_shape_id
+    }
+
+    pub(crate) fn store_quad_command(&mut self, id: ShapeId, command: QuadCommand) {
+        self.quad_command_map
+            .get_mut(&id)
+            .expect("Unexpected: could not find shape commands for given id")
+            .1
+            .push(command);
     }
 }
 

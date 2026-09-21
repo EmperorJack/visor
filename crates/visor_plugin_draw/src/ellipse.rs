@@ -7,7 +7,7 @@ use nannou::{
 };
 use visor_engine::AccessSketchStore;
 
-use crate::draw_plugin::{DrawId, ShapeCommand, ShapeId, SketchState};
+use crate::draw_plugin::{DrawId, ShapeCommand, ShapeId, ShapeType, SketchState};
 
 pub(crate) type EllipseCommandMap = HashMap<ShapeId, (DrawId, Vec<EllipseCommand>)>;
 
@@ -36,6 +36,30 @@ impl ShapeCommand<Ellipse> for EllipseCommand {
             Self::StrokeHsva { h, s, v, a } => drawing.stroke(color::hsva(h, s, v, a)),
             Self::StrokeWeight { w } => drawing.stroke_weight(w),
         }
+    }
+}
+
+impl SketchState {
+    pub(crate) fn start_drawing_ellipse(&mut self, draw_id: DrawId) -> ShapeId {
+        self.next_shape_id.0 += 1;
+
+        let draw_id = self.clamp_draw_id(draw_id);
+
+        self.ellipse_command_map
+            .insert(self.next_shape_id, (draw_id, Vec::new()));
+
+        self.shape_order
+            .push((self.next_shape_id, ShapeType::Ellipse));
+
+        self.next_shape_id
+    }
+
+    pub(crate) fn store_ellipse_command(&mut self, id: ShapeId, command: EllipseCommand) {
+        self.ellipse_command_map
+            .get_mut(&id)
+            .expect("Unexpected: could not find shape commands for given id")
+            .1
+            .push(command);
     }
 }
 
