@@ -49,6 +49,7 @@ pub(crate) struct SketchState {
     draw_map: DrawMap,
     next_draw_id: DrawId,
     pub(crate) next_shape_id: ShapeId,
+    shape_order: Vec<(ShapeId, ShapeType)>,
     pub(crate) ellipse_command_map: EllipseCommandMap,
     pub(crate) rect_command_map: RectCommandMap,
     pub(crate) quad_command_map: QuadCommandMap,
@@ -62,6 +63,17 @@ pub(crate) struct SketchState {
     fullscreen_shader_map: HashMap<FullscreenShaderId, FullscreenShader>,
     pub(crate) fullscreen_shader_event_sender: mpsc::Sender<FullscreenShaderEvent>,
     fullscreen_shader_event_receiver: mpsc::Receiver<FullscreenShaderEvent>,
+}
+
+enum ShapeType {
+    Ellipse,
+    Rect,
+    Quad,
+    Polygon,
+    Polyline,
+    Spline,
+    Path,
+    FullscreenShader,
 }
 
 type SketchSizeState = HashMap<SketchId, [u32; 2]>;
@@ -98,6 +110,9 @@ impl SketchState {
         self.ellipse_command_map
             .insert(self.next_shape_id, (draw_id, Vec::new()));
 
+        self.shape_order
+            .push((self.next_shape_id, ShapeType::Ellipse));
+
         self.next_shape_id
     }
 
@@ -116,6 +131,8 @@ impl SketchState {
 
         self.rect_command_map
             .insert(self.next_shape_id, (draw_id, Vec::new()));
+
+        self.shape_order.push((self.next_shape_id, ShapeType::Rect));
 
         self.next_shape_id
     }
@@ -136,6 +153,8 @@ impl SketchState {
         self.quad_command_map
             .insert(self.next_shape_id, (draw_id, Vec::new()));
 
+        self.shape_order.push((self.next_shape_id, ShapeType::Quad));
+
         self.next_shape_id
     }
 
@@ -154,6 +173,9 @@ impl SketchState {
 
         self.polygon_command_map
             .insert(self.next_shape_id, (draw_id, Vec::new()));
+
+        self.shape_order
+            .push((self.next_shape_id, ShapeType::Polygon));
 
         self.next_shape_id
     }
@@ -174,6 +196,9 @@ impl SketchState {
         self.polyline_command_map
             .insert(self.next_shape_id, (draw_id, Vec::new()));
 
+        self.shape_order
+            .push((self.next_shape_id, ShapeType::Polyline));
+
         self.next_shape_id
     }
 
@@ -192,6 +217,9 @@ impl SketchState {
 
         self.spline_command_map
             .insert(self.next_shape_id, (draw_id, Vec::new()));
+
+        self.shape_order
+            .push((self.next_shape_id, ShapeType::Spline));
 
         self.next_shape_id
     }
@@ -212,6 +240,8 @@ impl SketchState {
         self.path_command_map
             .insert(self.next_shape_id, (draw_id, Vec::new()));
 
+        self.shape_order.push((self.next_shape_id, ShapeType::Path));
+
         self.next_shape_id
     }
 
@@ -223,7 +253,11 @@ impl SketchState {
             .push(command);
     }
 
-    pub(crate) fn start_drawing_shader(&mut self, draw_id: DrawId, shader_id: FullscreenShaderId) {
+    pub(crate) fn start_drawing_fullscreen_shader(
+        &mut self,
+        draw_id: DrawId,
+        shader_id: FullscreenShaderId,
+    ) {
         let draw_id = self.clamp_draw_id(draw_id);
 
         self.fullscreen_shader_command_map
@@ -236,6 +270,9 @@ impl SketchState {
         {
             shader.is_being_drawn = true;
         }
+
+        self.shape_order
+            .push((self.next_shape_id, ShapeType::FullscreenShader));
     }
 
     pub(crate) fn clamp_draw_id(&self, id: DrawId) -> DrawId {
@@ -251,163 +288,193 @@ impl SketchState {
     }
 
     fn apply_shape_commands(&self, sketch_store: &SketchStore) {
-        for (draw_id, shader_id) in self.fullscreen_shader_command_map.values() {
-            let draw = get_draw(sketch_store, *draw_id);
+        for (shape_id, shape_type) in self.shape_order.iter() {
+            match shape_type {
+                ShapeType::Ellipse => {
+                    let (draw_id, commands) = self
+                        .ellipse_command_map
+                        .get(shape_id)
+                        .expect("Unexpected: could not find ellipse commands for shape id");
+                    let draw = get_draw(sketch_store, *draw_id);
 
-            let shader = self.fullscreen_shader_map.get(shader_id);
+                    let mut ellipse = draw.inner.ellipse();
 
-            if let FullscreenShader::Loaded(shader) =
-                shader.expect("Unexpected: could not find fullscreen shader")
-            {
-                draw.inner
-                    .texture(&shader.texture_view)
-                    .width(self.width as f32)
-                    .height(self.height as f32);
-            }
-        }
+                    for command in commands {
+                        ellipse = command.apply(ellipse);
+                    }
+                }
+                ShapeType::Rect => {
+                    let (draw_id, commands) = self
+                        .rect_command_map
+                        .get(shape_id)
+                        .expect("Unexpected: could not find rect commands for shape id");
+                    let draw = get_draw(sketch_store, *draw_id);
 
-        for (draw_id, commands) in self.ellipse_command_map.values() {
-            let draw = get_draw(sketch_store, *draw_id);
+                    let mut rect = draw.inner.rect();
 
-            let mut ellipse = draw.inner.ellipse();
+                    for command in commands {
+                        rect = command.apply(rect);
+                    }
+                }
+                ShapeType::Quad => {
+                    let (draw_id, commands) = self
+                        .quad_command_map
+                        .get(shape_id)
+                        .expect("Unexpected: could not find quad commands for shape id");
+                    let draw = get_draw(sketch_store, *draw_id);
 
-            for command in commands {
-                ellipse = command.apply(ellipse);
-            }
-        }
+                    let mut quad = draw.inner.quad();
 
-        for (draw_id, commands) in self.rect_command_map.values() {
-            let draw = get_draw(sketch_store, *draw_id);
+                    for command in commands {
+                        quad = command.apply(quad);
+                    }
+                }
+                ShapeType::Polygon => {
+                    let (draw_id, commands) = self
+                        .polygon_command_map
+                        .get(shape_id)
+                        .expect("Unexpected: could not find polygon commands for shape id");
+                    let draw = get_draw(sketch_store, *draw_id);
 
-            let mut rect = draw.inner.rect();
+                    let mut polygon = draw.inner.polygon();
 
-            for command in commands {
-                rect = command.apply(rect);
-            }
-        }
+                    let mut points: Vec<(f32, f32)> = vec![];
 
-        for (draw_id, commands) in self.quad_command_map.values() {
-            let draw = get_draw(sketch_store, *draw_id);
+                    for command in commands {
+                        match command {
+                            PolygonCommand::Point { x, y } => points.push((*x, *y)),
+                            _ => polygon = command.apply(polygon),
+                        }
+                    }
 
-            let mut quad = draw.inner.quad();
+                    if points.is_empty() {
+                        continue;
+                    }
 
-            for command in commands {
-                quad = command.apply(quad);
-            }
-        }
+                    let _polygon = polygon.points(points);
+                }
+                ShapeType::Polyline => {
+                    let (draw_id, commands) = self
+                        .polyline_command_map
+                        .get(shape_id)
+                        .expect("Unexpected: could not find polyline commands for shape id");
+                    let draw = get_draw(sketch_store, *draw_id);
 
-        for (draw_id, commands) in self.polygon_command_map.values() {
-            let draw = get_draw(sketch_store, *draw_id);
+                    let mut polyline = draw.inner.polyline();
 
-            let mut polygon = draw.inner.polygon();
+                    let mut points: Vec<(f32, f32)> = vec![];
 
-            let mut points: Vec<(f32, f32)> = vec![];
+                    for command in commands {
+                        match command {
+                            PolylineCommand::Point { x, y } => points.push((*x, *y)),
+                            _ => polyline = command.apply(polyline),
+                        }
+                    }
 
-            for command in commands {
-                match command {
-                    PolygonCommand::Point { x, y } => points.push((*x, *y)),
-                    _ => polygon = command.apply(polygon),
+                    if points.is_empty() {
+                        continue;
+                    }
+
+                    let _polyline = polyline.points(points);
+                }
+                ShapeType::Spline => {
+                    let (draw_id, commands) = self
+                        .spline_command_map
+                        .get(shape_id)
+                        .expect("Unexpected: could not find spline commands for shape id");
+                    let draw = get_draw(sketch_store, *draw_id);
+
+                    let mut spline = draw.inner.polyline();
+
+                    let mut points: Vec<Vec2> = vec![];
+                    let mut tension: f32 = 0.5;
+                    let mut resolution: Option<usize> = None;
+
+                    for command in commands {
+                        match command {
+                            SplineCommand::Point { x, y } => points.push((*x, *y).into()),
+                            SplineCommand::Tension { t } => tension = *t,
+                            SplineCommand::Resolution { n } => resolution = Some(*n as usize),
+                            _ => spline = command.apply(spline),
+                        }
+                    }
+
+                    if points.is_empty() {
+                        continue;
+                    }
+
+                    let resolution = resolution.unwrap_or_else(|| points.len() * 20);
+
+                    let curve = CubicCardinalSpline::new(tension, points).to_curve();
+
+                    let points: Vec<_> = curve
+                        .iter_positions(resolution)
+                        .map(|point| (point.x, point.y))
+                        .collect();
+
+                    let _spline = spline.points(points);
+                }
+                ShapeType::Path => {
+                    let (draw_id, commands) = self
+                        .path_command_map
+                        .get(shape_id)
+                        .expect("Unexpected: could not find path commands for shape id");
+                    let draw = get_draw(sketch_store, *draw_id);
+
+                    let mut path = draw.inner.path().fill();
+
+                    let mut points: Vec<Vec2> = vec![];
+                    let mut tension: f32 = 0.0;
+                    let mut resolution: Option<usize> = None;
+
+                    for command in commands {
+                        match command {
+                            PathCommand::Point { x, y } => points.push((*x, *y).into()),
+                            PathCommand::Tension { t } => tension = *t,
+                            PathCommand::Resolution { n } => resolution = Some(*n as usize),
+                            _ => path = command.apply(path),
+                        }
+                    }
+
+                    if points.is_empty() {
+                        continue;
+                    }
+
+                    let points: Vec<_> = if tension > 0.0 {
+                        let resolution = resolution.unwrap_or_else(|| points.len() * 20);
+
+                        let curve = CubicCardinalSpline::new(tension, points).to_curve();
+
+                        curve
+                            .iter_positions(resolution)
+                            .map(|point| (point.x, point.y))
+                            .collect()
+                    } else {
+                        points.into_iter().map(|point| (point.x, point.y)).collect()
+                    };
+
+                    let _path = path.points(points);
+                }
+                ShapeType::FullscreenShader => {
+                    let (draw_id, shader_id) =
+                        self.fullscreen_shader_command_map.get(shape_id).expect(
+                            "Unexpected: could not find fullscreen shader commands for shape id",
+                        );
+
+                    let draw = get_draw(sketch_store, *draw_id);
+
+                    let shader = self.fullscreen_shader_map.get(shader_id);
+
+                    if let FullscreenShader::Loaded(shader) =
+                        shader.expect("Unexpected: could not find fullscreen shader")
+                    {
+                        draw.inner
+                            .texture(&shader.texture_view)
+                            .width(self.width as f32)
+                            .height(self.height as f32);
+                    }
                 }
             }
-
-            if points.is_empty() {
-                continue;
-            }
-
-            let _polygon = polygon.points(points);
-        }
-
-        for (draw_id, commands) in self.polyline_command_map.values() {
-            let draw = get_draw(sketch_store, *draw_id);
-
-            let mut polyline = draw.inner.polyline();
-
-            let mut points: Vec<(f32, f32)> = vec![];
-
-            for command in commands {
-                match command {
-                    PolylineCommand::Point { x, y } => points.push((*x, *y)),
-                    _ => polyline = command.apply(polyline),
-                }
-            }
-
-            if points.is_empty() {
-                continue;
-            }
-
-            let _polyline = polyline.points(points);
-        }
-
-        for (draw_id, commands) in self.spline_command_map.values() {
-            let draw = get_draw(sketch_store, *draw_id);
-
-            let mut spline = draw.inner.polyline();
-
-            let mut points: Vec<Vec2> = vec![];
-            let mut tension: f32 = 0.5;
-            let mut resolution: Option<usize> = None;
-
-            for command in commands {
-                match command {
-                    SplineCommand::Point { x, y } => points.push((*x, *y).into()),
-                    SplineCommand::Tension { t } => tension = *t,
-                    SplineCommand::Resolution { n } => resolution = Some(*n as usize),
-                    _ => spline = command.apply(spline),
-                }
-            }
-
-            if points.is_empty() {
-                continue;
-            }
-
-            let resolution = resolution.unwrap_or_else(|| points.len() * 20);
-
-            let curve = CubicCardinalSpline::new(tension, points).to_curve();
-
-            let points: Vec<_> = curve
-                .iter_positions(resolution)
-                .map(|point| (point.x, point.y))
-                .collect();
-
-            let _spline = spline.points(points);
-        }
-
-        for (draw_id, commands) in self.path_command_map.values() {
-            let draw = get_draw(sketch_store, *draw_id);
-
-            let mut path = draw.inner.path().fill();
-
-            let mut points: Vec<Vec2> = vec![];
-            let mut tension: f32 = 0.0;
-            let mut resolution: Option<usize> = None;
-
-            for command in commands {
-                match command {
-                    PathCommand::Point { x, y } => points.push((*x, *y).into()),
-                    PathCommand::Tension { t } => tension = *t,
-                    PathCommand::Resolution { n } => resolution = Some(*n as usize),
-                    _ => path = command.apply(path),
-                }
-            }
-
-            if points.is_empty() {
-                continue;
-            }
-
-            let points: Vec<_> = if tension > 0.0 {
-                let resolution = resolution.unwrap_or_else(|| points.len() * 20);
-
-                let curve = CubicCardinalSpline::new(tension, points).to_curve();
-
-                curve
-                    .iter_positions(resolution)
-                    .map(|point| (point.x, point.y))
-                    .collect()
-            } else {
-                points.into_iter().map(|point| (point.x, point.y)).collect()
-            };
-
-            let _path = path.points(points);
         }
     }
 
@@ -427,6 +494,7 @@ impl SketchState {
 
         self.next_draw_id.0 = 0;
         self.next_shape_id.0 = 0;
+        self.shape_order.clear();
 
         for shader in self.fullscreen_shader_map.values_mut() {
             if let FullscreenShader::Loaded(shader) = shader {
@@ -607,6 +675,7 @@ impl Plugin for DrawPlugin {
             draw_map: Default::default(),
             next_draw_id: DrawId(0),
             next_shape_id: ShapeId(0),
+            shape_order: Default::default(),
             ellipse_command_map: Default::default(),
             rect_command_map: Default::default(),
             quad_command_map: Default::default(),

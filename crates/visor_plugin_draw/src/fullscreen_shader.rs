@@ -255,7 +255,7 @@ pub(crate) type FullscreenShaderCommandMap = HashMap<ShapeId, (DrawId, Fullscree
 pub(crate) fn op_draw_fullscreen_shader(state: &mut OpState, id: u32, shader_id: u32) {
     let state = state.sketch_store_mut().get_mut::<SketchState>();
 
-    state.start_drawing_shader(DrawId(id), FullscreenShaderId(shader_id));
+    state.start_drawing_fullscreen_shader(DrawId(id), FullscreenShaderId(shader_id));
 }
 
 #[op2(fast)]
