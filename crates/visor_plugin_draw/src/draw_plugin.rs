@@ -1,4 +1,8 @@
-use std::{collections::HashMap, hash::Hash, sync::RwLock};
+use std::{
+    collections::HashMap,
+    hash::Hash,
+    sync::{Arc, RwLock},
+};
 
 use bevy_math::{
     Vec2,
@@ -6,8 +10,9 @@ use bevy_math::{
 };
 use deno_core::{Extension, OpState, extension, op2};
 use nannou::draw::Drawing;
-use tokio::sync::mpsc;
-use visor_engine::{AccessSketchStore, Draw, Engine, Plugin, SketchId, SketchStore, Store};
+use visor_engine::{
+    AccessSketchStore, Draw, Engine, Plugin, SketchId, SketchStore, Store, WgpuHandle,
+};
 
 use crate::ellipse::*;
 use crate::fullscreen_shader::*;
@@ -40,11 +45,10 @@ pub(crate) struct SketchState {
     pub(crate) spline_command_map: SplineCommandMap,
     pub(crate) path_command_map: PathCommandMap,
     pub(crate) fullscreen_shader_command_map: FullscreenShaderCommandMap,
+    pub(crate) fullscreen_shader_map: HashMap<FullscreenShaderId, FullscreenShader>,
     pub(crate) width: u32,
     pub(crate) height: u32,
-    pub(crate) fullscreen_shader_map: HashMap<FullscreenShaderId, FullscreenShader>,
-    pub(crate) fullscreen_shader_event_sender: mpsc::Sender<FullscreenShaderEvent>,
-    fullscreen_shader_event_receiver: mpsc::Receiver<FullscreenShaderEvent>,
+    pub(crate) wgpu_handle: Arc<WgpuHandle>,
 }
 
 pub(crate) enum ShapeType {
@@ -273,16 +277,15 @@ impl SketchState {
 
                     let draw = get_draw(sketch_store, *draw_id);
 
-                    let shader = self.fullscreen_shader_map.get(shader_id);
+                    let shader = self
+                        .fullscreen_shader_map
+                        .get(shader_id)
+                        .expect("Unexpected: could not find fullscreen shader");
 
-                    if let FullscreenShader::Loaded(shader) =
-                        shader.expect("Unexpected: could not find fullscreen shader")
-                    {
-                        draw.inner
-                            .texture(&shader.texture_view)
-                            .width(self.width as f32)
-                            .height(self.height as f32);
-                    }
+                    draw.inner
+                        .texture(&shader.texture_view)
+                        .width(self.width as f32)
+                        .height(self.height as f32);
                 }
             }
         }
@@ -307,9 +310,7 @@ impl SketchState {
         self.shape_order.clear();
 
         for shader in self.fullscreen_shader_map.values_mut() {
-            if let FullscreenShader::Loaded(shader) = shader {
-                shader.is_being_drawn = false;
-            }
+            shader.is_being_drawn = false;
         }
     }
 }
@@ -429,12 +430,10 @@ impl Plugin for DrawPlugin {
     fn build_sketch(
         &self,
         _sketch_id: &SketchId,
-        _engine: &mut Engine,
+        engine: &mut Engine,
         _store: &Store,
         sketch_store: &mut SketchStore,
     ) {
-        let (shader_event_sender, shader_event_receiver) = mpsc::channel::<_>(64);
-
         sketch_store.set(SketchState {
             draw_map: Default::default(),
             next_draw_id: DrawId(0),
@@ -448,11 +447,10 @@ impl Plugin for DrawPlugin {
             spline_command_map: Default::default(),
             path_command_map: Default::default(),
             fullscreen_shader_command_map: Default::default(),
+            fullscreen_shader_map: Default::default(),
             width: 0,
             height: 0,
-            fullscreen_shader_map: Default::default(),
-            fullscreen_shader_event_sender: shader_event_sender,
-            fullscreen_shader_event_receiver: shader_event_receiver,
+            wgpu_handle: engine.wgpu_handle().clone(),
         });
     }
 
@@ -497,9 +495,7 @@ impl Plugin for DrawPlugin {
                 .fullscreen_shader_map
                 .values_mut()
                 .for_each(|shader| {
-                    if let FullscreenShader::Loaded(shader) = shader {
-                        shader.resize(width, height);
-                    }
+                    shader.resize(width, height);
                 });
         }
     }
@@ -548,62 +544,15 @@ impl Plugin for DrawPlugin {
         _store: &Store,
         encoder: &mut nannou::wgpu::CommandEncoder,
     ) {
-        // Fetch shader events
-        // TODO: this can be collapsed after wgpu_handle is passed as parameter to plugin callbacks
-        let mut shader_events: HashMap<SketchId, Vec<FullscreenShaderEvent>> = HashMap::new();
-
-        for sketch in engine.sketches_mut().values_mut() {
-            let sketch_state = sketch.sketch_store_mut().get_mut::<SketchState>();
-
-            if sketch_state.fullscreen_shader_event_receiver.is_empty() {
-                continue;
-            }
-
-            let mut events = Vec::new();
-            while let Ok(event) = sketch_state.fullscreen_shader_event_receiver.try_recv() {
-                events.push(event);
-            }
-
-            shader_events.insert(*sketch.id(), events);
-        }
-
-        // Process shader events
-        for (sketch_id, events) in shader_events {
-            for event in events {
-                match event {
-                    FullscreenShaderEvent::Load {
-                        id,
-                        source,
-                        width,
-                        height,
-                    } => {
-                        let shader = FullscreenShaderState::new(source, engine, width, height);
-
-                        engine
-                            .sketches_mut()
-                            .get_mut(&sketch_id)
-                            .expect("Unexpected: could not find sketch")
-                            .sketch_store_mut()
-                            .get_mut::<SketchState>()
-                            .fullscreen_shader_map
-                            .insert(id, FullscreenShader::Loaded(shader));
-                    }
-                }
-            }
-        }
-
-        // Render shaders
         for sketch in engine.sketches_mut().values_mut() {
             let sketch_state = sketch.sketch_store_mut().get_mut::<SketchState>();
 
             for shader in sketch_state.fullscreen_shader_map.values_mut() {
-                if let FullscreenShader::Loaded(shader) = shader {
-                    if !shader.is_being_drawn {
-                        continue;
-                    }
-
-                    shader.render(encoder);
+                if !shader.is_being_drawn {
+                    continue;
                 }
+
+                shader.render(encoder);
             }
         }
     }

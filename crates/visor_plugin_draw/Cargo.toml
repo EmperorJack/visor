@@ -15,5 +15,4 @@ deno_core.workspace = true
 deno_error.workspace = true
 naga = { version = "0.20", features = ["wgsl-in"] }
 nannou.workspace = true
-tokio = { workspace = true, features = ["sync"] }
 visor_engine.workspace = true

@@ -7,7 +7,7 @@ use std::{
 use anyhow::{Result, anyhow};
 use deno_core::{OpState, op2};
 use deno_error::JsErrorBox;
-use visor_engine::{AccessSketchStore, Engine, WgpuHandle};
+use visor_engine::{AccessSketchStore, WgpuHandle};
 
 use crate::draw_plugin::{DrawId, ShapeId, ShapeType, SketchState};
 
@@ -24,12 +24,7 @@ impl FullscreenShaderId {
     }
 }
 
-pub(crate) enum FullscreenShader {
-    Unloaded,
-    Loaded(FullscreenShaderState),
-}
-
-pub(crate) struct FullscreenShaderState {
+pub(crate) struct FullscreenShader {
     texture: nannou::wgpu::Texture,
     pub(crate) texture_view: nannou::wgpu::TextureView,
     render_pipeline: nannou::wgpu::RenderPipeline,
@@ -49,24 +44,30 @@ struct UniformVariable {
 
 const VERTEX_SHADER_SOURCE: &str = include_str!("fullscreen_vertex_shader.wgsl");
 
-impl FullscreenShaderState {
+impl FullscreenShader {
     pub(crate) fn new(
-        fragment_shader_source: String,
-        engine: &mut Engine,
+        path: String,
         width: u32,
         height: u32,
-    ) -> Self {
-        let device = &engine.wgpu_handle().device;
+        wgpu_handle: &Arc<WgpuHandle>,
+    ) -> Result<Self> {
+        let device = &wgpu_handle.device;
 
         let (texture, texture_view) = Self::create_graphics(device, width, height);
 
+        let fragment_shader_source = std::fs::read_to_string(&path)
+            .map_err(|_| anyhow!("Could not load fullscreen shader at path {}", path))?;
+
         let source = format!("{}\n{}", VERTEX_SHADER_SOURCE, fragment_shader_source);
 
-        let module =
-            naga::front::wgsl::parse_str(&source).expect("Unexpected: WGSL must be valid here");
+        let module = naga::front::wgsl::parse_str(&source).map_err(|error| {
+            anyhow!(
+                "Could not load shader due to invalid WGSL syntax: {}",
+                error.message()
+            )
+        })?;
 
         // TODO: this can fail, need to handle the error
-        // Could we have access to the device from within the shader code? Should we?
         let shader = device.create_shader_module(nannou::wgpu::ShaderModuleDescriptor {
             label: Some("Fullscreen Shader"),
             source: nannou::wgpu::ShaderSource::Wgsl(source.into()),
@@ -170,7 +171,7 @@ impl FullscreenShaderState {
                 multiview: None,
             });
 
-        Self {
+        Ok(Self {
             texture,
             texture_view,
             render_pipeline,
@@ -180,8 +181,8 @@ impl FullscreenShaderState {
             uniform_bind_group,
             is_being_drawn: true,
             has_uniforms_changed: false,
-            wgpu_handle: engine.wgpu_handle().clone(),
-        }
+            wgpu_handle: wgpu_handle.clone(),
+        })
     }
 
     fn create_graphics(
@@ -257,20 +258,6 @@ impl FullscreenShaderState {
     }
 }
 
-pub(crate) enum FullscreenShaderEvent {
-    Load {
-        id: FullscreenShaderId,
-        source: String,
-        width: u32,
-        height: u32,
-    },
-    // SetUniform {
-    //     id: FullscreenShaderId,
-    //     key: String,
-    //     value: f32,
-    // },
-}
-
 pub(crate) type FullscreenShaderCommandMap = HashMap<ShapeId, (DrawId, FullscreenShaderId)>;
 
 impl SketchState {
@@ -287,40 +274,18 @@ impl SketchState {
         self.shape_order
             .push((self.next_shape_id, ShapeType::FullscreenShader));
 
-        if let FullscreenShader::Loaded(shader) = self
-            .fullscreen_shader_map
+        self.fullscreen_shader_map
             .get_mut(&shader_id)
             .expect("Unexpected: could not find fullscreen shader for given id")
-        {
-            shader.is_being_drawn = true;
-        }
+            .is_being_drawn = true;
     }
 
     pub(crate) fn load_fullscreen_shader(&mut self, path: String) -> Result<FullscreenShaderId> {
         let shader_id = FullscreenShaderId::new(&path);
 
-        let source = std::fs::read_to_string(&path)
-            .map_err(|_| anyhow!("Could not load shader at path {}", path))?;
+        let shader = FullscreenShader::new(path, self.width, self.height, &self.wgpu_handle)?;
 
-        naga::front::wgsl::parse_str(&source).map_err(|error| {
-            anyhow!(
-                "Could not load shader due to invalid WGSL syntax: {}",
-                // TODO: don't expose visor internals here
-                error.message()
-            )
-        })?;
-
-        self.fullscreen_shader_map
-            .insert(shader_id, FullscreenShader::Unloaded);
-
-        self.fullscreen_shader_event_sender
-            .try_send(FullscreenShaderEvent::Load {
-                id: shader_id,
-                source,
-                width: self.width,
-                height: self.height,
-            })
-            .expect("Unexpected: could not send shader event");
+        self.fullscreen_shader_map.insert(shader_id, shader);
 
         Ok(shader_id)
     }
@@ -331,14 +296,10 @@ impl SketchState {
         key: String,
         value: f32,
     ) -> Result<()> {
-        // TODO: assign uniform value to unloaded shader anyway so it can be applied immediately after loaded
-        if let FullscreenShader::Loaded(shader) = self
-            .fullscreen_shader_map
+        self.fullscreen_shader_map
             .get_mut(&id)
             .expect("Unexpected: could not find shader for given id")
-        {
-            shader.set_uniform(&key, value)?;
-        }
+            .set_uniform(&key, value)?;
 
         Ok(())
     }
