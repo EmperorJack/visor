@@ -60,14 +60,21 @@ impl FullscreenShader {
 
         let source = format!("{}\n{}", VERTEX_SHADER_SOURCE, fragment_shader_source);
 
-        let module = naga::front::wgsl::parse_str(&source).map_err(|error| {
+        let module = naga::front::wgsl::parse_str(&source)
+            .map_err(|error| anyhow!("Could not parse WGSL shader: {}", error.message()))?;
+
+        let mut validator = naga::valid::Validator::new(
+            naga::valid::ValidationFlags::all(),
+            naga::valid::Capabilities::default(),
+        );
+
+        validator.validate(&module).map_err(|err| {
             anyhow!(
-                "Could not load shader due to invalid WGSL syntax: {}",
-                error.message()
+                "WGSL shader validation error: {}",
+                err.emit_to_string(&source)
             )
         })?;
 
-        // TODO: this can fail, need to handle the error
         let shader = device.create_shader_module(nannou::wgpu::ShaderModuleDescriptor {
             label: Some("Fullscreen Shader"),
             source: nannou::wgpu::ShaderSource::Wgsl(source.into()),
