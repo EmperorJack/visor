@@ -1,6 +1,6 @@
 [package]
 name = "visor_plugin_state"
-version = "0.1.1"
+version = "0.2.0"
 description = "Plugin for persistent sketch state when hot reloading."
 edition.workspace = true
 homepage.workspace = true
