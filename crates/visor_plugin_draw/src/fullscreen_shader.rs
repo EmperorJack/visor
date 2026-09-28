@@ -104,8 +104,10 @@ impl FullscreenShader {
 
         let (uniforms_meta, total_struct_size) = Self::parse_uniforms_meta(module)?;
 
-        let padded_size = (total_struct_size + 15) & !15;
-        let uniforms_buffer = vec![0; padded_size];
+        let padded_size = ((total_struct_size as f32 / 16.0).ceil() * 16.0) as usize;
+        let buffer_size = padded_size.max(16);
+
+        let uniforms_buffer = vec![0; buffer_size];
 
         let uniform_bind_group_layout =
             device.create_bind_group_layout(&nannou::wgpu::BindGroupLayoutDescriptor {
@@ -131,7 +133,7 @@ impl FullscreenShader {
 
         let uniform_buffer = device.create_buffer(&nannou::wgpu::BufferDescriptor {
             label: Some("Fullscreen Shader Uniform Buffer"),
-            size: padded_size as u64,
+            size: buffer_size as u64,
             usage: nannou::wgpu::BufferUsages::UNIFORM | nannou::wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
