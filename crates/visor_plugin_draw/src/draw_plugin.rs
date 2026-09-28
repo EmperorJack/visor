@@ -270,12 +270,11 @@ impl SketchState {
                     let _path = path.points(points);
                 }
                 ShapeType::FullscreenShader => {
-                    let (draw_id, shader_id) =
-                        self.fullscreen_shader_command_map.get(shape_id).expect(
-                            "Unexpected: could not find fullscreen shader commands for shape id",
-                        );
+                    let shader_id = self.fullscreen_shader_command_map.get(shape_id).expect(
+                        "Unexpected: could not find fullscreen shader commands for shape id",
+                    );
 
-                    let draw = get_draw(sketch_store, *draw_id);
+                    let draw = get_draw(sketch_store, DrawId(0));
 
                     let shader = self
                         .fullscreen_shader_map
@@ -386,7 +385,6 @@ extension!(
         op_draw_path_fill_hsva,
         op_draw_path_tension,
         op_draw_path_resolution,
-        op_draw_fullscreen_shader,
         op_draw_translate,
         op_draw_rotate,
         op_draw_scale,
@@ -394,6 +392,7 @@ extension!(
         op_draw_scale_y,
         op_draw_width,
         op_draw_height,
+        op_draw_fullscreen_shader,
         op_draw_fullscreen_shader_load,
         op_draw_fullscreen_shader_set_uniform,
     ],

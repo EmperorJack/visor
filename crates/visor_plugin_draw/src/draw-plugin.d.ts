@@ -12,8 +12,6 @@ interface Draw {
   spline(): Spline;
   path(): Path;
 
-  fullscreenShader(shader: FullscreenShader): void;
-
   translate(x: number, y: number): Draw;
   rotate(radians: number): Draw;
   scale(s: number): Draw;
@@ -135,7 +133,10 @@ type UniformValue =
   | Array<[number, number, number, number]>;
 
 interface FullscreenShader {
+  id(): number;
   setUniform(name: string, value: UniformValue): void;
 }
 
 declare function loadFullscreenShader(path: string): FullscreenShader;
+
+declare function fullscreenShader(shader: FullscreenShader): void;

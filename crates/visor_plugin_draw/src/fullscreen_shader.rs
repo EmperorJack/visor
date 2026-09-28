@@ -9,7 +9,7 @@ use deno_core::{OpState, op2, v8};
 use deno_error::JsErrorBox;
 use visor_engine::{AccessSketchStore, WgpuHandle};
 
-use crate::draw_plugin::{DrawId, ShapeId, ShapeType, SketchState};
+use crate::draw_plugin::{ShapeId, ShapeType, SketchState};
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub(crate) struct FullscreenShaderId(pub(crate) u32);
@@ -536,18 +536,12 @@ impl FullscreenShader {
     }
 }
 
-pub(crate) type FullscreenShaderCommandMap = HashMap<ShapeId, (DrawId, FullscreenShaderId)>;
+pub(crate) type FullscreenShaderCommandMap = HashMap<ShapeId, FullscreenShaderId>;
 
 impl SketchState {
-    pub(crate) fn start_drawing_fullscreen_shader(
-        &mut self,
-        draw_id: DrawId,
-        shader_id: FullscreenShaderId,
-    ) {
-        let draw_id = self.clamp_draw_id(draw_id);
-
+    pub(crate) fn start_drawing_fullscreen_shader(&mut self, shader_id: FullscreenShaderId) {
         self.fullscreen_shader_command_map
-            .insert(self.next_shape_id, (draw_id, shader_id));
+            .insert(self.next_shape_id, shader_id);
 
         self.shape_order
             .push((self.next_shape_id, ShapeType::FullscreenShader));
@@ -585,10 +579,10 @@ impl SketchState {
 }
 
 #[op2(fast)]
-pub(crate) fn op_draw_fullscreen_shader(state: &mut OpState, id: u32, shader_id: u32) {
+pub(crate) fn op_draw_fullscreen_shader(state: &mut OpState, shader_id: u32) {
     let state = state.sketch_store_mut().get_mut::<SketchState>();
 
-    state.start_drawing_fullscreen_shader(DrawId(id), FullscreenShaderId(shader_id));
+    state.start_drawing_fullscreen_shader(FullscreenShaderId(shader_id));
 }
 
 #[op2(fast)]
