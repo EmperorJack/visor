@@ -22,9 +22,10 @@ mod tests {
         assert_eq!(*sketch.runtime_error(), None);
 
         let sketch_store = engine
-            .sketch_stores()
+            .sketches()
             .get(&sketch_id)
-            .expect("Unexpected: could not find sketch store");
+            .expect("Unexpected: could not find store")
+            .sketch_store();
 
         let sketch_logs = visor_plugin_log::LogPlugin::get_state(sketch_store);
 
