@@ -5,7 +5,7 @@ use std::{
 };
 
 use anyhow::{Result, anyhow};
-use deno_core::{OpState, op2};
+use deno_core::{OpState, op2, v8};
 use deno_error::JsErrorBox;
 use visor_engine::{AccessSketchStore, WgpuHandle};
 
@@ -28,7 +28,7 @@ pub(crate) struct FullscreenShader {
     texture: nannou::wgpu::Texture,
     pub(crate) texture_view: nannou::wgpu::TextureView,
     render_pipeline: nannou::wgpu::RenderPipeline,
-    uniforms: HashMap<String, UniformVariable>,
+    uniforms_meta: HashMap<String, UniformMeta>,
     uniforms_buffer: Vec<u8>,
     uniform_buffer: nannou::wgpu::Buffer,
     uniform_bind_group: nannou::wgpu::BindGroup,
@@ -37,9 +37,31 @@ pub(crate) struct FullscreenShader {
     wgpu_handle: Arc<WgpuHandle>,
 }
 
-struct UniformVariable {
+struct UniformMeta {
     offset: usize,
-    size: usize,
+    wgsl_type: UniformType,
+}
+
+enum ScalarType {
+    F32,
+    U32,
+    I32,
+}
+
+enum UniformType {
+    Scalar(ScalarType),
+    Vector {
+        scalar_type: ScalarType,
+        size: naga::VectorSize,
+    },
+    MatrixF32 {
+        columns: naga::VectorSize,
+        rows: naga::VectorSize,
+    },
+    ArrayOfVector4 {
+        scalar_type: ScalarType,
+        length: u32,
+    },
 }
 
 const VERTEX_SHADER_SOURCE: &str = include_str!("fullscreen_vertex_shader.wgsl");
@@ -80,33 +102,7 @@ impl FullscreenShader {
             source: nannou::wgpu::ShaderSource::Wgsl(source.into()),
         });
 
-        let mut uniforms = HashMap::new();
-        let mut total_struct_size = 0;
-
-        for (_, ty) in module.types.iter() {
-            if let naga::TypeInner::Struct { members, span } = &ty.inner {
-                if ty.name.as_deref() == Some("Uniforms") {
-                    total_struct_size = *span as usize;
-
-                    for member in members {
-                        if let Some(ref name) = member.name {
-                            uniforms.insert(
-                                name.clone(),
-                                UniformVariable {
-                                    offset: member.offset as usize,
-                                    // TODO: test the types other than f32 work
-                                    size: match module.types[member.ty].inner {
-                                        naga::TypeInner::Scalar { .. } => 4, // f32, u32, i32
-                                        naga::TypeInner::Vector { size, .. } => (size as usize) * 4, // vec2, vec3, vec4
-                                        _ => 4,
-                                    },
-                                },
-                            );
-                        }
-                    }
-                }
-            }
-        }
+        let (uniforms_meta, total_struct_size) = Self::parse_uniforms_meta(module)?;
 
         let padded_size = (total_struct_size + 15) & !15;
         let uniforms_buffer = vec![0; padded_size];
@@ -182,7 +178,7 @@ impl FullscreenShader {
             texture,
             texture_view,
             render_pipeline,
-            uniforms,
+            uniforms_meta,
             uniforms_buffer,
             uniform_buffer,
             uniform_bind_group,
@@ -190,6 +186,89 @@ impl FullscreenShader {
             has_uniforms_changed: false,
             wgpu_handle: wgpu_handle.clone(),
         })
+    }
+
+    fn parse_uniforms_meta(module: naga::Module) -> Result<(HashMap<String, UniformMeta>, usize)> {
+        let mut uniforms_meta = HashMap::new();
+        let mut total_struct_size = 0;
+
+        for (_, ty) in module.types.iter() {
+            if let naga::TypeInner::Struct { members, span } = &ty.inner {
+                if ty.name.as_deref() == Some("Uniforms") {
+                    total_struct_size = *span as usize;
+
+                    for member in members {
+                        if let Some(ref name) = member.name {
+                            let offset = member.offset as usize;
+                            let wgsl_type = match &module.types[member.ty].inner {
+                                naga::TypeInner::Scalar(scalar) => match scalar.kind {
+                                    naga::ScalarKind::Sint => UniformType::Scalar(ScalarType::I32),
+                                    naga::ScalarKind::Uint => UniformType::Scalar(ScalarType::U32),
+                                    naga::ScalarKind::Float => UniformType::Scalar(ScalarType::F32),
+                                    _ => Err(anyhow!("Invalid uniform type"))?,
+                                },
+                                naga::TypeInner::Vector { size, scalar } => match scalar.kind {
+                                    naga::ScalarKind::Sint => UniformType::Vector {
+                                        scalar_type: ScalarType::I32,
+                                        size: *size,
+                                    },
+                                    naga::ScalarKind::Uint => UniformType::Vector {
+                                        scalar_type: ScalarType::U32,
+                                        size: *size,
+                                    },
+                                    naga::ScalarKind::Float => UniformType::Vector {
+                                        scalar_type: ScalarType::F32,
+                                        size: *size,
+                                    },
+                                    _ => Err(anyhow!("Invalid uniform type"))?,
+                                },
+                                naga::TypeInner::Matrix { columns, rows, .. } => {
+                                    UniformType::MatrixF32 {
+                                        columns: *columns,
+                                        rows: *rows,
+                                    }
+                                }
+                                naga::TypeInner::Array { base, size, .. } => {
+                                    let length = match size {
+                                        naga::ArraySize::Constant(size) => size.get(),
+                                        naga::ArraySize::Dynamic => {
+                                            Err(anyhow!("Invalid uniform type"))?
+                                        }
+                                    };
+
+                                    let scalar_type = match &module.types[*base].inner {
+                                        naga::TypeInner::Vector { size, scalar } => {
+                                            match size {
+                                                naga::VectorSize::Quad => {}
+                                                _ => Err(anyhow!("Invalid uniform type"))?,
+                                            };
+
+                                            match scalar.kind {
+                                                naga::ScalarKind::Sint => ScalarType::I32,
+                                                naga::ScalarKind::Uint => ScalarType::U32,
+                                                naga::ScalarKind::Float => ScalarType::F32,
+                                                _ => Err(anyhow!("Invalid uniform type"))?,
+                                            }
+                                        }
+                                        _ => Err(anyhow!("Invalid uniform type"))?,
+                                    };
+
+                                    UniformType::ArrayOfVector4 {
+                                        scalar_type,
+                                        length,
+                                    }
+                                }
+                                _ => Err(anyhow!("Invalid uniform type"))?,
+                            };
+
+                            uniforms_meta.insert(name.clone(), UniformMeta { offset, wgsl_type });
+                        }
+                    }
+                }
+            }
+        }
+
+        Ok((uniforms_meta, total_struct_size))
     }
 
     fn create_graphics(
@@ -217,22 +296,214 @@ impl FullscreenShader {
             Self::create_graphics(&self.wgpu_handle.device, width, height);
     }
 
-    // TODO: support uniform value types other than f32
-    pub(crate) fn set_uniform(&mut self, key: &str, value: f32) -> Result<()> {
-        let uniform = self
-            .uniforms
+    pub(crate) fn set_uniform(
+        &mut self,
+        key: &str,
+        value: v8::Local<v8::Value>,
+        scope: &mut v8::HandleScope,
+    ) -> Result<()> {
+        let uniform_meta = self
+            .uniforms_meta
             .get(key)
             .ok_or_else(|| anyhow!("Shader uniform {} not found", key))?;
 
-        let bytes = &value.to_ne_bytes();
+        let start = uniform_meta.offset;
 
-        let start = uniform.offset;
-        let end = start + uniform.size;
-        self.uniforms_buffer[start..end].copy_from_slice(bytes);
+        match &uniform_meta.wgsl_type {
+            UniformType::Scalar(scalar_type) => {
+                if !value.is_number() {
+                    return Err(anyhow!(
+                        "Invalid value provided to set scalar uniform {}, expected number but got {}",
+                        key,
+                        value.type_repr()
+                    ));
+                }
+
+                let value = value
+                    .to_number(scope)
+                    .expect("Unexpected: could not parse v8 value into number");
+
+                Self::write_uniform_scalar(
+                    &mut self.uniforms_buffer,
+                    value,
+                    scope,
+                    scalar_type,
+                    start,
+                );
+            }
+            UniformType::Vector { scalar_type, size } => {
+                if !value.is_array() {
+                    return Err(anyhow!(
+                        "Invalid value provided to set vector uniform {}, expected array but got {}",
+                        key,
+                        value.type_repr()
+                    ));
+                }
+
+                let vector = v8::Local::<v8::Array>::try_from(value)
+                    .expect("Unexpected: could not parse v8 value into array");
+
+                let size = *size as u32;
+
+                if size != vector.length() {
+                    return Err(anyhow!(
+                        "Invalid array provided to set vector uniform {}, expected length of {} but got {}",
+                        key,
+                        size,
+                        vector.length(),
+                    ));
+                }
+
+                for i in 0..vector.length() {
+                    let value = vector
+                        .get_index(scope, i)
+                        .expect("Unexpected: could not get v8 item value from array")
+                        .to_number(scope)
+                        .expect("Unexpected: could not parse v8 value into number");
+                    let offset = start + (i as usize * 4);
+
+                    Self::write_uniform_scalar(
+                        &mut self.uniforms_buffer,
+                        value,
+                        scope,
+                        scalar_type,
+                        offset,
+                    );
+                }
+            }
+            UniformType::MatrixF32 { columns, rows } => {
+                if !value.is_array() {
+                    return Err(anyhow!(
+                        "Invalid value provided to set matrix uniform {}, expected array but got {}",
+                        key,
+                        value.type_repr()
+                    ));
+                }
+
+                let matrix = v8::Local::<v8::Array>::try_from(value)
+                    .expect("Unexpected: could not parse v8 value into array");
+
+                let columns = *columns as u32;
+                let rows = *rows as u32;
+
+                if columns * rows != matrix.length() {
+                    return Err(anyhow!(
+                        "Invalid array provided to set matrix uniform {}, expected length of {} but got {}",
+                        key,
+                        columns * rows,
+                        matrix.length(),
+                    ));
+                }
+
+                for i in 0..matrix.length() {
+                    let value = matrix
+                        .get_index(scope, i)
+                        .expect("Unexpected: could not get v8 item value from array")
+                        .to_number(scope)
+                        .expect("Unexpected: could not parse v8 value into number");
+                    let offset = start + (i as usize * 4);
+
+                    let value = value.value() as f32;
+                    self.uniforms_buffer[offset..offset + 4].copy_from_slice(&value.to_ne_bytes());
+                }
+            }
+            UniformType::ArrayOfVector4 {
+                scalar_type,
+                length,
+            } => {
+                if !value.is_array() {
+                    return Err(anyhow!(
+                        "Invalid value provided to set array uniform {}, expected array but got {}",
+                        key,
+                        value.type_repr()
+                    ));
+                }
+
+                let array = v8::Local::<v8::Array>::try_from(value)
+                    .expect("Unexpected: could not parse v8 value into array");
+
+                if *length != array.length() {
+                    return Err(anyhow!(
+                        "Invalid array provided to set array uniform {}, expected length of {} but got {}",
+                        key,
+                        length,
+                        array.length(),
+                    ));
+                }
+
+                for i in 0..array.length() {
+                    let value = array
+                        .get_index(scope, i)
+                        .expect("Unexpected: could not get v8 item value from array");
+                    let element_offset = start + (i as usize * 16);
+
+                    if !value.is_array() {
+                        return Err(anyhow!(
+                            "Invalid item provided to set vector uniform {}, expected array but got {}",
+                            key,
+                            value.type_repr()
+                        ));
+                    }
+
+                    let vector = v8::Local::<v8::Array>::try_from(value)
+                        .expect("Unexpected: could not parse v8 value into array");
+
+                    if 4 != vector.length() {
+                        return Err(anyhow!(
+                            "Invalid array item provided to set element of vector uniform {}, expected length of 4 but got {}",
+                            key,
+                            vector.length(),
+                        ));
+                    }
+
+                    for j in 0..vector.length() {
+                        let value = vector
+                            .get_index(scope, j)
+                            .expect("Unexpected: could not get v8 item value from array")
+                            .to_number(scope)
+                            .expect("Unexpected: could not parse v8 value into number");
+                        let offset = element_offset + (j as usize * 4);
+
+                        Self::write_uniform_scalar(
+                            &mut self.uniforms_buffer,
+                            value,
+                            scope,
+                            scalar_type,
+                            offset,
+                        );
+                    }
+                }
+            }
+        };
 
         self.has_uniforms_changed = true;
 
         Ok(())
+    }
+
+    fn write_uniform_scalar(
+        buffer: &mut [u8],
+        value: v8::Local<v8::Number>,
+        scope: &mut v8::HandleScope,
+        scalar_type: &ScalarType,
+        offset: usize,
+    ) {
+        match scalar_type {
+            ScalarType::F32 => {
+                let value = value.value() as f32;
+                buffer[offset..offset + 4].copy_from_slice(&value.to_ne_bytes());
+            }
+            ScalarType::I32 => {
+                let value = value
+                    .int32_value(scope)
+                    .expect("Unexpected: could not parse v8 number into i32");
+                buffer[offset..offset + 4].copy_from_slice(&value.to_ne_bytes());
+            }
+            ScalarType::U32 => {
+                let value = value.value().max(0.0) as u32;
+                buffer[offset..offset + 4].copy_from_slice(&value.to_ne_bytes());
+            }
+        };
     }
 
     pub(crate) fn render(&mut self, encoder: &mut nannou::wgpu::CommandEncoder) {
@@ -301,12 +572,13 @@ impl SketchState {
         &mut self,
         id: FullscreenShaderId,
         key: String,
-        value: f32,
+        value: v8::Local<v8::Value>,
+        scope: &mut v8::HandleScope,
     ) -> Result<()> {
         self.fullscreen_shader_map
             .get_mut(&id)
             .expect("Unexpected: could not find shader for given id")
-            .set_uniform(&key, value)?;
+            .set_uniform(&key, value, scope)?;
 
         Ok(())
     }
@@ -337,11 +609,12 @@ pub(crate) fn op_draw_fullscreen_shader_set_uniform(
     state: &mut OpState,
     id: u32,
     #[string] key: String,
-    value: f32,
+    value: v8::Local<v8::Value>,
+    scope: &mut v8::HandleScope,
 ) -> Result<(), JsErrorBox> {
     let state = state.sketch_store_mut().get_mut::<SketchState>();
 
     state
-        .set_fullscreen_shader_uniform(FullscreenShaderId(id), key, value)
+        .set_fullscreen_shader_uniform(FullscreenShaderId(id), key, value, scope)
         .map_err(|error| JsErrorBox::generic(error.to_string()))
 }

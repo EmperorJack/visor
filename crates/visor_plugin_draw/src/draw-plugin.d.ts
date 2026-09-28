@@ -129,8 +129,13 @@ declare function hsva(h: number, s: number, v: number, a: number): Color;
 declare function width(): number;
 declare function height(): number;
 
+type UniformValue =
+  | number
+  | Array<number>
+  | Array<[number, number, number, number]>;
+
 interface FullscreenShader {
-  setUniform(name: string, value: number): void;
+  setUniform(name: string, value: UniformValue): void;
 }
 
 declare function loadFullscreenShader(path: string): FullscreenShader;

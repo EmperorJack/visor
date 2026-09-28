@@ -122,7 +122,7 @@ declare namespace Deno {
       op_draw_fullscreen_shader_set_uniform: (
         shaderId: number,
         key: string,
-        value: number,
+        value: number | Array<number> | Array<[number, number, number, number]>,
       ) => void;
     };
   };

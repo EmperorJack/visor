@@ -13,7 +13,7 @@ export class FullscreenShader {
     return this.#id;
   }
 
-  setUniform(key: string, value: number) {
+  setUniform(key: string, value: UniformValue) {
     op_draw_fullscreen_shader_set_uniform(this.#id, key, value);
   }
 }
