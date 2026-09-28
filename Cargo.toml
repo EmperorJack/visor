@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/*", "examples/*", "visor_cli", "visor_core"]
+members = ["crates/*", "examples/counter_plugin", "visor_cli", "visor_core"]
 
 [workspace.package]
 description = "Creative code real-time visuals in JavaScript or TypeScript."
