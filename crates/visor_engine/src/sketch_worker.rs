@@ -1,4 +1,7 @@
-use std::path::PathBuf;
+use std::{
+    path::PathBuf,
+    time::{Duration, Instant},
+};
 
 use anyhow::Result;
 use tokio::sync::{mpsc, oneshot};
@@ -17,6 +20,7 @@ pub(crate) struct SketchUpdateResult {
     pub store: SketchStore,
     pub compile_error: Option<String>,
     pub runtime_error: Option<String>,
+    pub duration: Duration,
 }
 
 pub(crate) enum SketchWorkerTask {
@@ -81,6 +85,7 @@ impl SketchWorker {
                 }
 
                 SketchWorkerTask::Update(store, result_sender) => {
+                    let timer_start = Instant::now();
                     let store = self.update(store);
 
                     result_sender
@@ -89,6 +94,7 @@ impl SketchWorker {
                             store,
                             compile_error: self.compile_error.clone(),
                             runtime_error: self.runtime_error.clone(),
+                            duration: timer_start.elapsed(),
                         })
                         .expect("Unexpected: could not send update result back to sketch");
                 }

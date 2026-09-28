@@ -2,6 +2,7 @@ use std::{
     collections::HashMap,
     path::PathBuf,
     sync::{Arc, OnceLock},
+    time::{Duration, Instant},
 };
 
 use deno_core::Extension;
@@ -35,6 +36,99 @@ pub struct Engine {
     render_textures: IndexMap<RenderTextureId, RenderTexture>,
     display_manager: DisplayManager,
     wgpu_handle: Arc<WgpuHandle>,
+    timers: Timers,
+}
+
+struct Timers {
+    engine_update_timer: Timer,
+    before_engine_update_timer: Timer,
+    sketch_update_timer: Timer,
+    sketch_update_timers: HashMap<SketchId, Timer>,
+    before_engine_render_timer: Timer,
+    after_engine_render_timer: Timer,
+    engine_render_timer: Timer,
+    after_engine_update_timer: Timer,
+    frame_count: u32,
+    last_report: Instant,
+}
+
+impl Default for Timers {
+    fn default() -> Self {
+        Self {
+            engine_update_timer: Timer::new("engine_update".into()),
+            before_engine_update_timer: Timer::new("plugin:before_engine_update".into()),
+            sketch_update_timer: Timer::new("sketch_update".into()),
+            sketch_update_timers: Default::default(),
+            before_engine_render_timer: Timer::new("plugin:before_engine_render".into()),
+            after_engine_render_timer: Timer::new("plugin:after_engine_render".into()),
+            engine_render_timer: Timer::new("engine_render".into()),
+            after_engine_update_timer: Timer::new("plugin:after_engine_update".into()),
+            frame_count: 0,
+            last_report: Instant::now(),
+        }
+    }
+}
+
+impl Timers {
+    fn update(&mut self) {
+        self.frame_count += 1;
+
+        if self.last_report.elapsed() >= Duration::from_secs(1) {
+            let num_sketches = self.sketch_update_timers.len();
+
+            self.engine_update_timer.report("", self.frame_count);
+            self.before_engine_update_timer
+                .report("├── ", self.frame_count);
+            self.sketch_update_timer.report("├── ", self.frame_count);
+            for (i, (_, timer)) in self.sketch_update_timers.iter_mut().enumerate() {
+                let prepend = if i == num_sketches - 1 {
+                    "└──"
+                } else {
+                    "├──"
+                };
+
+                timer.report(&format!("│   {} ", prepend), self.frame_count);
+            }
+            self.before_engine_render_timer
+                .report("├── ", self.frame_count);
+            self.after_engine_render_timer
+                .report("├── ", self.frame_count);
+            self.engine_render_timer.report("├── ", self.frame_count);
+            self.after_engine_update_timer
+                .report("└── ", self.frame_count);
+
+            println!("====================");
+
+            self.frame_count = 0;
+            self.last_report = Instant::now();
+        }
+    }
+}
+
+struct Timer {
+    label: String,
+    duration: Duration,
+}
+
+impl Timer {
+    fn new(label: String) -> Self {
+        Self {
+            label,
+            duration: Duration::ZERO,
+        }
+    }
+
+    fn update(&mut self, duration: Duration) {
+        self.duration += duration;
+    }
+
+    fn report(&mut self, prepend: &str, frame_count: u32) {
+        let avg_time = self.duration / frame_count;
+
+        println!("{} {}: {} ms", prepend, self.label, avg_time.as_millis());
+
+        self.duration = Duration::ZERO;
+    }
 }
 
 impl Engine {
@@ -127,6 +221,7 @@ impl Engine {
             render_textures: Default::default(),
             display_manager,
             wgpu_handle,
+            timers: Default::default(),
         };
 
         for plugin in Self::plugins() {
@@ -141,14 +236,21 @@ impl Engine {
     }
 
     pub fn update(&mut self) {
+        let update_start = Instant::now();
+
         self.ensure_sketches_built();
 
+        let timer_start = Instant::now();
         for plugin in Self::plugins() {
             plugin.before_engine_update(self, &ENGINE_STORE);
         }
+        self.timers
+            .before_engine_update_timer
+            .update(timer_start.elapsed());
 
         let mut sketch_stores = self.take_sketch_stores();
 
+        let timer_start = Instant::now();
         self.runtime_handle.block_on(async {
             let mut join_set = JoinSet::new();
 
@@ -179,9 +281,18 @@ impl Engine {
                     .expect("Unexpected: could not find sketch")
                     .set_errors(result.compile_error, result.runtime_error);
 
+                self.timers
+                    .sketch_update_timers
+                    .get_mut(&result.id)
+                    .expect("Unexpected: could not get sketch timer")
+                    .update(result.duration);
+
                 sketch_stores.insert(result.id, result.store);
             }
         });
+        self.timers
+            .sketch_update_timer
+            .update(timer_start.elapsed());
 
         self.set_sketch_stores(sketch_stores);
 
@@ -193,9 +304,13 @@ impl Engine {
 
         self.ensure_sketches_built();
 
+        let timer_start = Instant::now();
         for plugin in Self::plugins() {
             plugin.before_engine_render(self, &ENGINE_STORE, &mut encoder);
         }
+        self.timers
+            .before_engine_render_timer
+            .update(timer_start.elapsed());
 
         for sketch in self.sketches.values().filter(|sketch| sketch.is_enabled()) {
             if let Some(render_texture_id) = sketch.get_target_render_texture_id() {
@@ -210,19 +325,37 @@ impl Engine {
 
         self.ensure_sketches_built();
 
+        let timer_start = Instant::now();
         for plugin in Self::plugins() {
             plugin.after_engine_render(self, &ENGINE_STORE, &mut encoder);
         }
+        self.timers
+            .after_engine_render_timer
+            .update(timer_start.elapsed());
 
+        let timer_start = Instant::now();
         self.wgpu_handle.queue.submit(Some(encoder.finish()));
 
         self.display_manager.render();
+        self.timers
+            .engine_render_timer
+            .update(timer_start.elapsed());
 
         self.ensure_sketches_built();
 
+        let timer_start = Instant::now();
         for plugin in Self::plugins() {
             plugin.after_engine_update(self, &ENGINE_STORE);
         }
+        self.timers
+            .after_engine_update_timer
+            .update(timer_start.elapsed());
+
+        self.timers
+            .engine_update_timer
+            .update(update_start.elapsed());
+
+        self.timers.update();
     }
 
     // TODO: this is now run quite a bit, can we do it more efficiently?
@@ -262,6 +395,16 @@ impl Engine {
     pub(crate) fn manage_sketch(&mut self, sketch: Sketch) -> &Sketch {
         let id = *sketch.id();
 
+        let file_name = sketch
+            .file_path()
+            .file_name()
+            .and_then(|file_name| file_name.to_str())
+            .expect("Unexpected: could not get sketch file name")
+            .into();
+        self.timers
+            .sketch_update_timers
+            .insert(id, Timer::new(file_name));
+
         self.sketches.insert(id, sketch);
 
         self.sketches
@@ -299,6 +442,8 @@ impl Engine {
 
     pub fn remove_sketch(&mut self, id: &SketchId) {
         self.sketches.shift_remove(id);
+
+        self.timers.sketch_update_timers.remove(id);
     }
 
     pub(crate) fn manage_render_texture(
