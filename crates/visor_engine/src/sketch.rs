@@ -68,6 +68,10 @@ impl Sketch {
         &self.file_path
     }
 
+    pub fn set_file_path(&mut self, file_path: PathBuf) {
+        self.file_path = file_path;
+    }
+
     pub fn draw(&self) -> &Draw {
         self.sketch_store
             .as_ref()
