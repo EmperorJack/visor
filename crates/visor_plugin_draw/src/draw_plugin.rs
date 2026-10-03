@@ -1,6 +1,7 @@
 use std::{
     collections::HashMap,
     hash::Hash,
+    path::PathBuf,
     sync::{Arc, RwLock},
 };
 
@@ -48,6 +49,7 @@ pub(crate) struct SketchState {
     pub(crate) fullscreen_shader_map: HashMap<FullscreenShaderId, FullscreenShader>,
     pub(crate) width: u32,
     pub(crate) height: u32,
+    pub(crate) file_path: PathBuf,
     pub(crate) wgpu_handle: Arc<WgpuHandle>,
 }
 
@@ -63,6 +65,7 @@ pub(crate) enum ShapeType {
 }
 
 type SketchSizeState = HashMap<SketchId, [u32; 2]>;
+type SketchFilePathState = HashMap<SketchId, PathBuf>;
 
 fn get_draw(sketch_store: &SketchStore, id: DrawId) -> &Draw {
     if id.0 == 0 {
@@ -424,6 +427,7 @@ impl Plugin for DrawPlugin {
 
     fn build(&self, _engine: &mut Engine, store: &Store) {
         store.set(RwLock::new(SketchSizeState::default()));
+        store.set(RwLock::new(SketchFilePathState::default()));
     }
 
     fn build_sketch(
@@ -449,6 +453,7 @@ impl Plugin for DrawPlugin {
             fullscreen_shader_map: Default::default(),
             width: 0,
             height: 0,
+            file_path: Default::default(),
             wgpu_handle: engine.wgpu_handle().clone(),
         });
     }
@@ -458,6 +463,11 @@ impl Plugin for DrawPlugin {
             .get::<RwLock<SketchSizeState>>()
             .write()
             .expect("Unexpected: could not acquire write lock for sketch size state");
+
+        let mut sketch_file_path_state = store
+            .get::<RwLock<SketchFilePathState>>()
+            .write()
+            .expect("Unexpected: could not acquire write lock for sketch file path state");
 
         let mut resized_sketches: HashMap<SketchId, [u32; 2]> = HashMap::new();
 
@@ -482,6 +492,8 @@ impl Plugin for DrawPlugin {
             }
 
             sketch_size_state.insert(*sketch_id, size);
+
+            sketch_file_path_state.insert(*sketch_id, sketch.file_path().clone());
         }
 
         for (sketch_id, [width, height]) in resized_sketches {
@@ -522,6 +534,16 @@ impl Plugin for DrawPlugin {
 
         sketch_state.width = sketch_size[0];
         sketch_state.height = sketch_size[1];
+
+        let file_path_state = store
+            .get::<RwLock<SketchFilePathState>>()
+            .read()
+            .expect("Unexpected: could not acquire read lock for sketch file path state");
+
+        sketch_state.file_path = file_path_state
+            .get(sketch_id)
+            .expect("Could not get sketch file path")
+            .clone();
     }
 
     fn after_sketch_update(

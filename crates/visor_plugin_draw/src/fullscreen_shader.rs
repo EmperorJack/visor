@@ -1,6 +1,7 @@
 use std::{
     collections::HashMap,
     hash::{Hash, Hasher},
+    path::{Path, PathBuf},
     sync::Arc,
 };
 
@@ -15,7 +16,7 @@ use crate::draw_plugin::{ShapeId, ShapeType, SketchState};
 pub(crate) struct FullscreenShaderId(pub(crate) u32);
 
 impl FullscreenShaderId {
-    fn new(path: &str) -> Self {
+    fn new(path: &Path) -> Self {
         let mut hasher = std::hash::DefaultHasher::new();
 
         path.hash(&mut hasher);
@@ -68,7 +69,7 @@ const VERTEX_SHADER_SOURCE: &str = include_str!("fullscreen_vertex_shader.wgsl")
 
 impl FullscreenShader {
     pub(crate) fn new(
-        path: String,
+        path: PathBuf,
         width: u32,
         height: u32,
         wgpu_handle: &Arc<WgpuHandle>,
@@ -77,8 +78,12 @@ impl FullscreenShader {
 
         let (texture, texture_view) = Self::create_graphics(device, width, height);
 
-        let fragment_shader_source = std::fs::read_to_string(&path)
-            .map_err(|_| anyhow!("Could not load fullscreen shader at path {}", path))?;
+        let fragment_shader_source = std::fs::read_to_string(&path).map_err(|_| {
+            anyhow!(
+                "Could not load fullscreen shader at path {}",
+                path.display()
+            )
+        })?;
 
         let source = format!("{}\n{}", VERTEX_SHADER_SOURCE, fragment_shader_source);
 
@@ -554,7 +559,7 @@ impl SketchState {
             .is_being_drawn = true;
     }
 
-    pub(crate) fn load_fullscreen_shader(&mut self, path: String) -> Result<FullscreenShaderId> {
+    pub(crate) fn load_fullscreen_shader(&mut self, path: PathBuf) -> Result<FullscreenShaderId> {
         let shader_id = FullscreenShaderId::new(&path);
 
         let shader = FullscreenShader::new(path, self.width, self.height, &self.wgpu_handle)?;
@@ -594,6 +599,8 @@ pub(crate) fn op_draw_fullscreen_shader_load(
 ) -> Result<u32, JsErrorBox> {
     let state = state.sketch_store_mut().get_mut::<SketchState>();
 
+    let path = build_path(&state.file_path, path.into());
+
     state
         .load_fullscreen_shader(path)
         .map(|shader_id| shader_id.0)
@@ -613,4 +620,12 @@ pub(crate) fn op_draw_fullscreen_shader_set_uniform(
     state
         .set_fullscreen_shader_uniform(FullscreenShaderId(id), key, value, scope)
         .map_err(|error| JsErrorBox::generic(error.to_string()))
+}
+
+fn build_path(base: &Path, target: PathBuf) -> PathBuf {
+    if let Some(dir) = base.parent() {
+        return dir.join(target);
+    }
+
+    target
 }

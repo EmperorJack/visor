@@ -1,6 +1,4 @@
-const shader = loadFullscreenShader(
-  "./examples/fullscreen-shader/hello-world.wgsl",
-);
+const shader = loadFullscreenShader("hello-world.wgsl");
 
 const draw = createDraw();
 
