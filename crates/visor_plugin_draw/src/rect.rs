@@ -29,11 +29,15 @@ impl ShapeCommand<Rect> for RectCommand {
             Self::Xy { x, y } => drawing.x_y(x, y),
             Self::Xyz { x, y, z } => drawing.x_y_z(x, y, z),
             Self::Wh { w, h } => drawing.w_h(w, h),
-            Self::FillRgba { r, g, b, a } => drawing.rgba(r, g, b, a),
-            Self::FillHsva { h, s, v, a } => drawing.hsva(h, s, v, a),
+            Self::FillRgba { r, g, b, a } => drawing.color(nannou::color::lin_srgba(r, g, b, a)),
+            Self::FillHsva { h, s, v, a } => drawing.color(nannou::color::LinSrgba::from(
+                nannou::color::hsva(h, s, v, a),
+            )),
             Self::NoFill => drawing.no_fill(),
-            Self::StrokeRgba { r, g, b, a } => drawing.stroke(color::rgba(r, g, b, a)),
-            Self::StrokeHsva { h, s, v, a } => drawing.stroke(color::hsva(h, s, v, a)),
+            Self::StrokeRgba { r, g, b, a } => drawing.stroke(nannou::color::lin_srgba(r, g, b, a)),
+            Self::StrokeHsva { h, s, v, a } => drawing.stroke(nannou::color::LinSrgba::from(
+                nannou::color::hsva(h, s, v, a),
+            )),
             Self::StrokeWeight { w } => drawing.stroke_weight(w),
         }
     }

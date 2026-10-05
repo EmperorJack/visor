@@ -76,8 +76,10 @@ impl ShapeCommand<Quad> for QuadCommand {
                 x4,
                 y4,
             } => drawing.points((x1, y1), (x2, y2), (x3, y3), (x4, y4)),
-            Self::FillRgba { r, g, b, a } => drawing.rgba(r, g, b, a),
-            Self::FillHsva { h, s, v, a } => drawing.hsva(h, s, v, a),
+            Self::FillRgba { r, g, b, a } => drawing.color(nannou::color::lin_srgba(r, g, b, a)),
+            Self::FillHsva { h, s, v, a } => drawing.color(nannou::color::LinSrgba::from(
+                nannou::color::hsva(h, s, v, a),
+            )),
             Self::NoFill => drawing.no_fill(),
             Self::StrokeRgba { r, g, b, a } => drawing.stroke_color(color::rgba(r, g, b, a)),
             Self::StrokeHsva { h, s, v, a } => drawing.stroke_color(color::hsva(h, s, v, a)),
