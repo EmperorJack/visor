@@ -1,3 +1,6 @@
+#[cfg(target_os = "macos")]
+use objc::{msg_send, runtime::Object, sel, sel_impl};
+
 use std::sync::Arc;
 
 use tao::rwh_06;
@@ -18,6 +21,16 @@ impl WgpuDisplay {
     where
         W: rwh_06::HasWindowHandle + rwh_06::HasDisplayHandle + Send + Sync + 'static,
     {
+        #[cfg(target_os = "macos")]
+        let ns_view: *mut Object = match window
+            .window_handle()
+            .expect("Unexpected: could not get macOS window handle")
+            .as_raw()
+        {
+            rwh_06::RawWindowHandle::AppKit(handle) => handle.ns_view.as_ptr() as *mut Object,
+            _ => panic!("Unexpected: expected a macOS AppKit window handle"),
+        };
+
         let surface = wgpu
             .instance
             .create_surface(window)
@@ -55,12 +68,29 @@ impl WgpuDisplay {
 
         surface.configure(&wgpu.device, &surface_config);
 
+        // Ensure macOS does not color manage the window
+        #[cfg(target_os = "macos")]
+        Self::set_layer_color_space_raw(ns_view);
+
         Self {
             surface,
             surface_format,
             surface_config,
             source_texture_reshaper: None,
             wgpu_handle: wgpu,
+        }
+    }
+
+    #[cfg(target_os = "macos")]
+    fn set_layer_color_space_raw(ns_view: *mut Object) {
+        #![allow(unexpected_cfgs)]
+        unsafe {
+            let layer: *mut Object = msg_send![ns_view, layer];
+            if layer.is_null() {
+                return;
+            }
+
+            let _: () = msg_send![layer, setColorspace: std::ptr::null_mut::<std::ffi::c_void>()];
         }
     }
 
