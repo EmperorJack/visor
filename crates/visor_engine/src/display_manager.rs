@@ -48,8 +48,8 @@ impl DisplayManager {
         self.displays.remove(id);
     }
 
-    pub(crate) fn render(&mut self) {
-        self.displays.values_mut().for_each(|display| {
+    pub(crate) fn render(&self) {
+        self.displays.values().for_each(|display| {
             display.render();
         });
     }

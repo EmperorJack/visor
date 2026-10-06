@@ -1,19 +1,23 @@
 #[cfg(target_os = "macos")]
 use objc::{msg_send, runtime::Object, sel, sel_impl};
+use tokio::sync::mpsc;
 
-use std::sync::Arc;
+use std::sync::{
+    Arc,
+    atomic::{AtomicU64, Ordering},
+};
 
 use tao::rwh_06;
 
-use crate::wgpu::handle::WgpuHandle;
+use crate::wgpu::{
+    display_worker::{WgpuDisplayWorker, WgpuDisplayWorkerTask},
+    handle::WgpuHandle,
+};
 
 #[derive(Debug)]
 pub struct WgpuDisplay {
-    surface: nannou::wgpu::Surface<'static>,
-    surface_format: nannou::wgpu::TextureFormat,
-    surface_config: nannou::wgpu::SurfaceConfiguration,
-    source_texture_reshaper: Option<nannou::wgpu::TextureReshaper>,
-    wgpu_handle: Arc<WgpuHandle>,
+    worker_task_sender: mpsc::Sender<WgpuDisplayWorkerTask>,
+    frame_counter: std::sync::Arc<AtomicU64>,
 }
 
 impl WgpuDisplay {
@@ -72,12 +76,29 @@ impl WgpuDisplay {
         #[cfg(target_os = "macos")]
         Self::set_layer_color_space_raw(ns_view);
 
+        let frame_counter = std::sync::Arc::new(AtomicU64::new(0));
+
+        let (worker_task_sender, worker_task_receiver) = mpsc::channel::<WgpuDisplayWorkerTask>(64);
+
+        {
+            let frame_counter = frame_counter.clone();
+
+            std::thread::spawn(move || {
+                WgpuDisplayWorker::new(
+                    surface,
+                    surface_config,
+                    surface_format,
+                    worker_task_receiver,
+                    frame_counter,
+                    wgpu,
+                )
+                .run();
+            });
+        }
+
         Self {
-            surface,
-            surface_format,
-            surface_config,
-            source_texture_reshaper: None,
-            wgpu_handle: wgpu,
+            worker_task_sender,
+            frame_counter,
         }
     }
 
@@ -94,50 +115,21 @@ impl WgpuDisplay {
         }
     }
 
-    pub fn set_source_texture(&mut self, texture_view: Option<&nannou::wgpu::TextureView>) {
-        self.source_texture_reshaper = texture_view.map(|texture_view| {
-            nannou::wgpu::TextureReshaper::new(
-                &self.wgpu_handle.device,
-                texture_view,
-                texture_view.info().sample_count,
-                texture_view.sample_type(),
-                1,
-                self.surface_format,
-            )
-        });
-    }
-
-    pub fn render(&self) -> Result<(), nannou::wgpu::SurfaceError> {
-        if let Some(source_texture_reshaper) = &self.source_texture_reshaper {
-            return self.surface.get_current_texture().map(|surface_texture| {
-                let mut encoder = self.wgpu_handle.device.create_command_encoder(
-                    &nannou::wgpu::CommandEncoderDescriptor {
-                        label: Some("Display surface texture render encoder"),
-                    },
-                );
-
-                let surface_texture_view = surface_texture
-                    .texture
-                    .create_view(&nannou::wgpu::TextureViewDescriptor::default());
-
-                source_texture_reshaper.encode_render_pass(&surface_texture_view, &mut encoder);
-
-                self.wgpu_handle.queue.submit(Some(encoder.finish()));
-
-                surface_texture.present();
-            });
-        };
-
-        Ok(())
-    }
-
     pub fn resize(&mut self, width: u32, height: u32) {
-        if width > 0 && height > 0 {
-            self.surface_config.width = width;
-            self.surface_config.height = height;
+        self.worker_task_sender
+            .try_send(WgpuDisplayWorkerTask::Resize { width, height })
+            .expect("Unexpected: could not send resize task to wgpu display worker");
+    }
 
-            self.surface
-                .configure(&self.wgpu_handle.device, &self.surface_config);
-        }
+    pub fn set_source_texture(&mut self, texture_view: Option<&nannou::wgpu::TextureView>) {
+        self.worker_task_sender
+            .try_send(WgpuDisplayWorkerTask::SetSourceTexture(
+                texture_view.cloned(),
+            ))
+            .expect("Unexpected: could not send set source texture task to wgpu display worker");
+    }
+
+    pub fn render(&self) {
+        self.frame_counter.fetch_add(1, Ordering::Release);
     }
 }

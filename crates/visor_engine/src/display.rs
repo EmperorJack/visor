@@ -50,23 +50,7 @@ impl Display {
         self.wgpu_display.set_source_texture(texture_view);
     }
 
-    pub(crate) fn render(&mut self) {
-        match self.wgpu_display.render() {
-            Ok(()) => {}
-            Err(nannou::wgpu::SurfaceError::Lost) => {
-                log::error!("Surface error: display surface texture lost!");
-
-                let size = self.window.inner_size();
-                self.wgpu_display.resize(size.width, size.height);
-            }
-            Err(nannou::wgpu::SurfaceError::OutOfMemory) => {
-                log::error!("Surface error: out of memory!");
-
-                panic!("Surface error: out of memory!")
-            }
-            Err(e) => {
-                log::error!("Surface error: {:?}", e);
-            }
-        }
+    pub(crate) fn render(&self) {
+        self.wgpu_display.render();
     }
 }
