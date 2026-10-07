@@ -23,5 +23,9 @@ tao = { workspace = true, features = ["rwh_06"] }
 tokio = { workspace = true, features = ["full"] }
 uuid = { version = "1.10.0", features = ["v4", "fast-rng"] }
 
+# Forces cargo to use the correct version of visor_nannou_wgpu
+[target.'cfg(any())'.dependencies]
+visor_nannou_wgpu = "=0.19.0-2"
+
 [target.'cfg(target_os = "macos")'.dependencies]
 objc = "0.2"

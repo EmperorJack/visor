@@ -55,13 +55,22 @@ impl WgpuDisplay {
             .find(|f| f.is_srgb())
             .unwrap_or(surface_capabilities.formats[0]);
 
+        let alpha_mode = if surface_capabilities
+            .alpha_modes
+            .contains(&nannou::wgpu::CompositeAlphaMode::PostMultiplied)
+        {
+            nannou::wgpu::CompositeAlphaMode::PostMultiplied
+        } else {
+            surface_capabilities.alpha_modes[0]
+        };
+
         let surface_config = nannou::wgpu::SurfaceConfiguration {
             usage: nannou::wgpu::TextureUsages::RENDER_ATTACHMENT,
             format: surface_format,
             width,
             height,
             present_mode: nannou::wgpu::PresentMode::Fifo,
-            alpha_mode: surface_capabilities.alpha_modes[0],
+            alpha_mode,
             view_formats: vec![],
             desired_maximum_frame_latency: 1,
         };
