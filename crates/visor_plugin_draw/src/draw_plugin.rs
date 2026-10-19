@@ -23,6 +23,7 @@ use crate::polyline::*;
 use crate::quad::*;
 use crate::rect::*;
 use crate::spline::*;
+use crate::texture::*;
 
 pub struct DrawPlugin;
 
@@ -45,6 +46,8 @@ pub(crate) struct SketchState {
     pub(crate) polyline_command_map: PolylineCommandMap,
     pub(crate) spline_command_map: SplineCommandMap,
     pub(crate) path_command_map: PathCommandMap,
+    pub(crate) texture_command_map: TextureCommandMap,
+    pub(crate) texture_map: HashMap<TextureId, nannou::wgpu::Texture>,
     pub(crate) fullscreen_shader_command_map: FullscreenShaderCommandMap,
     pub(crate) fullscreen_shader_map: HashMap<FullscreenShaderId, FullscreenShader>,
     pub(crate) width: u32,
@@ -61,6 +64,7 @@ pub(crate) enum ShapeType {
     Polyline,
     Spline,
     Path,
+    Texture,
     FullscreenShader,
 }
 
@@ -272,6 +276,25 @@ impl SketchState {
 
                     let _path = path.points(points);
                 }
+                ShapeType::Texture => {
+                    let (draw_id, texture_id, commands) = self
+                        .texture_command_map
+                        .get(shape_id)
+                        .expect("Unexpected: could not find texture commands for shape id");
+
+                    let draw = get_draw(sketch_store, *draw_id);
+
+                    let texture = self
+                        .texture_map
+                        .get(texture_id)
+                        .expect("Unexpected: could not find texture for given id");
+
+                    let mut drawing = draw.inner.texture(texture);
+
+                    for command in commands {
+                        drawing = command.apply(drawing);
+                    }
+                }
                 ShapeType::FullscreenShader => {
                     let shader_id = self.fullscreen_shader_command_map.get(shape_id).expect(
                         "Unexpected: could not find fullscreen shader commands for shape id",
@@ -301,6 +324,7 @@ impl SketchState {
         self.polyline_command_map.clear();
         self.spline_command_map.clear();
         self.path_command_map.clear();
+        self.texture_command_map.clear();
         self.fullscreen_shader_command_map.clear();
     }
 
@@ -395,6 +419,14 @@ extension!(
         op_draw_scale_y,
         op_draw_width,
         op_draw_height,
+        op_draw_texture,
+        op_draw_texture_load,
+        op_draw_texture_width,
+        op_draw_texture_height,
+        op_draw_texture_xy,
+        op_draw_texture_xyz,
+        op_draw_texture_wh,
+        op_draw_texture_opacity,
         op_draw_fullscreen_shader,
         op_draw_fullscreen_shader_load,
         op_draw_fullscreen_shader_set_uniform,
@@ -412,6 +444,8 @@ extension!(
         "src/quad.ts",
         "src/rect.ts",
         "src/spline.ts",
+        "src/texture.ts",
+        "src/texture-drawing.ts",
         "src/draw-plugin.ts"
     ]
 );
@@ -449,6 +483,8 @@ impl Plugin for DrawPlugin {
             polyline_command_map: Default::default(),
             spline_command_map: Default::default(),
             path_command_map: Default::default(),
+            texture_command_map: Default::default(),
+            texture_map: Default::default(),
             fullscreen_shader_command_map: Default::default(),
             fullscreen_shader_map: Default::default(),
             width: 0,

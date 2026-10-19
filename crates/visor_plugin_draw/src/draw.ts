@@ -6,6 +6,8 @@ import { Polyline } from "./polyline.ts";
 import { Quad } from "./quad.ts";
 import { Rect } from "./rect.ts";
 import { Spline } from "./spline.ts";
+import { Texture } from "./texture.ts";
+import { TextureDrawing } from "./texture-drawing.ts";
 
 const {
   op_draw_background_rgb,
@@ -17,6 +19,7 @@ const {
   op_draw_polyline,
   op_draw_spline,
   op_draw_path,
+  op_draw_texture,
   op_draw_translate,
   op_draw_rotate,
   op_draw_scale,
@@ -79,6 +82,11 @@ export class Draw {
   path() {
     const shapeId = op_draw_path(this.#id);
     return new Path(shapeId);
+  }
+
+  texture(texture: Texture) {
+    const shapeId = op_draw_texture(this.#id, texture.id());
+    return new TextureDrawing(shapeId);
   }
 
   // Transforms

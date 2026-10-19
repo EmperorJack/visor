@@ -7,5 +7,6 @@ mod polyline;
 mod quad;
 mod rect;
 mod spline;
+mod texture;
 
 pub use draw_plugin::DrawPlugin;

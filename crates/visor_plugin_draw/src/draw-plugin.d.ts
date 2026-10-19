@@ -11,6 +11,7 @@ interface Draw {
   polyline(): Polyline;
   spline(): Spline;
   path(): Path;
+  texture(texture: Texture): TextureDrawing;
 
   translate(x: number, y: number): Draw;
   rotate(radians: number): Draw;
@@ -20,6 +21,8 @@ interface Draw {
 
   copy(): Draw;
 }
+
+// TODO: append Drawing to shape interface names e.g: EllipseDrawing, and rename shape.ts files to shape-drawing.ts too
 
 interface Ellipse
   extends
@@ -75,6 +78,11 @@ interface Path
     Omit<ShapeFill<Path>, "noFill">,
     ShapeCurve<Path> {}
 
+interface TextureDrawing
+  extends ShapePosition<TextureDrawing>, ShapeWidthHeight<TextureDrawing> {
+  opacity(opacity: number): TextureDrawing;
+}
+
 interface ShapePosition<S> {
   xy(x: number, y: number): S;
   xyz(x: number, y: number, z: number): S;
@@ -126,6 +134,14 @@ declare function hsva(h: number, s: number, v: number, a: number): Color;
 
 declare function width(): number;
 declare function height(): number;
+
+declare function loadTexture(path: string): Texture;
+
+interface Texture {
+  id(): number;
+  width(): number;
+  height(): number;
+}
 
 type UniformValue =
   | number

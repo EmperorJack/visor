@@ -117,6 +117,14 @@ declare namespace Deno {
       op_draw_noise: (x: number, y: number, z: number) => number;
       op_draw_width: () => number;
       op_draw_height: () => number;
+      op_draw_texture: (drawId: number, textureId: number) => number;
+      op_draw_texture_load: (path: string) => number;
+      op_draw_texture_width: (textureId: number) => number;
+      op_draw_texture_height: (textureId: number) => number;
+      op_draw_texture_xy: ShapeXYCommand;
+      op_draw_texture_xyz: ShapeXYZCommand;
+      op_draw_texture_wh: ShapeWHCommand;
+      op_draw_texture_opacity: (id: number, opacity: number) => void;
       op_draw_fullscreen_shader: (shaderId: number) => void;
       op_draw_fullscreen_shader_load: (path: string) => number;
       op_draw_fullscreen_shader_set_uniform: (

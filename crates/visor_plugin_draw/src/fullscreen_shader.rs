@@ -21,7 +21,7 @@ impl FullscreenShaderId {
 
         path.hash(&mut hasher);
 
-        FullscreenShaderId(hasher.finish() as u32)
+        Self(hasher.finish() as u32)
     }
 }
 
