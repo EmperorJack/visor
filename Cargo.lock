@@ -5198,9 +5198,9 @@ dependencies = [
 
 [[package]]
 name = "visor_nannou"
-version = "0.19.0-2"
+version = "0.19.0-3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "06cb7252759c534142e8e6d778674706cc5b8ba80a41ccca2a5f16492253d59c"
+checksum = "e9462a81a5f9eb1ca13918cad07dbfe4a7510631855db01eaf72865849339525"
 dependencies = [
  "find_folder",
  "futures",
@@ -5228,9 +5228,9 @@ dependencies = [
 
 [[package]]
 name = "visor_nannou_wgpu"
-version = "0.19.0-2"
+version = "0.19.0-3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f85331a4824a8590f31b46514de432ba7bc39035be02af768c3ad3f5f3691ffc"
+checksum = "1d90ba3fce3aeed8861a0cbbd5020436a2165357cf9ec4eb70dadd05a373b149"
 dependencies = [
  "futures",
  "image",

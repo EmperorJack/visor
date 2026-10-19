@@ -426,7 +426,7 @@ extension!(
         op_draw_texture_xy,
         op_draw_texture_xyz,
         op_draw_texture_wh,
-        op_draw_texture_opacity,
+        op_draw_texture_tint,
         op_draw_fullscreen_shader,
         op_draw_fullscreen_shader_load,
         op_draw_fullscreen_shader_set_uniform,

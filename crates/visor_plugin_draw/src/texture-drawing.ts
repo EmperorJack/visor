@@ -4,7 +4,7 @@ const {
   op_draw_texture_xy,
   op_draw_texture_xyz,
   op_draw_texture_wh,
-  op_draw_texture_opacity,
+  op_draw_texture_tint,
 } = ops;
 
 export class TextureDrawing {
@@ -29,8 +29,8 @@ export class TextureDrawing {
     return this;
   }
 
-  opacity(opacity: number) {
-    op_draw_texture_opacity(this.#id, opacity);
+  tint(r: number, g: number, b: number, a: number) {
+    op_draw_texture_tint(this.#id, r, g, b, a);
     return this;
   }
 }

@@ -124,7 +124,7 @@ declare namespace Deno {
       op_draw_texture_xy: ShapeXYCommand;
       op_draw_texture_xyz: ShapeXYZCommand;
       op_draw_texture_wh: ShapeWHCommand;
-      op_draw_texture_opacity: (id: number, opacity: number) => void;
+      op_draw_texture_tint: ShapeRGBACommand;
       op_draw_fullscreen_shader: (shaderId: number) => void;
       op_draw_fullscreen_shader_load: (path: string) => number;
       op_draw_fullscreen_shader_set_uniform: (

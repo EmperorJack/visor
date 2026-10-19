@@ -31,7 +31,7 @@ pub(crate) enum TextureCommand {
     Xy { x: f32, y: f32 },
     Xyz { x: f32, y: f32, z: f32 },
     Wh { w: f32, h: f32 },
-    Opacity { opacity: f32 },
+    Tint { r: f32, g: f32, b: f32, a: f32 },
 }
 
 impl ShapeCommand<Texture> for TextureCommand {
@@ -40,7 +40,7 @@ impl ShapeCommand<Texture> for TextureCommand {
             Self::Xy { x, y } => drawing.x_y(x, y),
             Self::Xyz { x, y, z } => drawing.x_y_z(x, y, z),
             Self::Wh { w, h } => drawing.w_h(w, h),
-            Self::Opacity { opacity } => drawing.opacity(opacity),
+            Self::Tint { r, g, b, a } => drawing.tint(r, g, b, a),
         }
     }
 }
@@ -160,11 +160,18 @@ pub(crate) fn op_draw_texture_wh(state: &mut OpState, shape_id: u32, w: f32, h: 
 }
 
 #[op2(fast)]
-pub(crate) fn op_draw_texture_opacity(state: &mut OpState, shape_id: u32, opacity: f32) {
+pub(crate) fn op_draw_texture_tint(
+    state: &mut OpState,
+    shape_id: u32,
+    r: f32,
+    g: f32,
+    b: f32,
+    a: f32,
+) {
     state
         .sketch_store_mut()
         .get_mut::<SketchState>()
-        .store_texture_command(ShapeId(shape_id), TextureCommand::Opacity { opacity });
+        .store_texture_command(ShapeId(shape_id), TextureCommand::Tint { r, g, b, a });
 }
 
 fn build_path(base: &Path, target: PathBuf) -> PathBuf {

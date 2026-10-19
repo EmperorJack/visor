@@ -80,7 +80,7 @@ interface Path
 
 interface TextureDrawing
   extends ShapePosition<TextureDrawing>, ShapeWidthHeight<TextureDrawing> {
-  opacity(opacity: number): TextureDrawing;
+  tint(r: number, g: number, b: number, a: number): TextureDrawing;
 }
 
 interface ShapePosition<S> {
