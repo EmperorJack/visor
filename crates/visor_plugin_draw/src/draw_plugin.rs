@@ -601,7 +601,11 @@ impl Plugin for DrawPlugin {
         _store: &Store,
         encoder: &mut nannou::wgpu::CommandEncoder,
     ) {
-        for sketch in engine.sketches_mut().values_mut() {
+        for sketch in engine
+            .sketches_mut()
+            .values_mut()
+            .filter(|sketch| sketch.is_enabled())
+        {
             let sketch_state = sketch.sketch_store_mut().get_mut::<SketchState>();
 
             for shader in sketch_state.fullscreen_shader_map.values_mut() {
