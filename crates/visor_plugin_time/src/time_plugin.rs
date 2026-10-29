@@ -93,7 +93,7 @@ impl Plugin for TimePlugin {
     ) {
         let state = store
             .get::<RwLock<State>>()
-            .write()
+            .read()
             .expect("Unexpected: could not acquire read lock for state");
 
         let sketch_state = SketchState {
