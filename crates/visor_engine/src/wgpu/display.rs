@@ -13,6 +13,7 @@ pub struct WgpuDisplay {
     surface_format: nannou::wgpu::TextureFormat,
     surface_config: nannou::wgpu::SurfaceConfiguration,
     source_texture_reshaper: Option<nannou::wgpu::TextureReshaper>,
+    source_texture_id: Option<nannou::wgpu::TextureViewId>,
     wgpu_handle: Arc<WgpuHandle>,
 }
 
@@ -88,6 +89,7 @@ impl WgpuDisplay {
             surface_format,
             surface_config,
             source_texture_reshaper: None,
+            source_texture_id: None,
             wgpu_handle: wgpu,
         }
     }
@@ -106,6 +108,12 @@ impl WgpuDisplay {
     }
 
     pub fn set_source_texture(&mut self, texture_view: Option<&nannou::wgpu::TextureView>) {
+        let texture_view_id = texture_view.map(|view| view.id());
+
+        if self.source_texture_id == texture_view_id {
+            return;
+        }
+
         self.source_texture_reshaper = texture_view.map(|texture_view| {
             nannou::wgpu::TextureReshaper::new(
                 &self.wgpu_handle.device,
@@ -116,7 +124,7 @@ impl WgpuDisplay {
                 self.surface_format,
             )
         });
-        self.source_texture_id = source_texture_id;
+        self.source_texture_id = texture_view_id;
     }
 
     pub fn render(&self) -> Result<(), nannou::wgpu::SurfaceError> {
