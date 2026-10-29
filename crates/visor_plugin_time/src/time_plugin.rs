@@ -122,16 +122,11 @@ fn calculate_seconds_elapsed(time_started: Instant, time_now: Instant) -> f32 {
 }
 
 fn calculate_frame_rate(since_last_update: Duration) -> f32 {
-    if since_last_update.as_secs() > 0 {
-        return 0.0;
-    }
-
-    let millis = since_last_update.subsec_millis() as f32;
-    if millis == 0.0 {
+    if since_last_update.is_zero() {
         return f32::MAX;
     }
 
-    1000.0 / millis
+    (1.0 / since_last_update.as_secs_f64()) as f32
 }
 
 #[op2(fast)]
