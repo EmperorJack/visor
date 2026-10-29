@@ -9,7 +9,7 @@ use indexmap::IndexMap;
 use tao::window::WindowId;
 use tokio::{
     runtime::{Handle, Runtime},
-    task::JoinSet,
+    sync::oneshot,
 };
 
 use crate::{
@@ -19,6 +19,7 @@ use crate::{
     sketch::{Sketch, SketchId},
     sketch_runtime::init_startup_snapshot,
     sketch_store::SketchStore,
+    sketch_worker::SketchUpdateResult,
     store::{ENGINE_STORE, Store},
     wgpu::{
         handle::WgpuHandle,
@@ -32,6 +33,8 @@ pub struct Engine {
     _runtime: Option<Runtime>,
     pub(crate) runtime_handle: Handle,
     sketches: IndexMap<SketchId, Sketch>,
+    sketch_store_buffer: HashMap<SketchId, SketchStore>,
+    sketch_update_receivers: Vec<oneshot::Receiver<SketchUpdateResult>>,
     render_textures: IndexMap<RenderTextureId, RenderTexture>,
     display_manager: DisplayManager,
     wgpu_handle: Arc<WgpuHandle>,
@@ -124,6 +127,8 @@ impl Engine {
             _runtime: runtime,
             runtime_handle,
             sketches: Default::default(),
+            sketch_store_buffer: Default::default(),
+            sketch_update_receivers: Default::default(),
             render_textures: Default::default(),
             display_manager,
             wgpu_handle,
@@ -149,30 +154,24 @@ impl Engine {
 
         let mut sketch_stores = self.take_sketch_stores();
 
+        for sketch in self
+            .sketches
+            .values()
+            .filter(|sketch| sketch.is_enabled() && sketch.is_built())
+        {
+            let store = sketch_stores
+                .remove(sketch.id())
+                .expect("Unexpected: could not find sketch store");
+
+            self.sketch_update_receivers
+                .push(sketch.request_update(store));
+        }
+
         self.runtime_handle.block_on(async {
-            let mut join_set = JoinSet::new();
-
-            for sketch in self
-                .sketches
-                .values()
-                .filter(|sketch| sketch.is_enabled() && sketch.is_built())
-            {
-                let store = sketch_stores
-                    .remove(sketch.id())
-                    .expect("Unexpected: could not find sketch store");
-
-                let result_receiver = sketch.request_update(store);
-
-                join_set.spawn(async move {
-                    result_receiver
-                        .await
-                        .expect("Unexpected: error occurred during sketch update")
-                });
-            }
-
-            while let Some(result) = join_set.join_next().await {
-                let result =
-                    result.expect("Unexpected: could not join the next sketch update result");
+            for receiver in self.sketch_update_receivers.drain(..) {
+                let result = receiver
+                    .await
+                    .expect("Unexpected: error occurred during sketch update");
 
                 self.sketches
                     .get_mut(&result.id)
@@ -270,23 +269,28 @@ impl Engine {
     }
 
     pub(crate) fn take_sketch_stores(&mut self) -> HashMap<SketchId, SketchStore> {
-        self.sketches_mut()
-            .iter_mut()
-            .map(|(sketch_id, sketch)| (*sketch_id, sketch.take_store()))
-            .collect()
+        let mut sketch_stores = std::mem::take(&mut self.sketch_store_buffer);
+
+        sketch_stores.extend(
+            self.sketches_mut()
+                .iter_mut()
+                .map(|(sketch_id, sketch)| (*sketch_id, sketch.take_store())),
+        );
+
+        sketch_stores
     }
 
-    pub(crate) fn set_sketch_stores(&mut self, sketch_stores: HashMap<SketchId, SketchStore>) {
-        sketch_stores
-            .into_iter()
-            .for_each(|(sketch_id, sketch_store)| {
-                let sketch = self
-                    .sketches
-                    .get_mut(&sketch_id)
-                    .expect("Unexpected: could not find sketch");
+    pub(crate) fn set_sketch_stores(&mut self, mut sketch_stores: HashMap<SketchId, SketchStore>) {
+        for (sketch_id, sketch_store) in sketch_stores.drain() {
+            let sketch = self
+                .sketches
+                .get_mut(&sketch_id)
+                .expect("Unexpected: could not find sketch");
 
-                sketch.set_store(sketch_store)
-            });
+            sketch.set_store(sketch_store);
+        }
+
+        self.sketch_store_buffer = sketch_stores;
     }
 
     pub fn sketches(&self) -> &IndexMap<SketchId, Sketch> {
