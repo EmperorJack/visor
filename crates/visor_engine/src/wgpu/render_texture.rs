@@ -79,6 +79,10 @@ impl RenderTexture {
 
     /// Please note this recreates the underlying wgpu Texture. Therefore, any external copies of the TextureView will need to be updated.
     pub fn resize(&mut self, width: u32, height: u32) {
+        if width == 0 || height == 0 || self.texture.size() == [width, height] {
+            return;
+        }
+
         (self.texture, self.texture_view, self.renderer) = Self::create_graphics(
             &self.wgpu_handle.device,
             width,

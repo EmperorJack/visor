@@ -299,6 +299,10 @@ impl FullscreenShader {
     }
 
     pub(crate) fn resize(&mut self, width: u32, height: u32) {
+        if width == 0 || height == 0 || self.texture.size() == [width, height] {
+            return;
+        }
+
         (self.texture, self.texture_view) =
             Self::create_graphics(&self.wgpu_handle.device, width, height);
     }

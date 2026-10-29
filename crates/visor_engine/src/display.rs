@@ -57,7 +57,7 @@ impl Display {
                 log::error!("Surface error: display surface texture lost!");
 
                 let size = self.window.inner_size();
-                self.wgpu_display.resize(size.width, size.height);
+                self.wgpu_display.reconfigure(size.width, size.height);
             }
             Err(nannou::wgpu::SurfaceError::OutOfMemory) => {
                 log::error!("Surface error: out of memory!");

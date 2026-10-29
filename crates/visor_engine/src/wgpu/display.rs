@@ -75,7 +75,9 @@ impl WgpuDisplay {
             desired_maximum_frame_latency: 1,
         };
 
-        surface.configure(&wgpu.device, &surface_config);
+        if width > 0 && height > 0 {
+            surface.configure(&wgpu.device, &surface_config);
+        }
 
         // Ensure macOS does not color manage the window
         #[cfg(target_os = "macos")]
@@ -114,9 +116,14 @@ impl WgpuDisplay {
                 self.surface_format,
             )
         });
+        self.source_texture_id = source_texture_id;
     }
 
     pub fn render(&self) -> Result<(), nannou::wgpu::SurfaceError> {
+        if self.surface_config.width == 0 || self.surface_config.height == 0 {
+            return Ok(());
+        }
+
         if let Some(source_texture_reshaper) = &self.source_texture_reshaper {
             return self.surface.get_current_texture().map(|surface_texture| {
                 let mut encoder = self.wgpu_handle.device.create_command_encoder(
@@ -141,10 +148,18 @@ impl WgpuDisplay {
     }
 
     pub fn resize(&mut self, width: u32, height: u32) {
-        if width > 0 && height > 0 {
-            self.surface_config.width = width;
-            self.surface_config.height = height;
+        if self.surface_config.width == width && self.surface_config.height == height {
+            return;
+        }
 
+        self.reconfigure(width, height);
+    }
+
+    pub(crate) fn reconfigure(&mut self, width: u32, height: u32) {
+        self.surface_config.width = width;
+        self.surface_config.height = height;
+
+        if width > 0 && height > 0 {
             self.surface
                 .configure(&self.wgpu_handle.device, &self.surface_config);
         }
