@@ -41,7 +41,7 @@ impl Plugin for CounterPlugin {
     ) {
         let state = store
             .get::<RwLock<State>>()
-            .write()
+            .read()
             .expect("Unexpected: could not acquire read lock for state");
 
         // TODO: this is not a global counter as intended, would be good to demonstrate both

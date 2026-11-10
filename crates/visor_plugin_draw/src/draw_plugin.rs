@@ -1,9 +1,4 @@
-use std::{
-    collections::HashMap,
-    hash::Hash,
-    path::PathBuf,
-    sync::{Arc, RwLock},
-};
+use std::{collections::HashMap, hash::Hash, path::PathBuf, sync::Arc};
 
 use bevy_math::{
     Vec2,
@@ -50,9 +45,9 @@ pub(crate) struct SketchState {
     pub(crate) texture_map: HashMap<TextureId, nannou::wgpu::Texture>,
     pub(crate) fullscreen_shader_command_map: FullscreenShaderCommandMap,
     pub(crate) fullscreen_shader_map: HashMap<FullscreenShaderId, FullscreenShader>,
+    pub(crate) file_path: Arc<PathBuf>,
     pub(crate) width: u32,
     pub(crate) height: u32,
-    pub(crate) file_path: PathBuf,
     pub(crate) wgpu_handle: Arc<WgpuHandle>,
 }
 
@@ -67,9 +62,6 @@ pub(crate) enum ShapeType {
     Texture,
     FullscreenShader,
 }
-
-type SketchSizeState = HashMap<SketchId, [u32; 2]>;
-type SketchFilePathState = HashMap<SketchId, PathBuf>;
 
 fn get_draw(sketch_store: &SketchStore, id: DrawId) -> &Draw {
     if id.0 == 0 {
@@ -459,11 +451,6 @@ impl Plugin for DrawPlugin {
         Some(include_str!("draw-plugin.d.ts").into())
     }
 
-    fn build(&self, _engine: &mut Engine, store: &Store) {
-        store.set(RwLock::new(SketchSizeState::default()));
-        store.set(RwLock::new(SketchFilePathState::default()));
-    }
-
     fn build_sketch(
         &self,
         _sketch_id: &SketchId,
@@ -487,99 +474,79 @@ impl Plugin for DrawPlugin {
             texture_map: Default::default(),
             fullscreen_shader_command_map: Default::default(),
             fullscreen_shader_map: Default::default(),
+            file_path: Default::default(),
             width: 0,
             height: 0,
-            file_path: Default::default(),
             wgpu_handle: engine.wgpu_handle().clone(),
         });
     }
 
-    fn before_engine_update(&self, engine: &mut Engine, store: &Store) {
-        let mut sketch_size_state = store
-            .get::<RwLock<SketchSizeState>>()
-            .write()
-            .expect("Unexpected: could not acquire write lock for sketch size state");
+    fn before_engine_update(&self, engine: &mut Engine, _store: &Store) {
+        let sketch_sizes: Vec<(SketchId, [u32; 2])> = engine
+            .sketches()
+            .iter()
+            .map(|(sketch_id, sketch)| {
+                let size = sketch
+                    .get_target_render_texture_id()
+                    .map(|render_texture_id| {
+                        engine
+                            .render_textures()
+                            .get(render_texture_id)
+                            .expect("Unexpected: could not find render texture")
+                            .texture_view()
+                            .size()
+                    })
+                    .unwrap_or([0, 0]);
 
-        let mut sketch_file_path_state = store
-            .get::<RwLock<SketchFilePathState>>()
-            .write()
-            .expect("Unexpected: could not acquire write lock for sketch file path state");
+                (*sketch_id, size)
+            })
+            .collect();
 
-        let mut resized_sketches: HashMap<SketchId, [u32; 2]> = HashMap::new();
-
-        for (sketch_id, sketch) in engine.sketches().iter() {
-            let render_texture_id = sketch.get_target_render_texture_id();
-
-            let render_texture = render_texture_id.map(|id| {
-                engine
-                    .render_textures()
-                    .get(id)
-                    .expect("Unexpected: could not find render texture")
-            });
-
-            let size = render_texture
-                .map(|render_texture| render_texture.texture_view().size())
-                .unwrap_or([0, 0]);
-
-            if let Some(current_size) = sketch_size_state.get(sketch_id) {
-                if *current_size != size {
-                    resized_sketches.insert(*sketch_id, size);
-                }
-            }
-
-            sketch_size_state.insert(*sketch_id, size);
-
-            sketch_file_path_state.insert(*sketch_id, sketch.file_path().clone());
-        }
-
-        for (sketch_id, [width, height]) in resized_sketches {
-            engine
+        for (sketch_id, [width, height]) in sketch_sizes {
+            let sketch = engine
                 .sketches_mut()
                 .get_mut(&sketch_id)
-                .expect("Unexpected: could not find sketch")
-                .sketch_store_mut()
-                .get_mut::<SketchState>()
-                .fullscreen_shader_map
-                .values_mut()
-                .for_each(|shader| {
-                    shader.resize(width, height);
-                });
+                .expect("Unexpected: could not find sketch");
+
+            let updated_file_path = {
+                let sketch_state = sketch.sketch_store().get::<SketchState>();
+
+                if sketch_state.file_path.as_ref() != sketch.file_path() {
+                    Some(Arc::new(sketch.file_path().clone()))
+                } else {
+                    None
+                }
+            };
+
+            let sketch_state = sketch.sketch_store_mut().get_mut::<SketchState>();
+
+            if let Some(file_path) = updated_file_path {
+                sketch_state.file_path = file_path;
+            }
+
+            if sketch_state.width == width && sketch_state.height == height {
+                continue;
+            }
+
+            sketch_state.width = width;
+            sketch_state.height = height;
+
+            for shader in sketch_state.fullscreen_shader_map.values_mut() {
+                shader.resize(width, height);
+            }
         }
     }
 
     fn before_sketch_update(
         &self,
-        sketch_id: &SketchId,
-        store: &Store,
+        _sketch_id: &SketchId,
+        _store: &Store,
         sketch_store: &mut SketchStore,
     ) {
         sketch_store.get::<Draw>().inner.reset();
 
         let sketch_state = sketch_store.get_mut::<SketchState>();
-
         sketch_state.reset();
-
-        let sketch_size_state = store
-            .get::<RwLock<SketchSizeState>>()
-            .read()
-            .expect("Unexpected: could not acquire read lock for sketch size state");
-
-        let sketch_size = sketch_size_state
-            .get(sketch_id)
-            .expect("Unexpected: could not get sketch size");
-
-        sketch_state.width = sketch_size[0];
-        sketch_state.height = sketch_size[1];
-
-        let file_path_state = store
-            .get::<RwLock<SketchFilePathState>>()
-            .read()
-            .expect("Unexpected: could not acquire read lock for sketch file path state");
-
-        sketch_state.file_path = file_path_state
-            .get(sketch_id)
-            .expect("Could not get sketch file path")
-            .clone();
     }
 
     fn after_sketch_update(
