@@ -20,7 +20,7 @@ pub(crate) struct SketchUpdateResult {
 }
 
 pub(crate) enum SketchWorkerTask {
-    RequestCompile(oneshot::Sender<()>),
+    RequestCompile(PathBuf, oneshot::Sender<()>),
     RequestSetup(oneshot::Sender<()>),
     Update(SketchStore, oneshot::Sender<SketchUpdateResult>),
 }
@@ -64,7 +64,8 @@ impl SketchWorker {
     pub(crate) fn run(&mut self) {
         while let Some(task) = self.task_receiver.blocking_recv() {
             match task {
-                SketchWorkerTask::RequestCompile(result_sender) => {
+                SketchWorkerTask::RequestCompile(file_path, result_sender) => {
+                    self.file_path = file_path;
                     self.request_compile = true;
 
                     result_sender

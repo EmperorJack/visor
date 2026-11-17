@@ -137,7 +137,10 @@ impl Sketch {
             let (result_sender, result_receiver) = oneshot::channel();
 
             self.worker_task_sender
-                .try_send(SketchWorkerTask::RequestCompile(result_sender))
+                .try_send(SketchWorkerTask::RequestCompile(
+                    self.file_path.clone(),
+                    result_sender,
+                ))
                 .expect("Unexpected: could not send request compile task to sketch worker");
 
             result_receiver
