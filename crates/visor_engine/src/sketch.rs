@@ -22,6 +22,7 @@ pub struct Sketch {
     file_path: PathBuf,
     is_built: bool,
     is_enabled: bool,
+    size: [u32; 2],
     sketch_store: Option<SketchStore>,
     target_render_texture_id: Option<RenderTextureId>,
     worker_task_sender: mpsc::Sender<SketchWorkerTask>,
@@ -52,6 +53,7 @@ impl Sketch {
             file_path,
             is_built: false,
             is_enabled: true,
+            size: [800, 600],
             sketch_store: Some(sketch_store),
             target_render_texture_id: None,
             worker_task_sender,
@@ -122,6 +124,19 @@ impl Sketch {
 
     pub fn set_enabled(&mut self, id: bool) {
         self.is_enabled = id;
+    }
+
+    pub fn size(&self) -> [u32; 2] {
+        self.size
+    }
+
+    pub fn set_size(&mut self, width: u32, height: u32) {
+        assert!(
+            width > 0 && height > 0,
+            "Sketch dimensions must be greater than zero"
+        );
+
+        self.size = [width, height];
     }
 
     pub fn get_target_render_texture_id(&self) -> Option<&RenderTextureId> {

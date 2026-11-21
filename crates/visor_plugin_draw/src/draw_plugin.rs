@@ -453,11 +453,17 @@ impl Plugin for DrawPlugin {
 
     fn build_sketch(
         &self,
-        _sketch_id: &SketchId,
+        sketch_id: &SketchId,
         engine: &mut Engine,
         _store: &Store,
         sketch_store: &mut SketchStore,
     ) {
+        let [width, height] = engine
+            .sketches()
+            .get(sketch_id)
+            .expect("Unexpected: could not find sketch")
+            .size();
+
         sketch_store.set(SketchState {
             draw_map: Default::default(),
             next_draw_id: DrawId(0),
@@ -475,8 +481,8 @@ impl Plugin for DrawPlugin {
             fullscreen_shader_command_map: Default::default(),
             fullscreen_shader_map: Default::default(),
             file_path: Default::default(),
-            width: 0,
-            height: 0,
+            width,
+            height,
             wgpu_handle: engine.wgpu_handle().clone(),
         });
     }
@@ -485,21 +491,7 @@ impl Plugin for DrawPlugin {
         let sketch_sizes: Vec<(SketchId, [u32; 2])> = engine
             .sketches()
             .iter()
-            .map(|(sketch_id, sketch)| {
-                let size = sketch
-                    .get_target_render_texture_id()
-                    .map(|render_texture_id| {
-                        engine
-                            .render_textures()
-                            .get(render_texture_id)
-                            .expect("Unexpected: could not find render texture")
-                            .texture_view()
-                            .size()
-                    })
-                    .unwrap_or([0, 0]);
-
-                (*sketch_id, size)
-            })
+            .map(|(sketch_id, sketch)| (*sketch_id, sketch.size()))
             .collect();
 
         for (sketch_id, [width, height]) in sketch_sizes {

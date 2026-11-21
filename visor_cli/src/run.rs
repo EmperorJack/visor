@@ -68,6 +68,10 @@ pub(crate) fn run_sketch(args: RunArgs, plugins: Option<Vec<PathBuf>>) -> Result
     let width = args.width.unwrap_or(600);
     let height = args.height.unwrap_or(400);
 
+    if width == 0 || height == 0 {
+        bail!("Sketch dimensions must be greater than zero");
+    }
+
     let mut engine = engine_builder.build();
 
     if !args.sketch_file_path.exists() {
@@ -87,11 +91,13 @@ pub(crate) fn run_sketch(args: RunArgs, plugins: Option<Vec<PathBuf>>) -> Result
     let render_texture_id = *render_texture.id();
     let render_texture_view = render_texture.texture_view().clone();
 
-    engine
+    let sketch = engine
         .sketches_mut()
         .get_mut(&sketch_id)
-        .expect("Unexpected: could not find sketch")
-        .set_target_render_texture_id(Some(&render_texture_id));
+        .expect("Unexpected: could not find sketch");
+
+    sketch.set_size(width, height);
+    sketch.set_target_render_texture_id(Some(&render_texture_id));
 
     let window = WindowBuilder::new()
         .with_title("Display")
@@ -162,7 +168,17 @@ pub(crate) fn run_sketch(args: RunArgs, plugins: Option<Vec<PathBuf>>) -> Result
                 }
 
                 WindowEvent::Resized(size) => {
+                    if size.width == 0 || size.height == 0 {
+                        return;
+                    }
+
                     let display_id = *engine.display_id_for_window_id(&window_id);
+
+                    engine
+                        .sketches_mut()
+                        .get_mut(&sketch_id)
+                        .expect("Unexpected: could not find sketch")
+                        .set_size(size.width, size.height);
 
                     let render_texture = engine
                         .render_textures_mut()
